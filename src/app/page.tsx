@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Head from 'next/head';
 import './komplexaci/komplexaci.css';
@@ -210,7 +210,7 @@ export default function Home() {
   const [isTraxAutoHidden, setIsTraxAutoHidden] = useState(false);
   const [showBriefly, setShowBriefly] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
-  const [scrollTimeout, setScrollTimeout] = useState<NodeJS.Timeout | null>(null);
+
   const [scrollDownTimeout, setScrollDownTimeout] = useState<NodeJS.Timeout | null>(null);
   const [activityTimeout, setActivityTimeout] = useState<NodeJS.Timeout | null>(null);
   const [musicStartTimeout, setMusicStartTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -225,30 +225,8 @@ export default function Home() {
     audio.volume = volume;
     audio.preload = 'auto';
 
-    // Define event handlers
-    const handleEnded = () => {
-      console.log('Track ended, playing next');
-      // Use shuffle mode for auto-advance too
-      let next;
-      if (isShuffleMode) {
-        // Get random track different from current
-        do {
-          next = Math.floor(Math.random() * playlist.length);
-        } while (next === currentTrack && playlist.length > 1);
-      } else {
-        next = (currentTrack + 1) % playlist.length;
-      }
-      console.log('Auto-advancing to track:', playlist[next]?.title);
-      setCurrentTrack(next);
-
-      // Load and play the new track
-      if (audio && playlist[next]) {
-        audio.src = playlist[next].file;
-        audio.play().catch(console.error);
-      }
-    };
-
-    const handleError = (e: Event) => {
+    // Define event handlers (without handleEnded to avoid stale closure issues)
+    const handleError = () => {
       console.log('Audio file not found, switching to demo mode');
       setIsDemoMode(true);
     };
@@ -262,8 +240,7 @@ export default function Home() {
       setIsDemoMode(false);
     };
 
-    // Add event listeners
-    audio.addEventListener('ended', handleEnded);
+    // Add event listeners (skip 'ended' for now to avoid closure issues)
     audio.addEventListener('error', handleError);
     audio.addEventListener('loadstart', handleLoadStart);
     audio.addEventListener('canplay', handleCanPlay);
@@ -301,7 +278,6 @@ export default function Home() {
       if (audio) {
         audio.pause();
         audio.src = '';
-        audio.removeEventListener('ended', handleEnded);
         audio.removeEventListener('error', handleError);
         audio.removeEventListener('loadstart', handleLoadStart);
         audio.removeEventListener('canplay', handleCanPlay);
@@ -352,11 +328,95 @@ export default function Home() {
     };
   }, [isTraxVisible, isTraxAutoHidden, hasUserInteracted, scrollDownTimeout]); // Dependencies for scroll handler
 
-  // Watch for currentTrack changes and update audio source
+  // Separate useEffect for handling track ended event with current state
+  useEffect(() => {
+    if (!audioElement) return;
+
+    const handleEnded = () => {
+      console.log('Track ended, playing next');
+
+      // Calculate next track
+      let next;
+      if (isShuffleMode) {
+        // Get random track different from current
+        do {
+          next = Math.floor(Math.random() * playlist.length);
+        } while (next === currentTrack && playlist.length > 1);
+      } else {
+        next = (currentTrack + 1) % playlist.length;
+      }
+
+      console.log('Auto-advancing to track:', playlist[next]?.title);
+
+      // Update the current track state
+      setCurrentTrack(next);
+
+      // Handle the audio source change directly to avoid conflicts
+      if (!isDemoMode && audioElement && playlist[next]) {
+        // Pause and reset current track
+        audioElement.pause();
+        audioElement.currentTime = 0;
+
+        // Set new source and play
+        audioElement.src = playlist[next].file;
+        audioElement.play()
+          .then(() => {
+            // Ensure the playing state is maintained
+            setIsPlaying(true);
+            console.log('Auto-advanced and playing:', playlist[next].title);
+
+            // Show Kompg Trax widget for auto-advance
+            setIsTraxVisible(true);
+            setIsTraxAutoHidden(false);
+            setShowBriefly(true);
+            console.log('🎵 Auto-advance - showing Kompg Trax for new track:', playlist[next].title);
+
+            // Auto-hide after 4 seconds for auto-advance
+            setTimeout(() => {
+              setShowBriefly(false);
+              setIsTraxAutoHidden(true);
+              console.log('⏰ Auto-hiding Kompg Trax after auto-advance');
+            }, 4000);
+          })
+          .catch((error) => {
+            console.error('Error auto-advancing to next track:', error);
+            setIsDemoMode(true);
+          });
+      } else if (isDemoMode) {
+        // In demo mode, just maintain the playing state and show widget
+        console.log('Demo mode: Auto-advanced to', playlist[next]?.title);
+
+        // Show Kompg Trax widget for demo mode auto-advance
+        setIsTraxVisible(true);
+        setIsTraxAutoHidden(false);
+        setShowBriefly(true);
+        console.log('🎮 Demo auto-advance - showing Kompg Trax for new track:', playlist[next]?.title);
+
+        // Auto-hide after 4 seconds for demo auto-advance
+        setTimeout(() => {
+          setShowBriefly(false);
+          setIsTraxAutoHidden(true);
+          console.log('⏰ Auto-hiding Kompg Trax after demo auto-advance');
+        }, 4000);
+      }
+    };
+
+    audioElement.addEventListener('ended', handleEnded);
+
+    return () => {
+      audioElement.removeEventListener('ended', handleEnded);
+    };
+  }, [audioElement, isDemoMode, isShuffleMode, currentTrack]); // Include all dependencies
+
+  // Watch for currentTrack changes and update audio source (only when not auto-advancing)
   useEffect(() => {
     if (audioElement && playlist[currentTrack] && !isDemoMode) {
       console.log('Current track changed to:', currentTrack, playlist[currentTrack].title);
-      audioElement.src = playlist[currentTrack].file;
+      // Only update src if it's different to avoid interrupting playback
+      const newSrc = playlist[currentTrack].file;
+      if (audioElement.src !== window.location.origin + newSrc && audioElement.src !== newSrc) {
+        audioElement.src = newSrc;
+      }
     }
   }, [currentTrack, audioElement, isDemoMode]);
 
@@ -460,9 +520,18 @@ export default function Home() {
         setIsPlaying(false);
         console.log('Real audio paused');
       } else {
-        // Ensure we have a valid source
-        if (!audioElement.src || audioElement.src === window.location.href) {
-          audioElement.src = playlist[currentTrack]?.file || '';
+        // Ensure we have a valid source and it matches the current track
+        const expectedSrc = playlist[currentTrack]?.file || '';
+        const currentSrc = audioElement.src;
+        const isValidSrc = currentSrc &&
+                          currentSrc !== window.location.href &&
+                          (currentSrc === expectedSrc || currentSrc === window.location.origin + expectedSrc);
+
+        if (!isValidSrc) {
+          console.log('Setting audio source to:', expectedSrc);
+          audioElement.src = expectedSrc;
+          // Wait a bit for the source to be set
+          await new Promise(resolve => setTimeout(resolve, 50));
         }
 
         await audioElement.play();
@@ -530,36 +599,54 @@ export default function Home() {
       audioElement.pause();
       setIsPlaying(false);
 
+      // Clear the current source to stop any ongoing fetch
+      audioElement.src = '';
+      audioElement.load(); // This will abort any ongoing fetch
+
       // Wait a bit to ensure the previous audio is properly stopped
-      await new Promise(resolve => setTimeout(resolve, 200));
+      await new Promise(resolve => setTimeout(resolve, 100));
 
       // Set new source and reset position
       audioElement.src = newSrc;
       audioElement.currentTime = 0;
 
-      // Load the new track with timeout
+      // Load the new track with timeout and proper cleanup
       await new Promise((resolve, reject) => {
+        let isResolved = false;
+
         const timeout = setTimeout(() => {
-          audioElement.removeEventListener('canplaythrough', handleLoad);
-          audioElement.removeEventListener('error', handleError);
-          reject(new Error('Load timeout'));
-        }, 10000); // 10 second timeout
+          if (!isResolved) {
+            isResolved = true;
+            cleanup();
+            reject(new Error('Load timeout'));
+          }
+        }, 8000); // 8 second timeout
 
         const handleLoad = () => {
-          clearTimeout(timeout);
-          audioElement.removeEventListener('canplaythrough', handleLoad);
-          audioElement.removeEventListener('error', handleError);
-          resolve(true);
+          if (!isResolved) {
+            isResolved = true;
+            cleanup();
+            resolve(true);
+          }
         };
 
-        const handleError = (error: any) => {
+        const handleError = (error: Event) => {
+          if (!isResolved) {
+            isResolved = true;
+            cleanup();
+            reject(error);
+          }
+        };
+
+        const cleanup = () => {
           clearTimeout(timeout);
           audioElement.removeEventListener('canplaythrough', handleLoad);
           audioElement.removeEventListener('error', handleError);
-          reject(error);
+          audioElement.removeEventListener('loadeddata', handleLoad);
         };
 
         audioElement.addEventListener('canplaythrough', handleLoad);
+        audioElement.addEventListener('loadeddata', handleLoad); // Alternative event
         audioElement.addEventListener('error', handleError);
         audioElement.load();
       });
@@ -612,9 +699,7 @@ export default function Home() {
       if (musicStartTimeout) {
         clearTimeout(musicStartTimeout);
       }
-      if (scrollTimeout) {
-        clearTimeout(scrollTimeout);
-      }
+
       if (scrollDownTimeout) {
         clearTimeout(scrollDownTimeout);
       }
@@ -661,24 +746,7 @@ export default function Home() {
     });
   };
 
-  // Function to test if audio files are available
-  const testAudioAvailability = async () => {
-    if (isDemoMode && playlist.length > 0) {
-      try {
-        const testAudio = new Audio();
-        testAudio.src = playlist[0].file;
-        await testAudio.load();
-        console.log('Audio files detected, switching to real audio mode');
-        setIsDemoMode(false);
-        // Re-initialize audio element
-        const audio = new Audio();
-        audio.volume = volume;
-        setAudioElement(audio);
-      } catch (error) {
-        console.log('Audio files still not available, staying in demo mode');
-      }
-    }
-  };
+
 
   return (
     <>

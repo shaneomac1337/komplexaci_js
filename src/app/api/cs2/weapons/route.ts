@@ -366,7 +366,7 @@ const weaponCategories: WeaponCategory[] = [
         name: 'M249',
         price: '$5200',
         stats: 'Těžký kulomet s velkým zásobníkem a vysokým poškozením',
-        damage: '99 (hlava s helmou), 24 (tělo s vestou)',
+        damage: '102 (hlava s helmou), 25 (tělo s vestou)',
         accuracy: 'Nízká přesnost, velmi vysoký zpětný ráz',
         team: 'CT i T',
         image: '/cs2/weapons/m249.png',
@@ -377,7 +377,7 @@ const weaponCategories: WeaponCategory[] = [
         name: 'Negev',
         price: '$1700',
         stats: 'Levný kulomet s unikátním systémem přesnosti',
-        damage: '99 (hlava s helmou), 24 (tělo s vestou)',
+        damage: '96 (hlava s helmou), 26 (tělo s vestou)',
         accuracy: 'Zpočátku nepřesný, postupně se zlepšuje',
         team: 'CT i T',
         image: '/cs2/weapons/negev.jpg',
@@ -474,7 +474,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json(weaponCategories);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

@@ -101,7 +101,7 @@ export async function GET(request: Request) {
     }
 
     return NextResponse.json(filteredMaps);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
