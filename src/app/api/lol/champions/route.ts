@@ -4,11 +4,12 @@ import { Champion, DataDragonChampionListResponse, Role } from '../../../league-
 // DataDragon API Service
 class DataDragonService {
   private baseUrl = 'https://ddragon.leagueoflegends.com';
-  private locale = 'cs_CZ';
-  private version: string | null = null;
+  private defaultLocale = 'cs_CZ';
+  private defaultVersion = '15.10.1';
+  private cachedVersion: string | null = null;
 
   async getLatestVersion(): Promise<string> {
-    if (this.version) return this.version;
+    if (this.cachedVersion) return this.cachedVersion;
 
     try {
       const response = await fetch(`${this.baseUrl}/api/versions.json`, {
@@ -20,20 +21,21 @@ class DataDragonService {
       }
 
       const versions = await response.json();
-      this.version = versions[0]; // Latest version is first
-      return this.version!; // Non-null assertion since we just assigned it
+      this.cachedVersion = versions[0]; // Latest version is first
+      return this.cachedVersion!; // Non-null assertion since we just assigned it
     } catch (error) {
       console.error('Failed to fetch latest version:', error);
       // Fallback to a known version
-      this.version = '15.10.1';
-      return this.version;
+      this.cachedVersion = this.defaultVersion;
+      return this.cachedVersion;
     }
   }
 
-  async getAllChampions(): Promise<Champion[]> {
+  async getAllChampions(locale?: string, version?: string): Promise<Champion[]> {
     try {
-      const version = await this.getLatestVersion();
-      const url = `${this.baseUrl}/cdn/${version}/data/${this.locale}/champion.json`;
+      const apiVersion = version || await this.getLatestVersion();
+      const apiLocale = locale || this.defaultLocale;
+      const url = `${this.baseUrl}/cdn/${apiVersion}/data/${apiLocale}/champion.json`;
       
       const response = await fetch(url, {
         next: { revalidate: 3600 } // Cache for 1 hour
@@ -46,28 +48,44 @@ class DataDragonService {
       const data: DataDragonChampionListResponse = await response.json();
       
       // Convert to our format
-      const champions = Object.values(data.data).map(champion => ({
-        id: champion.id,
-        key: champion.key,
-        name: champion.name,
-        title: champion.title,
-        description: champion.blurb,
-        splash: `${this.baseUrl}/cdn/img/champion/splash/${champion.id}_0.jpg`,
-        square: `${this.baseUrl}/cdn/${version}/img/champion/${champion.id}.png`,
-        difficulty: this.mapDifficulty(champion.info.difficulty),
-        damage: this.mapDamageType(champion.name, champion.tags),
-        survivability: this.mapSurvivability(champion.info.defense),
-        roles: this.mapRoles(champion.tags, champion.name),
-        rangeType: this.mapRangeType(champion.name, champion.tags),
-        championClass: champion.tags[0] || 'Fighter',
-        region: this.mapRegion(champion.name)
-      }));
+      const champions = Object.values(data.data).map(champion => {
+        // Transform champion name for display (e.g., MonkeyKing -> Wukong)
+        const displayName = this.getDisplayName(champion.name);
+
+        return {
+          id: champion.id,
+          key: champion.key,
+          name: displayName,
+          title: champion.title,
+          description: champion.blurb,
+          splash: `${this.baseUrl}/cdn/img/champion/splash/${champion.id}_0.jpg`,
+          square: `${this.baseUrl}/cdn/${apiVersion}/img/champion/${champion.id}.png`,
+          difficulty: this.mapDifficulty(champion.info.difficulty),
+          damage: this.mapDamageType(champion.name, champion.tags, champion.info),
+          survivability: this.mapSurvivability(champion.info.defense),
+          roles: this.mapRoles(champion.tags, champion.name, champion.id),
+          rangeType: this.mapRangeType(displayName, champion.tags),
+          championClass: champion.tags[0] || 'Fighter',
+          region: this.mapRegion(displayName)
+        };
+      });
 
       return champions;
     } catch (error) {
       console.error('Failed to fetch champions:', error);
       throw error;
     }
+  }
+
+  private getDisplayName(originalName: string): string {
+    // Transform DataDragon names to preferred display names
+    const displayNameMap: Record<string, string> = {
+      'MonkeyKing': 'Wukong',
+      'RenataGlasc': 'Renata Glasc',
+      // Add other name transformations as needed
+    };
+
+    return displayNameMap[originalName] || originalName;
   }
 
   private mapDifficulty(difficulty: number): 'Nízká' | 'Střední' | 'Vysoká' | 'Velmi vysoká' {
@@ -77,31 +95,27 @@ class DataDragonService {
     return 'Velmi vysoká';
   }
 
-  private mapDamageType(championName: string, tags: string[]): 'Physical' | 'Magic' | 'Mixed' {
-    // Magic damage champions
-    const magicDamageChampions = new Set([
-      'Ahri', 'Anivia', 'Annie', 'Aurelion Sol', 'Aurora', 'Azir', 'Brand', 'Cassiopeia',
-      'Heimerdinger', 'Hwei', 'Kassadin', 'Lissandra', 'Lux', 'Malzahar', 'Neeko',
-      'Orianna', 'Ryze', 'Swain', 'Syndra', 'Twisted Fate', 'Veigar', 'Vel\'Koz',
-      'Vex', 'Viktor', 'Xerath', 'Ziggs', 'Zoe', 'Akali', 'Diana', 'Ekko', 'Evelynn',
-      'Fizz', 'Katarina', 'LeBlanc', 'Sylas', 'Bard', 'Janna', 'Karma', 'Lulu',
-      'Milio', 'Morgana', 'Nami', 'Seraphine', 'Sona', 'Soraka', 'Yuumi', 'Zilean',
-      'Zyra', 'Amumu', 'Cho\'Gath', 'Dr. Mundo', 'Galio', 'Gragas', 'Maokai',
-      'Mordekaiser', 'Rumble', 'Singed', 'Vladimir', 'Volibear', 'Zac'
-    ]);
-
-    if (magicDamageChampions.has(championName)) {
-      return 'Magic';
-    }
-
-    if (tags.includes('Mage')) {
+  private mapDamageType(championName: string, tags: string[], info: any): 'Physical' | 'Magic' {
+    // Use API data to determine damage type
+    // info.attack = physical damage rating (0-10)
+    // info.magic = magic damage rating (0-10)
+    
+    if (info.attack > info.magic) {
+      return 'Physical';
+    } else if (info.magic > info.attack) {
       return 'Magic';
     }
     
+    // If equal, fall back to tag-based detection
     if (tags.includes('Marksman') || tags.includes('Fighter') || tags.includes('Assassin')) {
       return 'Physical';
     }
+    
+    if (tags.includes('Mage')) {
+      return 'Magic';
+    }
 
+    // Default to Physical for ambiguous cases
     return 'Physical';
   }
 
@@ -112,195 +126,248 @@ class DataDragonService {
     return 'Velmi vysoká';
   }
 
-  private mapRoles(tags: string[], championName: string): Role[] {
+  private mapRoles(tags: string[], championName: string, championId?: string): Role[] {
     // Official champion position mapping from League of Legends Wiki
     // Source: https://leagueoflegends.fandom.com/wiki/List_of_champions_by_draft_position
     // Legend: ✓ = Official Riot position, 3P = Third-party viable position
     const championPositions: Record<string, Role[]> = {
-      'Aatrox': ['Top'],
-      'Ahri': ['Mid'],
-      'Akali': ['Top', 'Mid'],
-      'Akshan': ['Mid'],
-      'Alistar': ['Support'],
-      'Ambessa': ['Mid'],
-      'Amumu': ['Jungle', 'Support'],
-      'Anivia': ['Mid'],
-      'Annie': ['Mid'],
+      'Aatrox': ['TOP'],
+      'Ahri': ['MID'],
+      'Akali': ['TOP', 'MID'],
+      'Akshan': ['MID'],
+      'Alistar': ['SUPPORT'],
+      'Ambessa': ['MID'],
+      'Amumu': ['JUNGLE', 'SUPPORT'],
+      'Anivia': ['MID'],
+      'Annie': ['MID'],
       'Aphelios': ['ADC'],
-      'Ashe': ['ADC', 'Support'],
-      'Aurelion Sol': ['Mid'],
-      'Aurora': ['Top', 'Mid'],
-      'Azir': ['Mid'],
-      'Bard': ['Support'],
-      'Bel\'Veth': ['Jungle'],
-      'Blitzcrank': ['Support'],
-      'Brand': ['Jungle', 'Mid', 'Support'], // ✓ Jungle, 3P Mid, ✓ Support
-      'Braum': ['Support'],
-      'Briar': ['Jungle'],
+      'Ashe': ['ADC', 'SUPPORT'],
+      'Aurelion Sol': ['MID'],
+      'Aurora': ['TOP', 'MID'],
+      'Azir': ['MID'],
+      'Bard': ['SUPPORT'],
+      'Bel\'Veth': ['JUNGLE'],
+      'Blitzcrank': ['SUPPORT'],
+      'Brand': ['JUNGLE', 'MID', 'SUPPORT'], // ✓ Jungle, 3P Mid, ✓ Support
+      'Braum': ['SUPPORT'],
+      'Briar': ['JUNGLE'],
       'Caitlyn': ['ADC'],
-      'Camille': ['Top', 'Support'], // ✓ Top, 3P Support
-      'Cassiopeia': ['Mid'],
-      'Cho\'Gath': ['Top'],
-      'Corki': ['Mid'],
-      'Darius': ['Top'],
-      'Diana': ['Jungle', 'Mid'], // ✓ Jungle, ✓ Mid
-      'Dr. Mundo': ['Top'],
+      'Camille': ['TOP', 'SUPPORT'], // ✓ Top, 3P Support
+      'Cassiopeia': ['MID'],
+      'Cho\'Gath': ['TOP'],
+      'Corki': ['MID'],
+      'Darius': ['TOP'],
+      'Diana': ['JUNGLE', 'MID'], // ✓ Jungle, ✓ Mid
+      'Dr. Mundo': ['TOP'],
       'Draven': ['ADC'],
-      'Ekko': ['Jungle', 'Mid'], // ✓ Jungle, ✓ Mid
-      'Elise': ['Jungle'],
-      'Evelynn': ['Jungle'],
+      'Ekko': ['JUNGLE', 'MID'], // ✓ Jungle, ✓ Mid
+      'Elise': ['JUNGLE'],
+      'Evelynn': ['JUNGLE'],
       'Ezreal': ['ADC'],
-      'Fiddlesticks': ['Jungle'],
-      'Fiora': ['Top'],
-      'Fizz': ['Mid'],
-      'Galio': ['Mid', 'Support'], // ✓ Mid, 3P Support
-      'Gangplank': ['Top'],
-      'Garen': ['Top'],
-      'Gnar': ['Top'],
-      'Gragas': ['Top', 'Jungle', 'Mid'], // 3P Top, ✓ Jungle, 3P Mid
-      'Graves': ['Jungle'],
-      'Gwen': ['Top'],
-      'Hecarim': ['Jungle'],
-      'Heimerdinger': ['Top', 'Mid', 'Support'], // 3P Top, 3P Mid, ✓ Support
-      'Hwei': ['Mid', 'Support'], // ✓ Mid, ✓ Support
-      'Illaoi': ['Top'],
-      'Irelia': ['Top', 'Mid'], // ✓ Top, ✓ Mid
-      'Ivern': ['Jungle'],
-      'Janna': ['Support'],
-      'Jarvan IV': ['Jungle'],
-      'Jax': ['Top', 'Jungle'], // ✓ Top, ✓ Jungle
-      'Jayce': ['Top', 'Mid'], // ✓ Top, 3P Mid
+      'Fiddlesticks': ['JUNGLE'],
+      'Fiora': ['TOP'],
+      'Fizz': ['MID'],
+      'Galio': ['MID', 'SUPPORT'], // ✓ Mid, 3P Support
+      'Gangplank': ['TOP'],
+      'Garen': ['TOP'],
+      'Gnar': ['TOP'],
+      'Gragas': ['TOP', 'JUNGLE', 'MID'], // 3P Top, ✓ Jungle, 3P Mid
+      'Graves': ['JUNGLE'],
+      'Gwen': ['TOP'],
+      'Hecarim': ['JUNGLE'],
+      'Heimerdinger': ['TOP', 'MID', 'SUPPORT'], // 3P Top, 3P Mid, ✓ Support
+      'Hwei': ['MID', 'SUPPORT'], // ✓ Mid, ✓ Support
+      'Illaoi': ['TOP'],
+      'Irelia': ['TOP', 'MID'], // ✓ Top, ✓ Mid
+      'Ivern': ['JUNGLE'],
+      'Janna': ['SUPPORT'],
+      'Jarvan IV': ['JUNGLE'],
+      'Jax': ['TOP', 'JUNGLE'], // ✓ Top, ✓ Jungle
+      'Jayce': ['TOP', 'MID'], // ✓ Top, 3P Mid
       'Jhin': ['ADC'],
       'Jinx': ['ADC'],
-      'K\'Sante': ['Top'],
+      'K\'Sante': ['TOP'],
       'Kai\'Sa': ['ADC'],
       'Kalista': ['ADC'],
-      'Karma': ['Top', 'Mid', 'Support'], // 3P Top, ✓ Mid, ✓ Support
-      'Karthus': ['Jungle'],
-      'Kassadin': ['Mid'],
-      'Katarina': ['Mid'],
-      'Kayle': ['Top'],
-      'Kayn': ['Jungle'],
-      'Kennen': ['Top'],
-      'Kha\'Zix': ['Jungle'],
-      'Kindred': ['Jungle'],
-      'Kled': ['Top'],
+      'Karma': ['TOP', 'MID', 'SUPPORT'], // 3P Top, ✓ Mid, ✓ Support
+      'Karthus': ['JUNGLE'],
+      'Kassadin': ['MID'],
+      'Katarina': ['MID'],
+      'Kayle': ['TOP'],
+      'Kayn': ['JUNGLE'],
+      'Kennen': ['TOP'],
+      'Kha\'Zix': ['JUNGLE'],
+      'Kindred': ['JUNGLE'],
+      'Kled': ['TOP'],
       'Kog\'Maw': ['ADC'],
-      'LeBlanc': ['Mid'],
-      'Lee Sin': ['Jungle'],
-      'Leona': ['Support'],
-      'Lillia': ['Jungle'],
-      'Lissandra': ['Mid'],
+      'LeBlanc': ['MID'],
+      'Lee Sin': ['JUNGLE'],
+      'Leona': ['SUPPORT'],
+      'Lillia': ['JUNGLE'],
+      'Lissandra': ['MID'],
       'Lucian': ['ADC'],
-      'Lulu': ['Support'],
-      'Lux': ['Mid', 'Support'], // ✓ Mid, ✓ Support
-      'Malphite': ['Top', 'Mid', 'Support'], // ✓ Top, 3P Mid, 3P Support
-      'Malzahar': ['Mid'],
-      'Maokai': ['Jungle', 'Support'], // 3P Jungle, ✓ Support
-      'Master Yi': ['Jungle'],
-      'Mel': ['Mid'],
-      'Milio': ['Support'],
+      'Lulu': ['SUPPORT'],
+      'Lux': ['MID', 'SUPPORT'], // ✓ Mid, ✓ Support
+      'Malphite': ['TOP', 'MID', 'SUPPORT'], // ✓ Top, 3P Mid, 3P Support
+      'Malzahar': ['MID'],
+      'Maokai': ['JUNGLE', 'SUPPORT'], // 3P Jungle, ✓ Support
+      'Master Yi': ['JUNGLE'],
+      'Mel': ['MID'],
+      'Milio': ['SUPPORT'],
       'Miss Fortune': ['ADC'],
-      'Mordekaiser': ['Top'],
-      'Morgana': ['Support'],
-      'Naafiri': ['Mid'],
-      'Nami': ['Support'],
-      'Nasus': ['Top'],
-      'Nautilus': ['Support'],
-      'Neeko': ['Mid', 'Support'], // ✓ Mid, ✓ Support
-      'Nidalee': ['Jungle'],
+      'Mordekaiser': ['TOP'],
+      'Morgana': ['SUPPORT'],
+      'Naafiri': ['MID'],
+      'Nami': ['SUPPORT'],
+      'Nasus': ['TOP'],
+      'Nautilus': ['SUPPORT'],
+      'Neeko': ['MID', 'SUPPORT'], // ✓ Mid, ✓ Support
+      'Nidalee': ['JUNGLE'],
       'Nilah': ['ADC'],
-      'Nocturne': ['Jungle'],
-      'Nunu & Willump': ['Jungle'],
-      'Olaf': ['Top'],
-      'Orianna': ['Mid'],
-      'Ornn': ['Top'],
-      'Pantheon': ['Top', 'Jungle', 'Mid', 'Support'], // ✓ Top, 3P Jungle, 3P Mid, ✓ Support
-      'Poppy': ['Top', 'Jungle'], // ✓ Top, ✓ Jungle
-      'Pyke': ['Support'],
-      'Qiyana': ['Mid'],
-      'Quinn': ['Top'],
-      'Rakan': ['Support'],
-      'Rammus': ['Jungle'],
-      'Rek\'Sai': ['Jungle'],
-      'Rell': ['Support'],
-      'RenataGlasc': ['Support'],
-      'Renekton': ['Top'],
-      'Rengar': ['Top', 'Jungle'], // 3P Top, ✓ Jungle
-      'Riven': ['Top'],
-      'Rumble': ['Top', 'Mid'], // ✓ Top, 3P Mid
-      'Ryze': ['Mid'],
+      'Nocturne': ['JUNGLE'],
+      'Nunu & Willump': ['JUNGLE'],
+      'Nunu': ['JUNGLE'], // Alternative name
+      'Olaf': ['TOP'],
+      'Orianna': ['MID'],
+      'Ornn': ['TOP'],
+      'Pantheon': ['TOP', 'JUNGLE', 'MID', 'SUPPORT'], // ✓ Top, 3P Jungle, 3P Mid, ✓ Support
+      'Poppy': ['TOP', 'JUNGLE'], // ✓ Top, ✓ Jungle
+      'Pyke': ['SUPPORT'],
+      'Qiyana': ['MID'],
+      'Quinn': ['TOP'],
+      'Rakan': ['SUPPORT'],
+      'Rammus': ['JUNGLE'],
+      'Rek\'Sai': ['JUNGLE'],
+      'Rell': ['SUPPORT'],
+      'RenataGlasc': ['SUPPORT'],
+      'Renekton': ['TOP'],
+      'Rengar': ['TOP', 'JUNGLE'], // 3P Top, ✓ Jungle
+      'Riven': ['TOP'],
+      'Rumble': ['TOP', 'MID'], // ✓ Top, 3P Mid
+      'Ryze': ['MID'],
       'Samira': ['ADC'],
-      'Sejuani': ['Jungle'],
-      'Senna': ['ADC', 'Support'], // ✓ ADC, ✓ Support
-      'Seraphine': ['ADC', 'Support'], // ✓ ADC, ✓ Support
-      'Sett': ['Top'],
-      'Shaco': ['Jungle', 'Support'], // ✓ Jungle, 3P Support
-      'Shen': ['Top', 'Support'], // ✓ Top, 3P Support
-      'Shyvana': ['Jungle'],
-      'Singed': ['Top'],
-      'Sion': ['Top'],
+      'Sejuani': ['JUNGLE'],
+      'Senna': ['ADC', 'SUPPORT'], // ✓ ADC, ✓ Support
+      'Seraphine': ['ADC', 'SUPPORT'], // ✓ ADC, ✓ Support
+      'Sett': ['TOP'],
+      'Shaco': ['JUNGLE', 'SUPPORT'], // ✓ Jungle, 3P Support
+      'Shen': ['TOP', 'SUPPORT'], // ✓ Top, 3P Support
+      'Shyvana': ['JUNGLE'],
+      'Singed': ['TOP'],
+      'Sion': ['TOP'],
       'Sivir': ['ADC'],
-      'Skarner': ['Top', 'Jungle'], // ✓ Top, ✓ Jungle
-      'Smolder': ['Top', 'Mid', 'ADC'], // 3P Top, 3P Mid, ✓ ADC
-      'Sona': ['Support'],
-      'Soraka': ['Support'],
-      'Swain': ['Mid', 'Support'], // 3P Mid, ✓ Support
-      'Sylas': ['Top', 'Mid'], // 3P Top, ✓ Mid
-      'Syndra': ['Mid'],
-      'Tahm Kench': ['Top', 'Support'], // ✓ Top, 3P Support
-      'Taliyah': ['Jungle', 'Mid'], // ✓ Jungle, 3P Mid
-      'Talon': ['Jungle', 'Mid'], // 3P Jungle, ✓ Mid (Official)
-      'Taric': ['Mid', 'Support'], // 3P Mid, ✓ Support
-      'Teemo': ['Top', 'Jungle', 'Support'], // ✓ Top, 3P Jungle, 3P Support
-      'Thresh': ['Support'],
-      'Tristana': ['Mid', 'ADC'], // 3P Mid, ✓ ADC
-      'Trundle': ['Top', 'Jungle'], // ✓ Top, 3P Jungle
-      'Tryndamere': ['Top'],
-      'Twisted Fate': ['Top', 'Mid', 'ADC'], // 3P Top, ✓ Mid, ✓ ADC
-      'Twitch': ['ADC', 'Support'], // ✓ ADC, 3P Support
-      'Udyr': ['Top', 'Jungle'], // ✓ Top, ✓ Jungle
-      'Urgot': ['Top'],
+      'Skarner': ['TOP', 'JUNGLE'], // ✓ Top, ✓ Jungle
+      'Smolder': ['TOP', 'MID', 'ADC'], // 3P Top, 3P Mid, ✓ ADC
+      'Sona': ['SUPPORT'],
+      'Soraka': ['SUPPORT'],
+      'Swain': ['MID', 'SUPPORT'], // 3P Mid, ✓ Support
+      'Sylas': ['TOP', 'MID'], // 3P Top, ✓ Mid
+      'Syndra': ['MID'],
+      'Tahm Kench': ['TOP', 'SUPPORT'], // ✓ Top, 3P Support
+      'Taliyah': ['JUNGLE', 'MID'], // ✓ Jungle, 3P Mid
+      'Talon': ['JUNGLE', 'MID'], // 3P Jungle, ✓ Mid (Official)
+      'Taric': ['MID', 'SUPPORT'], // 3P Mid, ✓ Support
+      'Teemo': ['TOP', 'JUNGLE', 'SUPPORT'], // ✓ Top, 3P Jungle, 3P Support
+      'Thresh': ['SUPPORT'],
+      'Tristana': ['MID', 'ADC'], // 3P Mid, ✓ ADC
+      'Trundle': ['TOP', 'JUNGLE'], // ✓ Top, 3P Jungle
+      'Tryndamere': ['TOP'],
+      'Twisted Fate': ['TOP', 'MID', 'ADC'], // 3P Top, ✓ Mid, ✓ ADC
+      'Twitch': ['ADC', 'SUPPORT'], // ✓ ADC, 3P Support
+      'Udyr': ['TOP', 'JUNGLE'], // ✓ Top, ✓ Jungle
+      'Urgot': ['TOP'],
       'Varus': ['ADC'],
-      'Vayne': ['Top', 'ADC'], // 3P Top, ✓ ADC
-      'Veigar': ['Mid', 'Support'], // ✓ Mid, 3P Support
-      'Vel\'Koz': ['Mid', 'Support'], // 3P Mid, ✓ Support
-      'Vex': ['Mid'],
-      'Vi': ['Jungle'],
-      'Viego': ['Jungle'],
-      'Viktor': ['Mid'],
-      'Vladimir': ['Top', 'Mid'], // 3P Top, ✓ Mid
-      'Volibear': ['Top', 'Jungle'], // ✓ Top, 3P Jungle
-      'Warwick': ['Top', 'Jungle'], // 3P Top, ✓ Jungle
-      'MonkeyKing': ['Top', 'Jungle'], // 3P Top, ✓ Jungle
+      'Vayne': ['TOP', 'ADC'], // 3P Top, ✓ ADC
+      'Veigar': ['MID', 'SUPPORT'], // ✓ Mid, 3P Support
+      'Vel\'Koz': ['MID', 'SUPPORT'], // 3P Mid, ✓ Support
+      'Vex': ['MID'],
+      'Vi': ['JUNGLE'],
+      'Viego': ['JUNGLE'],
+      'Viktor': ['MID'],
+      'Vladimir': ['TOP', 'MID'], // 3P Top, ✓ Mid
+      'Volibear': ['TOP', 'JUNGLE'], // ✓ Top, 3P Jungle
+      'Warwick': ['TOP', 'JUNGLE'], // 3P Top, ✓ Jungle
+      'Wukong': ['TOP', 'JUNGLE'], // Alternative name for MonkeyKing
       'Xayah': ['ADC'],
-      'Xerath': ['Mid', 'Support'], // ✓ Mid, ✓ Support
-      'Xin Zhao': ['Jungle'],
-      'Yasuo': ['Top', 'Mid', 'ADC'], // ✓ Top, ✓ Mid, ✓ ADC
-      'Yone': ['Top', 'Mid'], // ✓ Top, ✓ Mid
-      'Yorick': ['Top'],
-      'Yuumi': ['Support'],
-      'Zac': ['Top', 'Jungle', 'Support'], // 3P Top, ✓ Jungle, 3P Support
-      'Zed': ['Jungle', 'Mid'], // 3P Jungle, ✓ Mid
+      'Xerath': ['MID', 'SUPPORT'], // ✓ Mid, ✓ Support
+      'Xin Zhao': ['JUNGLE'],
+      'Yasuo': ['TOP', 'MID', 'ADC'], // ✓ Top, ✓ Mid, ✓ ADC
+      'Yone': ['TOP', 'MID'], // ✓ Top, ✓ Mid
+      'Yorick': ['TOP'],
+      'Yuumi': ['SUPPORT'],
+      'Zac': ['TOP', 'JUNGLE', 'SUPPORT'], // 3P Top, ✓ Jungle, 3P Support
+      'Zed': ['JUNGLE', 'MID'], // 3P Jungle, ✓ Mid
       'Zeri': ['ADC'],
-      'Ziggs': ['Mid', 'ADC'], // 3P Mid, ✓ ADC
-      'Zilean': ['Support'],
-      'Zoe': ['Mid'],
-      'Zyra': ['Support']
+      'Ziggs': ['MID', 'ADC'], // 3P Mid, ✓ ADC
+      'Zilean': ['SUPPORT'],
+      'Zoe': ['MID'],
+      'Zyra': ['SUPPORT']
     };
 
+    // Handle name variations and aliases
+    const nameAliases: Record<string, string> = {
+      'Nunu': 'Nunu & Willump',
+      'MonkeyKing': 'Wukong', // DataDragon uses MonkeyKing, we want to display as Wukong
+      'Renata Glasc': 'RenataGlasc',
+      'Cho\'Gath': 'Cho\'Gath',
+      'Dr. Mundo': 'Dr. Mundo',
+      'Kai\'Sa': 'Kai\'Sa',
+      'Kha\'Zix': 'Kha\'Zix',
+      'Kog\'Maw': 'Kog\'Maw',
+      'Rek\'Sai': 'Rek\'Sai',
+      'Vel\'Koz': 'Vel\'Koz',
+      'Bel\'Veth': 'Bel\'Veth'
+    };
+
+    // ID-based aliases (for cases where ID differs from display name)
+    const idAliases: Record<string, string> = {
+      'Nunu': 'Nunu & Willump',
+      'MonkeyKing': 'Wukong', // Wukong's internal ID maps to display name
+      'RenataGlasc': 'RenataGlasc'
+    };
+
+    // Try multiple lookup strategies
+    let lookupName = championName;
+
+    // 1. Try original name
     if (championPositions[championName]) {
       return championPositions[championName];
     }
 
+    // 2. Try name aliases
+    if (nameAliases[championName]) {
+      lookupName = nameAliases[championName];
+      if (championPositions[lookupName]) {
+        return championPositions[lookupName];
+      }
+    }
+
+    // 3. Try champion ID if provided
+    if (championId && idAliases[championId]) {
+      lookupName = idAliases[championId];
+      if (championPositions[lookupName]) {
+        return championPositions[lookupName];
+      }
+    }
+
+    // 4. Try champion ID directly
+    if (championId && championPositions[championId]) {
+      return championPositions[championId];
+    }
+
+    // Debug: Log missing champions (only in development)
+    if (process.env.NODE_ENV === 'development') {
+      console.log(`Missing role mapping for champion: "${championName}" (ID: "${championId}")`);
+    }
+
     // Fallback to class-based mapping
     const roleMapping: Record<string, Role[]> = {
-      'Fighter': ['Top'],
-      'Tank': ['Top'],
-      'Mage': ['Mid'],
-      'Assassin': ['Mid'],
+      'Fighter': ['TOP'],
+      'Tank': ['TOP'],
+      'Mage': ['MID'],
+      'Assassin': ['MID'],
       'Marksman': ['ADC'],
-      'Support': ['Support']
+      'Support': ['SUPPORT']
     };
 
     const roles: Role[] = [];
@@ -314,7 +381,7 @@ class DataDragonService {
       }
     });
 
-    return roles.length > 0 ? roles : ['Top'];
+    return roles.length > 0 ? roles : ['TOP'];
   }
 
   private mapRangeType(championName: string, tags: string[]): 'Melee' | 'Ranged' {
@@ -343,15 +410,79 @@ class DataDragonService {
   }
 
   private mapRegion(championName: string): string {
-    // Simplified region mapping - you can expand this
+    // Official region mapping from League of Legends Universe
     const championRegions: Record<string, string> = {
-      'Garen': 'Demacia',
-      'Darius': 'Noxus',
-      'Ashe': 'Freljord',
-      'Ahri': 'Ionia',
-      'Jinx': 'Zaun',
-      'Vi': 'Piltover',
-      // Add more mappings as needed
+      // Bandle City
+      'Corki': 'Bandle City', 'Lulu': 'Bandle City', 'Rumble': 'Bandle City', 'Teemo': 'Bandle City',
+      'Tristana': 'Bandle City', 'Veigar': 'Bandle City', 'Yuumi': 'Bandle City',
+
+      // Bilgewater
+      'Fizz': 'Bilgewater', 'Gangplank': 'Bilgewater', 'Graves': 'Bilgewater', 'Illaoi': 'Bilgewater',
+      'Miss Fortune': 'Bilgewater', 'Nautilus': 'Bilgewater', 'Nilah': 'Bilgewater', 'Pyke': 'Bilgewater',
+      'Tahm Kench': 'Bilgewater', 'Twisted Fate': 'Bilgewater',
+
+      // Demacia
+      'Fiora': 'Demacia', 'Galio': 'Demacia', 'Garen': 'Demacia', 'Jarvan IV': 'Demacia',
+      'Kayle': 'Demacia', 'Lucian': 'Demacia', 'Lux': 'Demacia', 'Morgana': 'Demacia',
+      'Poppy': 'Demacia', 'Quinn': 'Demacia', 'Shyvana': 'Demacia', 'Sona': 'Demacia',
+      'Sylas': 'Demacia', 'Vayne': 'Demacia', 'Xin Zhao': 'Demacia',
+
+      // Freljord
+      'Anivia': 'Freljord', 'Ashe': 'Freljord', 'Aurora': 'Freljord', 'Braum': 'Freljord',
+      'Gnar': 'Freljord', 'Gragas': 'Freljord', 'Lissandra': 'Freljord', 'Nunu & Willump': 'Freljord',
+      'Nunu': 'Freljord', 'Olaf': 'Freljord', 'Ornn': 'Freljord', 'Sejuani': 'Freljord',
+      'Trundle': 'Freljord', 'Tryndamere': 'Freljord', 'Udyr': 'Freljord', 'Volibear': 'Freljord',
+
+      // Ionia
+      'Ahri': 'Ionia', 'Akali': 'Ionia', 'Hwei': 'Ionia', 'Irelia': 'Ionia', 'Ivern': 'Ionia',
+      'Jhin': 'Ionia', 'Karma': 'Ionia', 'Kayn': 'Ionia', 'Kennen': 'Ionia', 'Lee Sin': 'Ionia',
+      'Lillia': 'Ionia', 'Master Yi': 'Ionia', 'Wukong': 'Ionia', 'MonkeyKing': 'Ionia',
+      'Rakan': 'Ionia', 'Sett': 'Ionia', 'Shen': 'Ionia', 'Syndra': 'Ionia', 'Varus': 'Ionia',
+      'Xayah': 'Ionia', 'Yasuo': 'Ionia', 'Yone': 'Ionia', 'Zed': 'Ionia',
+
+      // Ixtal
+      'Malphite': 'Ixtal', 'Milio': 'Ixtal', 'Neeko': 'Ixtal', 'Nidalee': 'Ixtal',
+      'Qiyana': 'Ixtal', 'Rengar': 'Ixtal', 'Skarner': 'Ixtal', 'Zyra': 'Ixtal',
+
+      // Noxus
+      'Ambessa': 'Noxus', 'Briar': 'Noxus', 'Cassiopeia': 'Noxus', 'Darius': 'Noxus',
+      'Draven': 'Noxus', 'Katarina': 'Noxus', 'Kled': 'Noxus', 'LeBlanc': 'Noxus',
+      'Mel': 'Noxus', 'Mordekaiser': 'Noxus', 'Rell': 'Noxus', 'Riven': 'Noxus',
+      'Samira': 'Noxus', 'Sion': 'Noxus', 'Swain': 'Noxus', 'Talon': 'Noxus', 'Vladimir': 'Noxus',
+
+      // Piltover
+      'Caitlyn': 'Piltover', 'Camille': 'Piltover', 'Ezreal': 'Piltover', 'Heimerdinger': 'Piltover',
+      'Jayce': 'Piltover', 'Orianna': 'Piltover', 'Seraphine': 'Piltover', 'Vi': 'Piltover',
+
+      // Shadow Isles
+      'Elise': 'Shadow Isles', 'Gwen': 'Shadow Isles', 'Hecarim': 'Shadow Isles', 'Kalista': 'Shadow Isles',
+      'Karthus': 'Shadow Isles', 'Maokai': 'Shadow Isles', 'Thresh': 'Shadow Isles', 'Vex': 'Shadow Isles',
+      'Viego': 'Shadow Isles', 'Yorick': 'Shadow Isles',
+
+      // Shurima
+      'Akshan': 'Shurima', 'Ammu': 'Shurima', 'Amumu': 'Shurima', 'Azir': 'Shurima',
+      'K\'Sante': 'Shurima', 'Naafiri': 'Shurima', 'Nasus': 'Shurima', 'Rammus': 'Shurima',
+      'Renekton': 'Shurima', 'Sivir': 'Shurima', 'Taliyah': 'Shurima', 'Xerath': 'Shurima',
+
+      // Targon
+      'Aphelios': 'Targon', 'Diana': 'Targon', 'Leona': 'Targon', 'Pantheon': 'Targon',
+      'Soraka': 'Targon', 'Taric': 'Targon', 'Zoe': 'Targon',
+
+      // The Void
+      'Bel\'Veth': 'The Void', 'Cho\'Gath': 'The Void', 'Kai\'Sa': 'The Void', 'Kassadin': 'The Void',
+      'Kha\'Zix': 'The Void', 'Kog\'Maw': 'The Void', 'Malzahar': 'The Void', 'Rek\'Sai': 'The Void',
+      'Vel\'Koz': 'The Void',
+
+      // Zaun
+      'Blitzcrank': 'Zaun', 'Dr. Mundo': 'Zaun', 'Ekko': 'Zaun', 'Janna': 'Zaun', 'Jinx': 'Zaun',
+      'Renata Glasc': 'Zaun', 'RenataGlasc': 'Zaun', 'Singed': 'Zaun', 'Twitch': 'Zaun',
+      'Urgot': 'Zaun', 'Viktor': 'Zaun', 'Warwick': 'Zaun', 'Zac': 'Zaun', 'Zeri': 'Zaun', 'Ziggs': 'Zaun',
+
+      // Runeterra (Global/Multiple regions)
+      'Aatrox': 'Runeterra', 'Alistar': 'Runeterra', 'Annie': 'Runeterra', 'Aurelion Sol': 'Runeterra',
+      'Bard': 'Runeterra', 'Brand': 'Runeterra', 'Evelynn': 'Runeterra', 'Fiddlesticks': 'Runeterra',
+      'Jax': 'Runeterra', 'Kindred': 'Runeterra', 'Nami': 'Runeterra', 'Nocturne': 'Runeterra',
+      'Ryze': 'Runeterra', 'Senna': 'Runeterra', 'Shaco': 'Runeterra', 'Smolder': 'Runeterra', 'Zilean': 'Runeterra'
     };
 
     return championRegions[championName] || 'Runeterra';
@@ -360,10 +491,14 @@ class DataDragonService {
 
 const datadragonService = new DataDragonService();
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const champions = await datadragonService.getAllChampions();
-    
+    const { searchParams } = new URL(request.url);
+    const locale = searchParams.get('locale') || undefined;
+    const version = searchParams.get('version') || undefined;
+
+    const champions = await datadragonService.getAllChampions(locale, version);
+
     return NextResponse.json(champions, {
       headers: {
         'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
@@ -371,7 +506,7 @@ export async function GET() {
     });
   } catch (error) {
     console.error('API Error:', error);
-    
+
     return NextResponse.json(
       { error: 'Failed to fetch champions' },
       { status: 500 }
