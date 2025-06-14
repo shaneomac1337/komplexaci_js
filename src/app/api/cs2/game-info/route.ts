@@ -111,7 +111,7 @@ const gameInfo: GameInfo = {
 export async function GET() {
   try {
     return NextResponse.json(gameInfo);
-  } catch (error) {
+  } catch {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
