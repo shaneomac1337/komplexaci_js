@@ -3,6 +3,9 @@ import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Head from 'next/head';
 import './komplexaci.css';
+import Header from './components/Header';
+import ServerStatus from './components/ServerStatus';
+import DiscordServerStats from './components/DiscordServerStats';
 
 // Import exact fonts from original
 if (typeof window !== 'undefined') {
@@ -216,6 +219,89 @@ export default function Home() {
   const [musicStartTimeout, setMusicStartTimeout] = useState<NodeJS.Timeout | null>(null);
   const [hasShownMusicStart, setHasShownMusicStart] = useState(false);
   const [isLoadingTrack, setIsLoadingTrack] = useState(false);
+
+  // Cross-page music control
+  useEffect(() => {
+    // Listen for WWE page music events and stop signals
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'wwe-music-state') {
+        const wweState = JSON.parse(e.newValue || '{}');
+        if (wweState.isPlaying && isPlaying) {
+          // WWE page started playing, pause main music
+          console.log('WWE music started, pausing main music');
+          if (audioElement && !isDemoMode) {
+            audioElement.pause();
+          }
+          setIsPlaying(false);
+        }
+      } else if (e.key === 'stop-main-music') {
+        // WWE page explicitly requested to stop main music
+        console.log('WWE page requested to stop main music');
+        if (audioElement && !isDemoMode) {
+          audioElement.pause();
+        }
+        setIsPlaying(false);
+        // Clear the stop signal
+        localStorage.removeItem('stop-main-music');
+      }
+    };
+
+    // Set main music state in localStorage when playing
+    const updateMusicState = () => {
+      if (isPlaying) {
+        localStorage.setItem('kompg-music-state', JSON.stringify({
+          isPlaying: true,
+          track: playlist[currentTrack]?.title || 'Main Track',
+          page: 'main'
+        }));
+      } else {
+        localStorage.removeItem('kompg-music-state');
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    updateMusicState();
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      localStorage.removeItem('kompg-music-state');
+    };
+  }, [isPlaying, currentTrack, audioElement, isDemoMode]);
+
+  // Check for WWE music on mount and clean up stale data
+  useEffect(() => {
+    const checkWWEMusic = () => {
+      const wweState = localStorage.getItem('wwe-music-state');
+      if (wweState) {
+        try {
+          const state = JSON.parse(wweState);
+          // Only consider WWE music as playing if it's from the current session
+          // Clear stale data from previous sessions
+          if (state.isPlaying) {
+            console.log('Found WWE music state in localStorage, checking if still valid...');
+            // Clear the stale state since we're on the main page now
+            localStorage.removeItem('wwe-music-state');
+            console.log('Cleared stale WWE music state from localStorage');
+            return false; // Don't prevent auto-start
+          }
+        } catch (error) {
+          console.log('Error parsing WWE music state, clearing localStorage:', error);
+          localStorage.removeItem('wwe-music-state');
+        }
+      }
+      return false;
+    };
+
+    // Clean up any stale WWE music state
+    checkWWEMusic();
+    
+    // Reset interaction state when returning to main page if music isn't playing
+    // This ensures the ribbon always shows when visiting the main page
+    if (!isPlaying) {
+      setHasUserInteracted(false);
+      console.log('Reset hasUserInteracted to show auto-play ribbon on main page');
+    }
+  }, []);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -714,6 +800,15 @@ export default function Home() {
       setHasUserInteracted(true);
       setIsTraxVisible(true);
 
+      // Stop WWE music when main music starts
+      localStorage.removeItem('wwe-music-state');
+      localStorage.setItem('stop-wwe-music', 'true');
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'stop-wwe-music',
+        newValue: 'true'
+      }));
+      console.log('Main page interaction: Stopping WWE music and starting main music');
+
       try {
         await audioElement.play();
         setIsPlaying(true);
@@ -729,6 +824,14 @@ export default function Home() {
       setHasUserInteracted(true);
       setIsTraxVisible(true);
       setIsPlaying(true);
+
+      // Stop WWE music when main music starts in demo mode
+      localStorage.removeItem('wwe-music-state');
+      localStorage.setItem('stop-wwe-music', 'true');
+      window.dispatchEvent(new StorageEvent('storage', {
+        key: 'stop-wwe-music',
+        newValue: 'true'
+      }));
       console.log('Auto-started demo mode on first user interaction');
     }
   };
@@ -760,47 +863,13 @@ export default function Home() {
         className="min-h-screen bg-gray-900 text-white relative overflow-hidden"
         onClick={handleFirstInteraction}
       >
-      {/* Animated Background */}
+        {/* Animated Background */}
       <div className="fixed inset-0 z-0">
         <div className="particles-bg"></div>
       </div>
 
-      {/* Header - EXACT Recreation */}
-      <header className="header">
-        <div className="container">
-          <div className="logo">
-            <div className="site-logo-placeholder">
-              <span className="logo-text">K</span>
-            </div>
-            <h1>Komplexáci</h1>
-          </div>
-          <nav className="main-nav">
-            <button className="mobile-menu-toggle">
-              <span className="bar"></span>
-              <span className="bar"></span>
-              <span className="bar"></span>
-            </button>
-            <ul className="nav-list">
-              <li><a href="#hero" className="nav-link active">Domů</a></li>
-              <li><a href="#o-nas" className="nav-link">O nás</a></li>
-              <li><a href="#clenove" className="nav-link">Členové</a></li>
-              <li className="has-submenu">
-                <a href="#hry" className="nav-link">
-                  Hry <i className="fas fa-chevron-down submenu-arrow"></i>
-                </a>
-                <ul className="submenu">
-                  <li><a href="/league-of-legends" className="nav-link" target="_blank">League of Legends</a></li>
-                  <li><a href="/cs2" className="nav-link" target="_blank">CS2</a></li>
-                  <li><a href="/wwe-games" className="nav-link" target="_blank">WWE Games</a></li>
-                </ul>
-              </li>
-              <li><a href="/videotvorba" className="nav-link" target="_blank">VIDEOTVORBA</a></li>
-              <li><a href="#discord" className="nav-link">Discord</a></li>
-              <li><a href="#kontakt" className="nav-link">Kontakt</a></li>
-            </ul>
-          </nav>
-        </div>
-      </header>
+      {/* Header with Scroll Spy */}
+      <Header />
 
       {/* Hero Section - EXACT Recreation */}
       <section id="hero" className="hero-exact">
@@ -943,11 +1012,15 @@ export default function Home() {
           <h2 className="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
             Naše hry
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="max-w-6xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {games.map((game, index) => (
-              <div
+              <a
                 key={game.title}
-                className={`group bg-gray-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-purple-500/20 transition-all duration-500 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/25 hover:border-purple-400/50 ${
+                href={game.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`group bg-gray-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-purple-500/20 transition-all duration-500 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/25 hover:border-purple-400/50 cursor-pointer block ${
                   isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
                 }`}
                 style={{ transitionDelay: `${index * 300}ms` }}
@@ -968,15 +1041,16 @@ export default function Home() {
                   <p className="text-gray-400 mb-4 leading-relaxed">
                     {game.description}
                   </p>
-                  <button className="inline-flex items-center text-purple-400 hover:text-purple-300 font-semibold transition-colors">
+                  <div className="inline-flex items-center text-purple-400 group-hover:text-purple-300 font-semibold transition-colors">
                     Více informací
                     <svg className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                     </svg>
-                  </button>
+                  </div>
                 </div>
-              </div>
+              </a>
             ))}
+            </div>
           </div>
         </div>
       </section>
@@ -1230,8 +1304,10 @@ export default function Home() {
           }}>
             Kontakt
           </h2>
-          <div className="max-w-2xl mx-auto text-center">
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/20 mb-8">
+          <div className="max-w-6xl mx-auto">
+            {/* Main Contact Info */}
+            <div className="text-center mb-12">
+              <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/20 mb-8">
               <p className="text-lg mb-6 leading-relaxed" style={{ color: 'var(--medium-text)' }}>
                 Máš zájem stát se součástí našeho týmu nebo máš nějaké otázky? Neváhej nás kontaktovat!
               </p>
@@ -1285,7 +1361,95 @@ export default function Home() {
               </div>
             </div>
           </div>
+
+          {/* Server Information & Community Guidelines */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            {/* Server Information */}
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/20">
+              <h3 className="text-2xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                🖥️ Server Information
+              </h3>
+              
+              <div className="space-y-6">
+                {/* Discord Server - Live Members */}
+                <DiscordServerStats />
+
+                {/* Activity Times */}
+                <div className="bg-gray-700/30 rounded-xl p-4 border border-green-500/20">
+                  <div className="flex items-center mb-3">
+                    <svg className="w-6 h-6 mr-3 text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <h4 className="text-lg font-semibold text-white">Nejaktivnější časy</h4>
+                  </div>
+                  <div className="text-sm space-y-1">
+                    <div className="text-gray-300">🕕 18:00 - 23:00 (všední dny)</div>
+                    <div className="text-gray-300">🕐 13:00 - 01:00 (víkendy)</div>
+                    <div className="text-gray-400 text-xs mt-2">* Časy v CET/CEST timezone</div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+            {/* Community Guidelines */}
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/20">
+              <h3 className="text-2xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                📋 Community Guidelines
+              </h3>
+              
+              <div className="space-y-6">
+                {/* Basic Rules */}
+                <div className="bg-gray-700/30 rounded-xl p-4 border border-purple-500/20">
+                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    Základní pravidla
+                  </h4>
+                  <ul className="space-y-2 text-sm text-gray-300">
+                    <li className="flex items-start">
+                      <span className="text-green-400 mr-2">✓</span>
+                      Respektuj ostatní členy
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-400 mr-2">✓</span>
+                      Žádný spam nebo toxicita
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-400 mr-2">✓</span>
+                      Používej správné kanály
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-400 mr-2">✓</span>
+                      Bavte se a užívejte si to!
+                    </li>
+                  </ul>
+                </div>
+
+
+                {/* Server Status - Website Health */}
+                <ServerStatus />
+
+                {/* Current Status */}
+                <div className="bg-gray-700/30 rounded-xl p-4 border border-yellow-500/20">
+                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    Aktuální stav
+                  </h4>
+                  <div className="text-sm text-gray-300">
+                    <p className="mb-2">🏖️ <strong>Status:</strong> Klan v důchodu</p>
+                    <p className="mb-2">💬 <strong>Discord:</strong> Stále aktivní pro povídání</p>
+                    <p>🎵 <strong>Music Bot:</strong> Hraje nostalgické pecky</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
+      </div>
       </section>
 
       {/* Footer */}

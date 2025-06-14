@@ -1,4 +1,4 @@
-export type Role = 'Top' | 'Jungle' | 'Mid' | 'ADC' | 'Support';
+export type Role = 'TOP' | 'JUNGLE' | 'MID' | 'ADC' | 'SUPPORT';
 
 export interface Champion {
   id: string;
@@ -9,7 +9,7 @@ export interface Champion {
   splash: string;
   square: string;
   difficulty: 'Nízká' | 'Střední' | 'Vysoká' | 'Velmi vysoká';
-  damage: 'Physical' | 'Magic' | 'Mixed';
+  damage: 'Physical' | 'Magic';
   survivability: 'Nízká' | 'Střední' | 'Vysoká' | 'Velmi vysoká';
   roles: Role[];
   rangeType: 'Melee' | 'Ranged';
