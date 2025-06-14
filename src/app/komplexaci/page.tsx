@@ -233,6 +233,9 @@ export default function KomplexaciPage() {
   const [lastActivity, setLastActivity] = useState(Date.now());
   const [showBriefly, setShowBriefly] = useState(false);
 
+  // Flag to prevent useEffect conflicts during auto-advance
+  const [isAutoAdvancing, setIsAutoAdvancing] = useState(false);
+
   useEffect(() => {
     setIsLoaded(true);
 
@@ -316,11 +319,11 @@ export default function KomplexaciPage() {
 
   // Watch for currentTrack changes and update audio source
   useEffect(() => {
-    if (audioElement && playlist[currentTrack] && !isDemoMode) {
+    if (audioElement && playlist[currentTrack] && !isDemoMode && !isAutoAdvancing) {
       console.log('Current track changed to:', currentTrack, playlist[currentTrack].title);
       audioElement.src = playlist[currentTrack].file;
     }
-  }, [currentTrack, audioElement, isDemoMode]);
+  }, [currentTrack, audioElement, isDemoMode, isAutoAdvancing]);
 
   // Separate useEffect for handling track ended event with current state
   useEffect(() => {
@@ -344,25 +347,40 @@ export default function KomplexaciPage() {
 
       console.log('Auto-advancing to track:', playlist[nextTrackIndex]?.title);
 
+      // Set flag to prevent useEffect interference
+      setIsAutoAdvancing(true);
+
       // Update the track
       setCurrentTrack(nextTrackIndex);
 
-      // Load and play the new track if not in demo mode
+      // Handle the audio source change directly to avoid conflicts
       if (!isDemoMode && audioElement && playlist[nextTrackIndex]) {
-        // Pause current playback first
+        // Pause and reset current track
         audioElement.pause();
-        audioElement.src = playlist[nextTrackIndex].file;
         audioElement.currentTime = 0;
 
-        // Wait for audio to be ready before playing
-        const handleCanPlay = () => {
-          audioElement.removeEventListener('canplay', handleCanPlay);
-          audioElement.play().catch(console.error);
-        };
-
-        audioElement.addEventListener('canplay', handleCanPlay);
-        audioElement.load();
+        // Set new source and play
+        audioElement.src = playlist[nextTrackIndex].file;
+        audioElement.play()
+          .then(() => {
+            // Ensure the playing state is maintained
+            setIsPlaying(true);
+            console.log('Auto-advanced and playing:', playlist[nextTrackIndex].title);
+          })
+          .catch((error) => {
+            console.error('Error auto-advancing to next track:', error);
+            setIsDemoMode(true);
+          });
+      } else if (isDemoMode) {
+        // In demo mode, just maintain the playing state
+        console.log('Demo mode: Auto-advanced to', playlist[nextTrackIndex]?.title);
+        // Keep playing state as it was
       }
+
+      // Reset the flag after a short delay
+      setTimeout(() => {
+        setIsAutoAdvancing(false);
+      }, 200);
     };
 
     audioElement.addEventListener('ended', handleEnded);
@@ -518,6 +536,8 @@ export default function KomplexaciPage() {
     return randomTrack;
   };
 
+
+
   const nextTrack = () => {
     const next = isShuffleMode ? getRandomTrack() : (currentTrack + 1) % playlist.length;
     setCurrentTrack(next);
@@ -533,27 +553,19 @@ export default function KomplexaciPage() {
     if (audioElement && playlist[next]) {
       const wasPlaying = isPlaying;
 
-      // First pause any current playback to avoid conflicts
+      // Pause current track
       audioElement.pause();
+      audioElement.currentTime = 0;
 
       // Set new source
       audioElement.src = playlist[next].file;
-      audioElement.currentTime = 0;
 
       if (wasPlaying) {
-        // Wait for the audio to be ready before playing
-        const handleCanPlay = () => {
-          audioElement.removeEventListener('canplay', handleCanPlay);
-          audioElement.play().catch((error) => {
-            console.error('Error playing next track:', error);
-            setIsDemoMode(true);
-          });
-        };
-
-        audioElement.addEventListener('canplay', handleCanPlay);
-
-        // Also try to load the audio
-        audioElement.load();
+        // If music was playing, continue playing the new track
+        audioElement.play().catch((error) => {
+          console.error('Error playing next track:', error);
+          setIsDemoMode(true);
+        });
       }
     }
   };
@@ -573,27 +585,19 @@ export default function KomplexaciPage() {
     if (audioElement && playlist[prev]) {
       const wasPlaying = isPlaying;
 
-      // First pause any current playback to avoid conflicts
+      // Pause current track
       audioElement.pause();
+      audioElement.currentTime = 0;
 
       // Set new source
       audioElement.src = playlist[prev].file;
-      audioElement.currentTime = 0;
 
       if (wasPlaying) {
-        // Wait for the audio to be ready before playing
-        const handleCanPlay = () => {
-          audioElement.removeEventListener('canplay', handleCanPlay);
-          audioElement.play().catch((error) => {
-            console.error('Error playing previous track:', error);
-            setIsDemoMode(true);
-          });
-        };
-
-        audioElement.addEventListener('canplay', handleCanPlay);
-
-        // Also try to load the audio
-        audioElement.load();
+        // If music was playing, continue playing the new track
+        audioElement.play().catch((error) => {
+          console.error('Error playing previous track:', error);
+          setIsDemoMode(true);
+        });
       }
     }
   };
