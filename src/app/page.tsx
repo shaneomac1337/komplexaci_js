@@ -2,7 +2,7 @@
 import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Head from 'next/head';
-import './komplexaci/komplexaci.css';
+import './komplexaci.css';
 
 // Import exact fonts from original
 if (typeof window !== 'undefined') {
