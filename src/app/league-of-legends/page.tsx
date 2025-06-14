@@ -6,6 +6,7 @@ import Image from 'next/image';
 import Head from 'next/head';
 import styles from './lol.module.css';
 import '../komplexaci.css';
+import Header from '../components/Header';
 
 // Types
 interface Champion {
@@ -77,6 +78,8 @@ interface ChampionDetails {
     attackspeed: number;
   };
   roles: string[];
+  allytips: string[];
+  enemytips: string[];
 }
 
 // Map data
@@ -85,21 +88,21 @@ const maps = [
     id: 'summoners-rift',
     name: "Summoner's Rift",
     description: 'Klasická 5v5 mapa s třemi linkami a džunglí. Hlavní kompetitivní mapa League of Legends.',
-    image: '/komplexaci/img/lol-summoners-rift.png',
+    image: '/komplexaci/img/lol-summoners-rift-artwork.jpg',
     gameMode: '5v5 Ranked'
   },
   {
-    id: 'howling-abyss',
-    name: 'Howling Abyss',
-    description: 'ARAM (All Random All Mid) mapa s jednou linkou. Rychlé a akční zápasy.',
-    image: '/komplexaci/img/lol-howling-abyss.png',
-    gameMode: 'ARAM'
+    id: 'bridge-of-progress',
+    name: 'Bridge of Progress',
+    description: 'Nová mapa s unikátním designem a strategickými možnostmi. Moderní prostředí pro kompetitivní hru.',
+    image: '/komplexaci/img/lol-bridge-of-progress.jpg',
+    gameMode: 'Arena'
   },
   {
     id: 'teamfight-tactics',
-    name: 'Teamfight Tactics',
-    description: 'Auto-battler herní mód s strategickým umisťováním jednotek.',
-    image: '/komplexaci/img/lol-tft-logo.png',
+    name: 'Teamfight Tactics: Convergence',
+    description: 'Auto-battler herní mód s strategickým umisťováním jednotek. Sbírejte šampiony a vytvářejte mocné týmy.',
+    image: '/komplexaci/img/lol-tft-artwork.jpg',
     gameMode: 'TFT'
   }
 ];
@@ -137,6 +140,16 @@ export default function LeagueOfLegendsNextJS() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [advancedFilters, setAdvancedFilters] = useState({
+    difficulty: [] as string[],
+    damage: [] as string[],
+    survivability: [] as string[],
+    rangeType: [] as string[],
+    championClass: [] as string[],
+    region: [] as string[],
+    roles: [] as string[]
+  });
   const [activePosition, setActivePosition] = useState('ALL');
   const [positionCounts, setPositionCounts] = useState(positions);
   
@@ -145,7 +158,7 @@ export default function LeagueOfLegendsNextJS() {
   const [championDetails, setChampionDetails] = useState<ChampionDetails | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'abilities' | 'skins'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'abilities' | 'skins' | 'tips'>('overview');
   
   // DataDragon API state
   const [currentVersion, setCurrentVersion] = useState<string>('15.10.1');
@@ -184,32 +197,25 @@ export default function LeagueOfLegendsNextJS() {
   const refreshChampionsData = async (locale: string, version: string) => {
     try {
       setIsRefreshing(true);
-      // Don't show main loading spinner, just refresh data
-      const response = await fetch(`https://ddragon.leagueoflegends.com/cdn/${version}/data/${locale}/champion.json`);
-      
+      // Use our API endpoint with locale and version parameters
+      const params = new URLSearchParams();
+      if (locale) params.append('locale', locale);
+      if (version) params.append('version', version);
+
+      const response = await fetch(`/api/lol/champions?${params.toString()}`);
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      const data = await response.json();
-      
-      // Convert to our format
-      const championList = Object.values(data.data).map((champion: any) => ({
-        id: champion.id,
-        key: champion.key,
-        name: champion.name,
-        title: champion.title,
-        description: champion.blurb,
-        splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champion.id}_0.jpg`,
-        square: `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champion.id}.png`,
-        difficulty: mapDifficulty(champion.info.difficulty),
-        damage: mapDamageType(champion.id, champion.tags), // Use ID instead of translated name
-        survivability: mapSurvivability(champion.info.defense),
-        roles: mapRoles(champion.tags, champion.id), // Use ID instead of translated name
-        rangeType: mapRangeType(champion.id, champion.tags), // Use ID instead of translated name
-        championClass: champion.tags[0] || 'Fighter',
-        region: 'Unknown'
-      }));
+      let championList = await response.json();
+
+      // Force alphabetical sorting and fix Wukong positioning
+      championList = championList.map((champion: any) => ({
+        ...champion,
+        // Force MonkeyKing to be displayed as Wukong for proper alphabetical sorting
+        name: champion.name === 'MonkeyKing' ? 'Wukong' : champion.name
+      })).sort((a: any, b: any) => a.name.localeCompare(b.name));
 
       setChampions(championList);
       setFilteredChampions(championList);
@@ -236,273 +242,38 @@ export default function LeagueOfLegendsNextJS() {
     }
   };
 
-  const mapDifficulty = (difficulty: number) => {
-    if (difficulty <= 3) return 'Nízká';
-    if (difficulty <= 6) return 'Střední';
-    if (difficulty <= 8) return 'Vysoká';
-    return 'Velmi vysoká';
-  };
 
-  const mapSurvivability = (defense: number) => {
-    if (defense <= 3) return 'Nízká';
-    if (defense <= 6) return 'Střední';
-    if (defense <= 8) return 'Vysoká';
-    return 'Velmi vysoká';
-  };
 
-  const mapDamageType = (championId: string, tags: string[]) => {
-    const magicChampions = ['Ahri', 'Annie', 'Brand', 'Cassiopeia', 'Karthus', 'LeBlanc', 'Lux', 'Malzahar', 'Orianna', 'Ryze', 'Syndra', 'Veigar', 'Viktor', 'Xerath', 'Ziggs', 'Azir'];
-    const physicalChampions = ['Caitlyn', 'Jinx', 'Lucian', 'Vayne', 'Graves', 'Draven', 'Ashe', 'Twitch', 'Tristana', 'Sivir'];
-    
-    if (magicChampions.includes(championId)) return 'Magic';
-    if (physicalChampions.includes(championId)) return 'Physical';
-    if (tags.includes('Mage')) return 'Magic';
-    if (tags.includes('Marksman')) return 'Physical';
-    return 'Mixed';
-  };
-
-  const mapRoles = (tags: string[], championId: string) => {
-    // Official position mappings based on League of Legends Wiki data
-    // Source: https://leagueoflegends.fandom.com/wiki/List_of_champions_by_draft_position
-    // Using champion IDs (which are always in English) instead of translated names
-    const championRoles: { [key: string]: string[] } = {
-      'Aatrox': ['TOP'],
-      'Ahri': ['MID'],
-      'Akali': ['TOP', 'MID'],
-      'Akshan': ['MID'],
-      'Alistar': ['SUPPORT'],
-      'Ambessa': ['MID'],
-      'Amumu': ['JUNGLE', 'SUPPORT'],
-      'Anivia': ['MID'],
-      'Annie': ['MID'],
-      'Aphelios': ['ADC'],
-      'Ashe': ['ADC', 'SUPPORT'],
-      'AurelionSol': ['MID'],
-      'Aurora': ['TOP', 'MID'],
-      'Azir': ['MID'],
-      'Bard': ['SUPPORT'],
-      'Belveth': ['JUNGLE'],
-      'Blitzcrank': ['SUPPORT'],
-      'Brand': ['JUNGLE', 'MID', 'SUPPORT'],
-      'Braum': ['SUPPORT'],
-      'Briar': ['JUNGLE'],
-      'Caitlyn': ['ADC'],
-      'Camille': ['TOP', 'SUPPORT'],
-      'Cassiopeia': ['MID'],
-      'Chogath': ['TOP'],
-      'Corki': ['MID'],
-      'Darius': ['TOP'],
-      'Diana': ['JUNGLE', 'MID'],
-      'DrMundo': ['TOP'],
-      'Draven': ['ADC'],
-      'Ekko': ['JUNGLE', 'MID'],
-      'Elise': ['JUNGLE'],
-      'Evelynn': ['JUNGLE'],
-      'Ezreal': ['ADC'],
-      'Fiddlesticks': ['JUNGLE'],
-      'Fiora': ['TOP'],
-      'Fizz': ['MID'],
-      'Galio': ['MID', 'SUPPORT'],
-      'Gangplank': ['TOP'],
-      'Garen': ['TOP'],
-      'Gnar': ['TOP'],
-      'Gragas': ['TOP', 'JUNGLE', 'MID'],
-      'Graves': ['JUNGLE'],
-      'Gwen': ['TOP'],
-      'Hecarim': ['JUNGLE'],
-      'Heimerdinger': ['TOP', 'MID', 'SUPPORT'],
-      'Hwei': ['MID', 'SUPPORT'],
-      'Illaoi': ['TOP'],
-      'Irelia': ['TOP', 'MID'],
-      'Ivern': ['JUNGLE'],
-      'Janna': ['SUPPORT'],
-      'JarvanIV': ['JUNGLE'],
-      'Jax': ['TOP', 'JUNGLE'],
-      'Jayce': ['TOP', 'MID'],
-      'Jhin': ['ADC'],
-      'Jinx': ['ADC'],
-      'KSante': ['TOP'],
-      'Kaisa': ['ADC'],
-      'Kalista': ['ADC'],
-      'Karma': ['TOP', 'MID', 'SUPPORT'],
-      'Karthus': ['JUNGLE'],
-      'Kassadin': ['MID'],
-      'Katarina': ['MID'],
-      'Kayle': ['TOP'],
-      'Kayn': ['JUNGLE'],
-      'Kennen': ['TOP'],
-      'Khazix': ['JUNGLE'],
-      'Kindred': ['JUNGLE'],
-      'Kled': ['TOP'],
-      'KogMaw': ['ADC'],
-      'Leblanc': ['MID'],
-      'LeeSin': ['JUNGLE'],
-      'Leona': ['SUPPORT'],
-      'Lillia': ['JUNGLE'],
-      'Lissandra': ['MID'],
-      'Lucian': ['ADC'],
-      'Lulu': ['SUPPORT'],
-      'Lux': ['MID', 'SUPPORT'],
-      'Malphite': ['TOP', 'MID', 'SUPPORT'],
-      'Malzahar': ['MID'],
-      'Maokai': ['JUNGLE', 'SUPPORT'],
-      'MasterYi': ['JUNGLE'],
-      'Mel': ['MID'],
-      'Milio': ['SUPPORT'],
-      'MissFortune': ['ADC'],
-      'Mordekaiser': ['TOP'],
-      'Morgana': ['SUPPORT'],
-      'Naafiri': ['MID'],
-      'Nami': ['SUPPORT'],
-      'Nasus': ['TOP'],
-      'Nautilus': ['SUPPORT'],
-      'Neeko': ['MID', 'SUPPORT'],
-      'Nidalee': ['JUNGLE'],
-      'Nilah': ['ADC'],
-      'Nocturne': ['JUNGLE'],
-      'Nunu': ['JUNGLE'],
-      'Olaf': ['TOP'],
-      'Orianna': ['MID'],
-      'Ornn': ['TOP'],
-      'Pantheon': ['TOP', 'JUNGLE', 'MID', 'SUPPORT'],
-      'Poppy': ['TOP', 'JUNGLE'],
-      'Pyke': ['SUPPORT'],
-      'Qiyana': ['MID'],
-      'Quinn': ['TOP'],
-      'Rakan': ['SUPPORT'],
-      'Rammus': ['JUNGLE'],
-      'RekSai': ['JUNGLE'],
-      'Rell': ['SUPPORT'],
-      'RenataGlasc': ['SUPPORT'],
-      'Renekton': ['TOP'],
-      'Rengar': ['TOP', 'JUNGLE'],
-      'Riven': ['TOP'],
-      'Rumble': ['TOP', 'MID'],
-      'Ryze': ['MID'],
-      'Samira': ['ADC'],
-      'Sejuani': ['JUNGLE'],
-      'Senna': ['ADC', 'SUPPORT'],
-      'Seraphine': ['ADC', 'SUPPORT'],
-      'Sett': ['TOP'],
-      'Shaco': ['JUNGLE', 'SUPPORT'],
-      'Shen': ['TOP', 'SUPPORT'],
-      'Shyvana': ['JUNGLE'],
-      'Singed': ['TOP'],
-      'Sion': ['TOP'],
-      'Sivir': ['ADC'],
-      'Skarner': ['TOP', 'JUNGLE'],
-      'Smolder': ['TOP', 'MID', 'ADC'],
-      'Sona': ['SUPPORT'],
-      'Soraka': ['SUPPORT'],
-      'Swain': ['MID', 'SUPPORT'],
-      'Sylas': ['TOP', 'MID'],
-      'Syndra': ['MID'],
-      'TahmKench': ['TOP', 'SUPPORT'],
-      'Taliyah': ['JUNGLE', 'MID'],
-      'Talon': ['JUNGLE', 'MID'],
-      'Taric': ['MID', 'SUPPORT'],
-      'Teemo': ['TOP', 'JUNGLE', 'SUPPORT'],
-      'Thresh': ['SUPPORT'],
-      'Tristana': ['MID', 'ADC'],
-      'Trundle': ['TOP', 'JUNGLE'],
-      'Tryndamere': ['TOP'],
-      'TwistedFate': ['TOP', 'MID', 'ADC'],
-      'Twitch': ['ADC', 'SUPPORT'],
-      'Udyr': ['TOP', 'JUNGLE'],
-      'Urgot': ['TOP'],
-      'Varus': ['ADC'],
-      'Vayne': ['TOP', 'ADC'],
-      'Veigar': ['MID', 'SUPPORT'],
-      'Velkoz': ['MID', 'SUPPORT'],
-      'Vex': ['MID'],
-      'Vi': ['JUNGLE'],
-      'Viego': ['JUNGLE'],
-      'Viktor': ['MID'],
-      'Vladimir': ['TOP', 'MID'],
-      'Volibear': ['TOP', 'JUNGLE'],
-      'Warwick': ['TOP', 'JUNGLE'],
-      'MonkeyKing': ['TOP', 'JUNGLE'],
-      'Xayah': ['ADC'],
-      'Xerath': ['MID', 'SUPPORT'],
-      'XinZhao': ['JUNGLE'],
-      'Yasuo': ['TOP', 'MID', 'ADC'],
-      'Yone': ['TOP', 'MID'],
-      'Yorick': ['TOP'],
-      'Yuumi': ['SUPPORT'],
-      'Zac': ['TOP', 'JUNGLE', 'SUPPORT'],
-      'Zed': ['JUNGLE', 'MID'],
-      'Zeri': ['ADC'],
-      'Ziggs': ['MID', 'ADC'],
-      'Zilean': ['SUPPORT'],
-      'Zoe': ['MID'],
-      'Zyra': ['SUPPORT'],
-    };
-    
-    // Use official mappings if available, otherwise fall back to tag-based mapping
-    if (championRoles[championId]) {
-      return championRoles[championId];
-    }
-    
-    // Fallback to tag-based mapping for champions not in the official list
-    const roleMap: { [key: string]: string[] } = {
-      'Assassin': ['MID'],
-      'Fighter': ['TOP'],
-      'Mage': ['MID'],
-      'Marksman': ['ADC'],
-      'Support': ['SUPPORT'],
-      'Tank': ['TOP', 'SUPPORT']
-    };
-    
-    const roles: string[] = [];
-    tags.forEach(tag => {
-      if (roleMap[tag]) {
-        roles.push(...roleMap[tag]);
-      }
-    });
-    
-    return roles.length > 0 ? Array.from(new Set(roles)) : ['MID'];
-  };
-
-  const mapRangeType = (championId: string, tags: string[]) => {
-    if (tags.includes('Marksman') || tags.includes('Mage')) return 'Ranged';
-    return 'Melee';
-  };
 
   const fetchChampions = async (locale?: string, version?: string) => {
     try {
       setLoading(true);
       const apiVersion = version || await getLatestVersion();
       const apiLocale = locale || currentLocale;
-      
+
       if (!version) {
         setCurrentVersion(apiVersion);
       }
-      
-      const response = await fetch(`https://ddragon.leagueoflegends.com/cdn/${apiVersion}/data/${apiLocale}/champion.json`);
-      
+
+      // Use our API endpoint with locale and version parameters
+      const params = new URLSearchParams();
+      if (apiLocale) params.append('locale', apiLocale);
+      if (apiVersion) params.append('version', apiVersion);
+
+      const response = await fetch(`/api/lol/champions?${params.toString()}`);
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
       
-      const data = await response.json();
-      
-      // Convert to our format
-      const championList = Object.values(data.data).map((champion: any) => ({
-        id: champion.id,
-        key: champion.key,
-        name: champion.name,
-        title: champion.title,
-        description: champion.blurb,
-        splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champion.id}_0.jpg`,
-        square: `https://ddragon.leagueoflegends.com/cdn/${version}/img/champion/${champion.id}.png`,
-        difficulty: mapDifficulty(champion.info.difficulty),
-        damage: mapDamageType(champion.id, champion.tags), // Use ID instead of translated name
-        survivability: mapSurvivability(champion.info.defense),
-        roles: mapRoles(champion.tags, champion.id), // Use ID instead of translated name
-        rangeType: mapRangeType(champion.id, champion.tags), // Use ID instead of translated name
-        championClass: champion.tags[0] || 'Fighter',
-        region: 'Unknown'
-      }));
+      let championList = await response.json();
+
+      // Force alphabetical sorting and fix Wukong positioning
+      championList = championList.map((champion: any) => ({
+        ...champion,
+        // Force MonkeyKing to be displayed as Wukong for proper alphabetical sorting
+        name: champion.name === 'MonkeyKing' ? 'Wukong' : champion.name
+      })).sort((a: any, b: any) => a.name.localeCompare(b.name));
 
       setChampions(championList);
       setFilteredChampions(championList);
@@ -526,16 +297,16 @@ export default function LeagueOfLegendsNextJS() {
     try {
       setModalLoading(true);
       setModalError(null);
-      
+
       const response = await fetch(`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/data/${currentLocale}/champion/${championId}.json`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const data = await response.json();
       const champion = data.data[championId];
-      
+
       if (!champion) {
         throw new Error('Champion not found');
       }
@@ -576,7 +347,9 @@ export default function LeagueOfLegendsNextJS() {
         spells,
         skins,
         stats: champion.stats,
-        roles: mapRoles(champion.tags, champion.id)
+        roles: champion.roles || ['MID'],
+        allytips: champion.allytips || [],
+        enemytips: champion.enemytips || []
       };
 
       setChampionDetails(championDetails);
@@ -589,15 +362,15 @@ export default function LeagueOfLegendsNextJS() {
     }
   };
 
-  // Filter champions based on position and search
+  // Filter champions based on position, search, and advanced filters
   const filterChampions = () => {
     let filtered = champions;
-    
+
     // Filter by position
     if (activePosition !== 'ALL') {
       filtered = filtered.filter(champion => champion.roles.includes(activePosition));
     }
-    
+
     // Filter by search term
     if (searchTerm) {
       const searchLower = searchTerm.toLowerCase();
@@ -606,7 +379,38 @@ export default function LeagueOfLegendsNextJS() {
         champion.title.toLowerCase().includes(searchLower)
       );
     }
-    
+
+    // Apply advanced filters
+    if (advancedFilters.difficulty.length > 0) {
+      filtered = filtered.filter(champion => advancedFilters.difficulty.includes(champion.difficulty));
+    }
+
+    if (advancedFilters.damage.length > 0) {
+      filtered = filtered.filter(champion => advancedFilters.damage.includes(champion.damage));
+    }
+
+    if (advancedFilters.survivability.length > 0) {
+      filtered = filtered.filter(champion => advancedFilters.survivability.includes(champion.survivability));
+    }
+
+    if (advancedFilters.rangeType.length > 0) {
+      filtered = filtered.filter(champion => advancedFilters.rangeType.includes(champion.rangeType));
+    }
+
+    if (advancedFilters.championClass.length > 0) {
+      filtered = filtered.filter(champion => advancedFilters.championClass.includes(champion.championClass));
+    }
+
+    if (advancedFilters.region.length > 0) {
+      filtered = filtered.filter(champion => advancedFilters.region.includes(champion.region));
+    }
+
+    if (advancedFilters.roles.length > 0) {
+      filtered = filtered.filter(champion =>
+        champion.roles.some(role => advancedFilters.roles.includes(role))
+      );
+    }
+
     setFilteredChampions(filtered);
   };
 
@@ -616,7 +420,7 @@ export default function LeagueOfLegendsNextJS() {
 
   useEffect(() => {
     filterChampions();
-  }, [champions, activePosition, searchTerm]);
+  }, [champions, activePosition, searchTerm, advancedFilters]);
 
   // Close modal on Escape key
   useEffect(() => {
@@ -655,7 +459,7 @@ export default function LeagueOfLegendsNextJS() {
     document.body.style.overflow = 'auto';
   };
 
-  const handleTabChange = (tab: 'overview' | 'abilities' | 'skins') => {
+  const handleTabChange = (tab: 'overview' | 'abilities' | 'skins' | 'tips') => {
     setActiveTab(tab);
   };
 
@@ -698,6 +502,9 @@ export default function LeagueOfLegendsNextJS() {
       </Head>
 
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900" style={{ fontFamily: "'Exo 2', 'Roboto', sans-serif" }}>
+        
+        {/* Header */}
+        <Header />
         
         {/* Hero Section */}
         <section className={styles.gameHero}>
@@ -891,6 +698,199 @@ export default function LeagueOfLegendsNextJS() {
               ))}
             </div>
 
+            {/* Advanced Filters */}
+            <div className={styles.advancedFilters}>
+              <button
+                className={styles.toggleFiltersBtn}
+                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              >
+                Pokročilé filtry <span className={styles.toggleArrow}>{showAdvancedFilters ? '▲' : '▼'}</span>
+                {Object.values(advancedFilters).flat().length > 0 && (
+                  <span className={styles.filterCount}>
+                    {Object.values(advancedFilters).flat().length}
+                  </span>
+                )}
+              </button>
+
+              {showAdvancedFilters && (
+                <div className={styles.filtersPanel}>
+                  <div className={styles.filtersGrid}>
+                    {/* Difficulty Filter */}
+                    <div className={styles.filterGroup}>
+                      <label>Obtížnost:</label>
+                      <div className={styles.filterCheckboxes}>
+                        {['Nízká', 'Střední', 'Vysoká', 'Velmi vysoká'].map(difficulty => (
+                          <label key={difficulty}>
+                            <input
+                              type="checkbox"
+                              checked={advancedFilters.difficulty.includes(difficulty)}
+                              onChange={(e) => {
+                                const newDifficulty = e.target.checked
+                                  ? [...advancedFilters.difficulty, difficulty]
+                                  : advancedFilters.difficulty.filter(d => d !== difficulty);
+                                setAdvancedFilters({...advancedFilters, difficulty: newDifficulty});
+                              }}
+                            />
+                            <span>{difficulty}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Damage Type Filter */}
+                    <div className={styles.filterGroup}>
+                      <label>Typ poškození:</label>
+                      <div className={styles.filterCheckboxes}>
+                        {[{value: 'Physical', label: 'Fyzické'}, {value: 'Magic', label: 'Magické'}].map(damage => (
+                          <label key={damage.value}>
+                            <input
+                              type="checkbox"
+                              checked={advancedFilters.damage.includes(damage.value)}
+                              onChange={(e) => {
+                                const newDamage = e.target.checked
+                                  ? [...advancedFilters.damage, damage.value]
+                                  : advancedFilters.damage.filter(d => d !== damage.value);
+                                setAdvancedFilters({...advancedFilters, damage: newDamage});
+                              }}
+                            />
+                            <span>{damage.label}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Survivability Filter */}
+                    <div className={styles.filterGroup}>
+                      <label>Přežitelnost:</label>
+                      <div className={styles.filterCheckboxes}>
+                        {['Nízká', 'Střední', 'Vysoká', 'Velmi vysoká'].map(survivability => (
+                          <label key={survivability}>
+                            <input
+                              type="checkbox"
+                              checked={advancedFilters.survivability.includes(survivability)}
+                              onChange={(e) => {
+                                const newSurvivability = e.target.checked
+                                  ? [...advancedFilters.survivability, survivability]
+                                  : advancedFilters.survivability.filter(s => s !== survivability);
+                                setAdvancedFilters({...advancedFilters, survivability: newSurvivability});
+                              }}
+                            />
+                            <span>{survivability}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Range Type Filter */}
+                    <div className={styles.filterGroup}>
+                      <label>Typ dosahu:</label>
+                      <div className={styles.filterCheckboxes}>
+                        {['Melee', 'Ranged'].map(rangeType => (
+                          <label key={rangeType}>
+                            <input
+                              type="checkbox"
+                              checked={advancedFilters.rangeType.includes(rangeType)}
+                              onChange={(e) => {
+                                const newRangeType = e.target.checked
+                                  ? [...advancedFilters.rangeType, rangeType]
+                                  : advancedFilters.rangeType.filter(r => r !== rangeType);
+                                setAdvancedFilters({...advancedFilters, rangeType: newRangeType});
+                              }}
+                            />
+                            <span>{rangeType}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Champion Class Filter */}
+                    <div className={styles.filterGroup}>
+                      <label>Třída šampiona:</label>
+                      <div className={styles.filterCheckboxes}>
+                        {['Assassin', 'Fighter', 'Mage', 'Marksman', 'Support', 'Tank'].map(championClass => (
+                          <label key={championClass}>
+                            <input
+                              type="checkbox"
+                              checked={advancedFilters.championClass.includes(championClass)}
+                              onChange={(e) => {
+                                const newChampionClass = e.target.checked
+                                  ? [...advancedFilters.championClass, championClass]
+                                  : advancedFilters.championClass.filter(c => c !== championClass);
+                                setAdvancedFilters({...advancedFilters, championClass: newChampionClass});
+                              }}
+                            />
+                            <span>{championClass}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Region Filter */}
+                    <div className={styles.filterGroup}>
+                      <label>Region:</label>
+                      <div className={styles.filterCheckboxes}>
+                        {['Bandle City', 'Bilgewater', 'Demacia', 'Freljord', 'Ionia', 'Ixtal', 'Noxus', 'Piltover', 'Shadow Isles', 'Shurima', 'Targon', 'The Void', 'Zaun', 'Runeterra'].map(region => (
+                          <label key={region}>
+                            <input
+                              type="checkbox"
+                              checked={advancedFilters.region.includes(region)}
+                              onChange={(e) => {
+                                const newRegion = e.target.checked
+                                  ? [...advancedFilters.region, region]
+                                  : advancedFilters.region.filter(r => r !== region);
+                                setAdvancedFilters({...advancedFilters, region: newRegion});
+                              }}
+                            />
+                            <span>{region}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Role Filters */}
+                  <div className={styles.roleFilters}>
+                    <label>Role:</label>
+                    <div className={styles.roleCheckboxes}>
+                      {['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT'].map(role => (
+                        <label key={role}>
+                          <input
+                            type="checkbox"
+                            checked={advancedFilters.roles.includes(role)}
+                            onChange={(e) => {
+                              const newRoles = e.target.checked
+                                ? [...advancedFilters.roles, role]
+                                : advancedFilters.roles.filter(r => r !== role);
+                              setAdvancedFilters({...advancedFilters, roles: newRoles});
+                            }}
+                          />
+                          <span>{role}</span>
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Filter Actions */}
+                  <div className={styles.filterActions}>
+                    <button
+                      onClick={() => setAdvancedFilters({
+                        difficulty: [],
+                        damage: [],
+                        survivability: [],
+                        rangeType: [],
+                        championClass: [],
+                        region: [],
+                        roles: []
+                      })}
+                      className={styles.clearFiltersBtn}
+                    >
+                      Vymazat filtry
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+
             {/* Champions Grid */}
             <div className={styles.championOverview}>
               {filteredChampions.map((champion) => (
@@ -931,6 +931,50 @@ export default function LeagueOfLegendsNextJS() {
                     <h3 className={styles.championName}>{champion.name}</h3>
                     <p className={styles.championTitle}>"{champion.title}"</p>
                     <p className={styles.championDescription}>{champion.description}</p>
+                    
+                    {/* Champion Stats */}
+                    <div className={styles.championStats}>
+                      <div className={styles.championStat}>
+                        <span className={styles.statLabel}>OBTÍŽNOST</span>
+                        <div className={styles.statProgressContainer}>
+                          <div
+                            className={styles.statProgressBar}
+                            data-difficulty={champion.difficulty.toLowerCase()}
+                            style={{
+                              width: champion.difficulty === 'Nízká' ? '33%' :
+                                     champion.difficulty === 'Střední' ? '66%' : '100%'
+                            }}
+                          ></div>
+                        </div>
+                        <span className={styles.statText} data-difficulty={champion.difficulty.toLowerCase()}>
+                          {champion.difficulty}
+                        </span>
+                      </div>
+                      <div className={styles.championStat}>
+                        <span className={styles.statLabel}>TYP</span>
+                        <div className={styles.statTextSpacer}></div>
+                        <span className={styles.statText} data-damage={champion.damage.toLowerCase()}>
+                          {champion.damage === 'Physical' ? 'Fyzické' : 'Magické'}
+                        </span>
+                      </div>
+                      <div className={styles.championStat}>
+                        <span className={styles.statLabel}>PŘEŽITELNOST</span>
+                        <div className={styles.statProgressContainer}>
+                          <div
+                            className={styles.statProgressBar}
+                            data-survivability={champion.survivability.toLowerCase()}
+                            style={{
+                              width: champion.survivability === 'Nízká' ? '25%' :
+                                     champion.survivability === 'Střední' ? '50%' :
+                                     champion.survivability === 'Vysoká' ? '75%' : '100%'
+                            }}
+                          ></div>
+                        </div>
+                        <span className={styles.statText} data-survivability={champion.survivability.toLowerCase()}>
+                          {champion.survivability}
+                        </span>
+                      </div>
+                    </div>
                   </div>
                 </div>
               ))}
@@ -1014,23 +1058,29 @@ export default function LeagueOfLegendsNextJS() {
                 </div>
 
                 <div className={styles.modalTabs}>
-                  <button 
+                  <button
                     className={`${styles.modalTab} ${activeTab === 'overview' ? styles.active : ''}`}
                     onClick={() => handleTabChange('overview')}
                   >
                     Přehled
                   </button>
-                  <button 
+                  <button
                     className={`${styles.modalTab} ${activeTab === 'abilities' ? styles.active : ''}`}
                     onClick={() => handleTabChange('abilities')}
                   >
                     Schopnosti
                   </button>
-                  <button 
+                  <button
                     className={`${styles.modalTab} ${activeTab === 'skins' ? styles.active : ''}`}
                     onClick={() => handleTabChange('skins')}
                   >
                     Skiny
+                  </button>
+                  <button
+                    className={`${styles.modalTab} ${activeTab === 'tips' ? styles.active : ''}`}
+                    onClick={() => handleTabChange('tips')}
+                  >
+                    Tipy
                   </button>
                 </div>
 
@@ -1059,9 +1109,18 @@ export default function LeagueOfLegendsNextJS() {
                       {/* Overview Tab */}
                       {activeTab === 'overview' && (
                         <div className={styles.modalTabContent}>
-                          <div className={styles.championDescription}>
+                          <div className={styles.championLoreSection}>
                             <h3>Příběh</h3>
-                            <p>{championDetails.lore}</p>
+                            <div className={styles.loreContainer}>
+                              <div
+                                className={styles.loreText}
+                                dangerouslySetInnerHTML={{
+                                  __html: championDetails.lore
+                                    .replace(/\n/g, ' ')
+                                    .trim()
+                                }}
+                              />
+                            </div>
                           </div>
                           
                           <div className={styles.championStatsDetailed}>
@@ -1340,6 +1399,59 @@ export default function LeagueOfLegendsNextJS() {
                                 </div>
                               ))}
                             </div>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Tips Tab */}
+                      {activeTab === 'tips' && (
+                        <div className={styles.modalTabContent}>
+                          <div className={styles.tipsContainer}>
+                            {/* Ally Tips */}
+                            {championDetails.allytips && championDetails.allytips.length > 0 && (
+                              <div className={styles.tipsSection}>
+                                <h3 className={styles.tipsSectionTitle}>
+                                  <span className={styles.tipsIcon}>💡</span>
+                                  Tipy pro hraní
+                                </h3>
+                                <div className={styles.tipsList}>
+                                  {championDetails.allytips.map((tip, index) => (
+                                    <div key={index} className={styles.tipItem}>
+                                      <div className={styles.tipBullet}>•</div>
+                                      <div className={styles.tipText}>{tip}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* Enemy Tips */}
+                            {championDetails.enemytips && championDetails.enemytips.length > 0 && (
+                              <div className={styles.tipsSection}>
+                                <h3 className={styles.tipsSectionTitle}>
+                                  <span className={styles.tipsIcon}>🛡️</span>
+                                  Jak hrát proti
+                                </h3>
+                                <div className={styles.tipsList}>
+                                  {championDetails.enemytips.map((tip, index) => (
+                                    <div key={index} className={styles.tipItem}>
+                                      <div className={styles.tipBullet}>•</div>
+                                      <div className={styles.tipText}>{tip}</div>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* No tips available */}
+                            {(!championDetails.allytips || championDetails.allytips.length === 0) &&
+                             (!championDetails.enemytips || championDetails.enemytips.length === 0) && (
+                              <div className={styles.noTips}>
+                                <div className={styles.noTipsIcon}>📝</div>
+                                <h3>Žádné tipy nejsou k dispozici</h3>
+                                <p>Pro tohoto šampiona nejsou momentálně dostupné žádné tipy.</p>
+                              </div>
+                            )}
                           </div>
                         </div>
                       )}

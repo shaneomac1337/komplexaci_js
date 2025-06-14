@@ -10,6 +10,7 @@ import AnimatedSection from '../components/AnimatedSection';
 import StaggeredGrid from '../components/StaggeredGrid';
 import WeaponCardSkeleton from '../components/WeaponCardSkeleton';
 import MapCardSkeleton from '../components/MapCardSkeleton';
+import Header from '../components/Header';
 
 export default function CS2Page() {
   const [weaponCategories, setWeaponCategories] = useState<WeaponCategory[]>([]);
@@ -133,6 +134,9 @@ export default function CS2Page() {
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
+      {/* Header */}
+      <Header />
+      
       {/* Hero Section */}
       <section className={`relative h-[60vh] flex items-center justify-center ${styles.heroSection} ${styles.parallaxBg}`}>
         <div className="absolute inset-0 bg-gradient-to-r from-red-500/30 to-purple-600/30"></div>
