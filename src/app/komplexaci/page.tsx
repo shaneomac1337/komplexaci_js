@@ -1,8 +1,8 @@
 "use client";
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import Head from 'next/head';
-import './komplexaci/komplexaci.css';
+import './komplexaci.css';
 
 // Import exact fonts from original
 if (typeof window !== 'undefined') {
@@ -149,54 +149,73 @@ const games = [
     description: 'FPS střílečka od Valve, ve které zdokonalujeme naše týmové taktiky, reflexy a přesnost.',
     image: '/komplexaci/img/cs2.jpg',
     link: '/cs2'
-  },
-  {
-    title: 'WWE Games',
-    description: 'Kolekce wrestlingových her od legendárního SmackDown! až po moderní série. Zažijte nostalgii a epické zápasy.',
-    image: '/komplexaci/img/wwe-main.jpg',
-    link: '/wwe-games'
   }
 ];
 
-// ScrollingText component for long text
-const ScrollingText = ({ text, className, maxWidth = 150 }: { text: string; className: string; maxWidth?: number }) => {
-  const [isScrolling, setIsScrolling] = useState(false);
-  const textRef = useRef<HTMLDivElement>(null);
+// Smart Scrolling Text Component
+interface ScrollingTextProps {
+  text: string;
+  className?: string;
+  maxWidth?: number;
+}
+
+const ScrollingText: React.FC<ScrollingTextProps> = ({ text, className = '', maxWidth = 150 }) => {
+  const containerRef = useRef<HTMLDivElement>(null);
+  const textRef = useRef<HTMLSpanElement>(null);
+  const [shouldScroll, setShouldScroll] = useState(false);
 
   useEffect(() => {
-    if (textRef.current) {
-      const textWidth = textRef.current.scrollWidth;
-      const containerWidth = maxWidth;
-      setIsScrolling(textWidth > containerWidth);
-    }
-  }, [text, maxWidth]);
+    const checkOverflow = () => {
+      if (containerRef.current && textRef.current) {
+        const containerWidth = containerRef.current.offsetWidth;
+        const textWidth = textRef.current.scrollWidth;
+
+        // Add a small threshold to make scrolling more likely to activate
+        // This ensures that even slightly long text will scroll for better UX
+        const threshold = 10; // pixels
+        setShouldScroll(textWidth > (containerWidth - threshold));
+
+        // Set CSS custom property for animation
+        if (textWidth > (containerWidth - threshold)) {
+          containerRef.current.style.setProperty('--container-width', `${containerWidth}px`);
+        }
+      }
+    };
+
+    // Check on mount and when text changes
+    checkOverflow();
+
+    // Small delay to ensure proper measurement after DOM updates
+    const timeoutId = setTimeout(checkOverflow, 100);
+
+    // Check on window resize
+    window.addEventListener('resize', checkOverflow);
+
+    return () => {
+      window.removeEventListener('resize', checkOverflow);
+      clearTimeout(timeoutId);
+    };
+  }, [text]);
 
   return (
     <div
-      className={className}
-      style={{
-        width: `${maxWidth}px`,
-        overflow: 'hidden',
-        whiteSpace: 'nowrap'
-      }}
+      ref={containerRef}
+      className={`scrolling-text-container ${className}`}
+      style={{ maxWidth: `${maxWidth}px` }}
     >
-      <div
+      <span
         ref={textRef}
-        style={{
-          display: 'inline-block',
-          animation: isScrolling ? 'scroll-text 8s linear infinite' : 'none',
-          paddingRight: isScrolling ? '20px' : '0'
-        }}
+        className={`scrolling-text ${shouldScroll ? 'scroll-active' : ''}`}
       >
         {text}
-      </div>
+      </span>
     </div>
   );
 };
 
-export default function Home() {
-  const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
+export default function KomplexaciPage() {
   const [isLoaded, setIsLoaded] = useState(false);
+  const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
 
   // Music player state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -207,15 +226,12 @@ export default function Home() {
   const [isDemoMode, setIsDemoMode] = useState(false); // Start by trying real audio first
   const [hasUserInteracted, setHasUserInteracted] = useState(false); // Track if user has clicked anywhere
   const [isShuffleMode, setIsShuffleMode] = useState(true); // Enable shuffle by default, like original
+
+  // Smart hide functionality state
   const [isTraxAutoHidden, setIsTraxAutoHidden] = useState(false);
-  const [showBriefly, setShowBriefly] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
-  const [scrollTimeout, setScrollTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [scrollDownTimeout, setScrollDownTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [activityTimeout, setActivityTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [musicStartTimeout, setMusicStartTimeout] = useState<NodeJS.Timeout | null>(null);
-  const [hasShownMusicStart, setHasShownMusicStart] = useState(false);
-  const [isLoadingTrack, setIsLoadingTrack] = useState(false);
+  const [lastActivity, setLastActivity] = useState(Date.now());
+  const [showBriefly, setShowBriefly] = useState(false);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -225,30 +241,10 @@ export default function Home() {
     audio.volume = volume;
     audio.preload = 'auto';
 
-    // Define event handlers
-    const handleEnded = () => {
-      console.log('Track ended, playing next');
-      // Use shuffle mode for auto-advance too
-      let next;
-      if (isShuffleMode) {
-        // Get random track different from current
-        do {
-          next = Math.floor(Math.random() * playlist.length);
-        } while (next === currentTrack && playlist.length > 1);
-      } else {
-        next = (currentTrack + 1) % playlist.length;
-      }
-      console.log('Auto-advancing to track:', playlist[next]?.title);
-      setCurrentTrack(next);
+    // Define event handlers - remove the problematic handleEnded for now
+    // We'll handle track ending differently to avoid closure issues
 
-      // Load and play the new track
-      if (audio && playlist[next]) {
-        audio.src = playlist[next].file;
-        audio.play().catch(console.error);
-      }
-    };
-
-    const handleError = (e: Event) => {
+    const handleError = () => {
       console.log('Audio file not found, switching to demo mode');
       setIsDemoMode(true);
     };
@@ -262,8 +258,7 @@ export default function Home() {
       setIsDemoMode(false);
     };
 
-    // Add event listeners
-    audio.addEventListener('ended', handleEnded);
+    // Add event listeners (skip 'ended' for now to avoid closure issues)
     audio.addEventListener('error', handleError);
     audio.addEventListener('loadstart', handleLoadStart);
     audio.addEventListener('canplay', handleCanPlay);
@@ -278,6 +273,13 @@ export default function Home() {
       console.log('Attempting to load random initial track:', playlist[initialTrack].title, 'from:', playlist[initialTrack].file);
     }
 
+    // Add scroll listener for auto-play
+    const handleScroll = () => {
+      if (!hasUserInteracted) {
+        handleFirstInteraction();
+      }
+    };
+
     // Add various interaction listeners
     const handleKeyPress = () => {
       if (!hasUserInteracted) {
@@ -285,6 +287,7 @@ export default function Home() {
       }
     };
 
+    window.addEventListener('scroll', handleScroll);
     window.addEventListener('keydown', handleKeyPress);
     window.addEventListener('mousemove', handleFirstInteraction);
 
@@ -301,56 +304,15 @@ export default function Home() {
       if (audio) {
         audio.pause();
         audio.src = '';
-        audio.removeEventListener('ended', handleEnded);
         audio.removeEventListener('error', handleError);
         audio.removeEventListener('loadstart', handleLoadStart);
         audio.removeEventListener('canplay', handleCanPlay);
       }
+      window.removeEventListener('scroll', handleScroll);
       window.removeEventListener('keydown', handleKeyPress);
       window.removeEventListener('mousemove', handleFirstInteraction);
     };
   }, []); // Empty dependency array is correct here
-
-  // Separate useEffect for scroll listener with proper dependencies
-  useEffect(() => {
-    const handleScroll = () => {
-      const currentScrollY = window.scrollY;
-
-      if (!hasUserInteracted) {
-        handleFirstInteraction();
-      }
-
-      // Check if we're scrolling down by comparing with last position
-      const isScrollingDown = currentScrollY > lastScrollY;
-
-      // Clear any existing scroll down timeout
-      if (scrollDownTimeout) {
-        clearTimeout(scrollDownTimeout);
-      }
-
-      // If scrolling down and widget is visible, start 0.1-second timer to hide
-      if (isScrollingDown && isTraxVisible && !isTraxAutoHidden && currentScrollY > 50) {
-        const newScrollDownTimeout = setTimeout(() => {
-          console.log('🔽 Hiding Trax - scrolled down for 0.1 seconds:', currentScrollY);
-          setIsTraxAutoHidden(true);
-        }, 100); // Hide after 0.1 seconds of scrolling down
-
-        setScrollDownTimeout(newScrollDownTimeout);
-      }
-
-      setLastScrollY(currentScrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll);
-
-    return () => {
-      window.removeEventListener('scroll', handleScroll);
-      // Clean up scroll down timeout
-      if (scrollDownTimeout) {
-        clearTimeout(scrollDownTimeout);
-      }
-    };
-  }, [isTraxVisible, isTraxAutoHidden, hasUserInteracted, scrollDownTimeout]); // Dependencies for scroll handler
 
   // Watch for currentTrack changes and update audio source
   useEffect(() => {
@@ -360,81 +322,151 @@ export default function Home() {
     }
   }, [currentTrack, audioElement, isDemoMode]);
 
-  // Inactivity-based auto-hide (only when music is paused)
+  // Separate useEffect for handling track ended event with current state
   useEffect(() => {
-    // Clear existing timeout
-    if (activityTimeout) {
-      clearTimeout(activityTimeout);
-    }
+    if (!audioElement) return;
 
-    // Only auto-hide when music is paused and widget is visible
-    if (!isPlaying && isTraxVisible && !isTraxAutoHidden) {
-      const newActivityTimeout = setTimeout(() => {
-        setIsTraxAutoHidden(true);
-        console.log('💤 Auto-hiding Trax after 15s inactivity (music paused)');
-      }, 15000);
+    const handleEnded = () => {
+      console.log('Track ended, playing next');
+      // Calculate next track based on current state values at the time of the event
+      const currentShuffle = isShuffleMode;
+      const currentTrackIndex = currentTrack;
 
-      setActivityTimeout(newActivityTimeout);
-    }
+      let nextTrackIndex: number;
+      if (currentShuffle) {
+        // Get random track different from current
+        do {
+          nextTrackIndex = Math.floor(Math.random() * playlist.length);
+        } while (nextTrackIndex === currentTrackIndex && playlist.length > 1);
+      } else {
+        nextTrackIndex = (currentTrackIndex + 1) % playlist.length;
+      }
 
-    return () => {
-      if (activityTimeout) {
-        clearTimeout(activityTimeout);
+      console.log('Auto-advancing to track:', playlist[nextTrackIndex]?.title);
+
+      // Update the track
+      setCurrentTrack(nextTrackIndex);
+
+      // Load and play the new track if not in demo mode
+      if (!isDemoMode && audioElement && playlist[nextTrackIndex]) {
+        // Pause current playback first
+        audioElement.pause();
+        audioElement.src = playlist[nextTrackIndex].file;
+        audioElement.currentTime = 0;
+
+        // Wait for audio to be ready before playing
+        const handleCanPlay = () => {
+          audioElement.removeEventListener('canplay', handleCanPlay);
+          audioElement.play().catch(console.error);
+        };
+
+        audioElement.addEventListener('canplay', handleCanPlay);
+        audioElement.load();
       }
     };
-  }, [isPlaying, isTraxVisible, isTraxAutoHidden]);
 
-  // Music start notification - show for 5 seconds when music starts
+    audioElement.addEventListener('ended', handleEnded);
+
+    return () => {
+      audioElement.removeEventListener('ended', handleEnded);
+    };
+  }, [audioElement, isDemoMode, isShuffleMode, currentTrack]); // Include all dependencies
+
+  // Smart hide functionality - Fixed version
   useEffect(() => {
-    // Only trigger on transition from not playing to playing
-    if (isPlaying && !hasShownMusicStart) {
+    let scrollTimeout: NodeJS.Timeout;
+
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+
       // Clear any existing timeout
-      if (musicStartTimeout) {
-        clearTimeout(musicStartTimeout);
-      }
+      clearTimeout(scrollTimeout);
 
-      // Show widget immediately when music starts (regardless of current state)
-      setIsTraxVisible(true);
-      setIsTraxAutoHidden(false);
-      setShowBriefly(true);
-      setHasShownMusicStart(true);
-      console.log('🎵 Music started - showing Kompg Trax for 5 seconds');
-
-      // Auto-minimize after 5 seconds - ALWAYS hide regardless of scroll position
-      const newMusicTimeout = setTimeout(() => {
-        setShowBriefly(false);
+      // Hide on scroll down (regardless of music state)
+      if (currentScrollY > lastScrollY && currentScrollY > 100) {
         setIsTraxAutoHidden(true);
-        console.log('⏰ Auto-minimizing Kompg Trax after 5 seconds');
-      }, 5000);
+      }
+      // No auto-show on scroll up - only mini icon or music start can show widget
 
-      setMusicStartTimeout(newMusicTimeout);
-    }
+      // Update scroll position after a small delay to avoid rapid updates
+      scrollTimeout = setTimeout(() => {
+        setLastScrollY(currentScrollY);
+      }, 50);
+    };
 
-    // Reset the flag when music stops
-    if (!isPlaying) {
-      setHasShownMusicStart(false);
-    }
+    // Add scroll listener with throttling
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
-      if (musicStartTimeout) {
-        clearTimeout(musicStartTimeout);
-      }
+      window.removeEventListener('scroll', handleScroll);
+      clearTimeout(scrollTimeout);
     };
-  }, [isPlaying]);
+  }, [lastScrollY]);
 
-  // Show briefly on track change
+  // Activity detection (separate from scroll)
   useEffect(() => {
-    if (isPlaying) {
-      setShowBriefly(true);
+    const handleActivity = () => {
+      setLastActivity(Date.now());
+    };
 
-      // Hide the brief show after 3 seconds
-      const briefTimer = setTimeout(() => {
+    // Add activity listeners
+    document.addEventListener('mousemove', handleActivity);
+    document.addEventListener('keydown', handleActivity);
+    document.addEventListener('click', handleActivity);
+
+    return () => {
+      document.removeEventListener('mousemove', handleActivity);
+      document.removeEventListener('keydown', handleActivity);
+      document.removeEventListener('click', handleActivity);
+    };
+  }, []);
+
+  // Auto-hide after inactivity when music is paused
+  useEffect(() => {
+    if (!isPlaying && isTraxVisible) {
+      const inactivityTimer = setTimeout(() => {
+        setIsTraxAutoHidden(true);
+      }, 15000); // 15 seconds
+
+      return () => clearTimeout(inactivityTimer);
+    }
+  }, [isPlaying, lastActivity, isTraxVisible]);
+
+  // Show briefly when track changes
+  useEffect(() => {
+    if (isTraxVisible) {
+      setShowBriefly(true);
+      setIsTraxAutoHidden(false);
+
+      const timer = setTimeout(() => {
         setShowBriefly(false);
       }, 3000);
 
-      return () => clearTimeout(briefTimer);
+      return () => clearTimeout(timer);
     }
   }, [currentTrack]);
+
+  // Show widget when music starts playing, then auto-minimize after 5s
+  useEffect(() => {
+    if (isPlaying) {
+      console.log('🎵 Music started - showing Kompg Trax for 5 seconds');
+
+      // Show widget immediately when music starts (regardless of scroll position)
+      setIsTraxAutoHidden(false);
+      setIsTraxVisible(true);
+      setShowBriefly(true);
+      setLastActivity(Date.now());
+
+      // Auto-minimize after 5 seconds (regardless of scroll position)
+      const autoMinimizeTimer = setTimeout(() => {
+        console.log('⏰ Auto-minimizing Kompg Trax after 5 seconds');
+        setShowBriefly(false);
+        setIsTraxAutoHidden(true);
+      }, 5000);
+
+      return () => clearTimeout(autoMinimizeTimer);
+    }
+  }, [isPlaying]);
 
   // Music player functions
   const togglePlay = async () => {
@@ -487,101 +519,86 @@ export default function Home() {
   };
 
   const nextTrack = () => {
-    if (isLoadingTrack) {
-      console.log('Already loading a track, ignoring next track request');
-      return;
-    }
-
     const next = isShuffleMode ? getRandomTrack() : (currentTrack + 1) % playlist.length;
     setCurrentTrack(next);
     console.log(isShuffleMode ? 'Random next track:' : 'Next track:', playlist[next]?.title);
 
-    if (!isDemoMode && audioElement) {
-      loadTrack(next);
+    // In demo mode, just update the UI
+    if (isDemoMode) {
+      console.log('Demo mode: Track skipped to', playlist[next]?.title);
+      return;
+    }
+
+    // In real audio mode, load and play the track if music was playing
+    if (audioElement && playlist[next]) {
+      const wasPlaying = isPlaying;
+
+      // First pause any current playback to avoid conflicts
+      audioElement.pause();
+
+      // Set new source
+      audioElement.src = playlist[next].file;
+      audioElement.currentTime = 0;
+
+      if (wasPlaying) {
+        // Wait for the audio to be ready before playing
+        const handleCanPlay = () => {
+          audioElement.removeEventListener('canplay', handleCanPlay);
+          audioElement.play().catch((error) => {
+            console.error('Error playing next track:', error);
+            setIsDemoMode(true);
+          });
+        };
+
+        audioElement.addEventListener('canplay', handleCanPlay);
+
+        // Also try to load the audio
+        audioElement.load();
+      }
     }
   };
 
   const prevTrack = () => {
-    if (isLoadingTrack) {
-      console.log('Already loading a track, ignoring previous track request');
-      return;
-    }
-
     const prev = isShuffleMode ? getRandomTrack() : (currentTrack === 0 ? playlist.length - 1 : currentTrack - 1);
     setCurrentTrack(prev);
     console.log(isShuffleMode ? 'Random previous track:' : 'Previous track:', playlist[prev]?.title);
 
-    if (!isDemoMode && audioElement) {
-      loadTrack(prev);
+    // In demo mode, just update the UI
+    if (isDemoMode) {
+      console.log('Demo mode: Track skipped to', playlist[prev]?.title);
+      return;
     }
-  };
 
-  const loadTrack = async (trackIndex: number) => {
-    if (!audioElement || !playlist[trackIndex] || isLoadingTrack) return;
+    // In real audio mode, load and play the track if music was playing
+    if (audioElement && playlist[prev]) {
+      const wasPlaying = isPlaying;
 
-    setIsLoadingTrack(true);
-    const wasPlaying = isPlaying;
-    const newSrc = playlist[trackIndex].file;
-
-    console.log('Loading track:', playlist[trackIndex].title, 'from:', newSrc);
-
-    try {
-      // Pause current playback and reset
+      // First pause any current playback to avoid conflicts
       audioElement.pause();
-      setIsPlaying(false);
 
-      // Wait a bit to ensure the previous audio is properly stopped
-      await new Promise(resolve => setTimeout(resolve, 200));
-
-      // Set new source and reset position
-      audioElement.src = newSrc;
+      // Set new source
+      audioElement.src = playlist[prev].file;
       audioElement.currentTime = 0;
 
-      // Load the new track with timeout
-      await new Promise((resolve, reject) => {
-        const timeout = setTimeout(() => {
-          audioElement.removeEventListener('canplaythrough', handleLoad);
-          audioElement.removeEventListener('error', handleError);
-          reject(new Error('Load timeout'));
-        }, 10000); // 10 second timeout
-
-        const handleLoad = () => {
-          clearTimeout(timeout);
-          audioElement.removeEventListener('canplaythrough', handleLoad);
-          audioElement.removeEventListener('error', handleError);
-          resolve(true);
+      if (wasPlaying) {
+        // Wait for the audio to be ready before playing
+        const handleCanPlay = () => {
+          audioElement.removeEventListener('canplay', handleCanPlay);
+          audioElement.play().catch((error) => {
+            console.error('Error playing previous track:', error);
+            setIsDemoMode(true);
+          });
         };
 
-        const handleError = (error: any) => {
-          clearTimeout(timeout);
-          audioElement.removeEventListener('canplaythrough', handleLoad);
-          audioElement.removeEventListener('error', handleError);
-          reject(error);
-        };
+        audioElement.addEventListener('canplay', handleCanPlay);
 
-        audioElement.addEventListener('canplaythrough', handleLoad);
-        audioElement.addEventListener('error', handleError);
+        // Also try to load the audio
         audioElement.load();
-      });
-
-      // If it was playing before, start playing the new track
-      if (wasPlaying) {
-        await audioElement.play();
-        setIsPlaying(true);
       }
-
-      console.log('Successfully loaded track:', playlist[trackIndex].title);
-    } catch (error) {
-      console.error('Error loading/playing new track:', error);
-      // Switch to demo mode if audio fails
-      setIsDemoMode(true);
-      if (wasPlaying) {
-        setIsPlaying(true); // Keep playing in demo mode
-      }
-    } finally {
-      setIsLoadingTrack(false);
     }
   };
+
+  // Removed loadTrack function - now handled directly in nextTrack/prevTrack
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseFloat(e.target.value);
@@ -591,36 +608,34 @@ export default function Home() {
     }
   };
 
+  // Handle card flip
+  const handleCardFlip = (memberId: string) => {
+    setFlippedCards(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(memberId)) {
+        newSet.delete(memberId);
+      } else {
+        newSet.add(memberId);
+      }
+      return newSet;
+    });
+  };
+
   const toggleTraxWidget = () => {
-    // Check if widget is effectively hidden (either not visible or auto-hidden)
-    if (isTraxVisible && !isTraxAutoHidden) {
-      // Widget is currently visible - hide it
-      setIsTraxVisible(false);
+    if (isTraxAutoHidden) {
+      // If auto-hidden, show the widget and reset hide state
       setIsTraxAutoHidden(false);
-      setShowBriefly(false);
-      console.log('🔽 Manually hiding Trax widget');
+      setIsTraxVisible(true);
+      setLastActivity(Date.now());
+    } else if (isTraxVisible) {
+      // If visible, hide it completely (user manual hide)
+      setIsTraxVisible(false);
     } else {
-      // Widget is hidden (either not visible or auto-hidden) - show it
+      // If hidden manually, show it
       setIsTraxVisible(true);
       setIsTraxAutoHidden(false);
-      setShowBriefly(false);
-
-      // Clear any existing timeouts
-      if (activityTimeout) {
-        clearTimeout(activityTimeout);
-      }
-      if (musicStartTimeout) {
-        clearTimeout(musicStartTimeout);
-      }
-      if (scrollTimeout) {
-        clearTimeout(scrollTimeout);
-      }
-      if (scrollDownTimeout) {
-        clearTimeout(scrollDownTimeout);
-      }
-
-      console.log('🔼 Manually showing Trax widget');
     }
+    setLastActivity(Date.now());
   };
 
   // Handle first user interaction to start music
@@ -648,37 +663,7 @@ export default function Home() {
     }
   };
 
-  // Card flip functionality
-  const handleCardFlip = (memberId: string) => {
-    setFlippedCards(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(memberId)) {
-        newSet.delete(memberId);
-      } else {
-        newSet.add(memberId);
-      }
-      return newSet;
-    });
-  };
-
-  // Function to test if audio files are available
-  const testAudioAvailability = async () => {
-    if (isDemoMode && playlist.length > 0) {
-      try {
-        const testAudio = new Audio();
-        testAudio.src = playlist[0].file;
-        await testAudio.load();
-        console.log('Audio files detected, switching to real audio mode');
-        setIsDemoMode(false);
-        // Re-initialize audio element
-        const audio = new Audio();
-        audio.volume = volume;
-        setAudioElement(audio);
-      } catch (error) {
-        console.log('Audio files still not available, staying in demo mode');
-      }
-    }
-  };
+  // Removed unused testAudioAvailability function
 
   return (
     <>
@@ -814,7 +799,7 @@ export default function Home() {
                 onClick={() => handleCardFlip(member.id)}
               >
                 <div className="member-card-inner">
-                  {/* Front of the card */}
+                  {/* Front of card */}
                   <div className="member-card-front">
                     <div className="member-avatar-exact">
                       <Image
@@ -831,7 +816,7 @@ export default function Home() {
                     <p className="member-role-exact">{member.role}</p>
                   </div>
 
-                  {/* Back of the card */}
+                  {/* Back of card */}
                   <div className="member-card-back">
                     <button
                       className="member-card-close"
@@ -842,15 +827,9 @@ export default function Home() {
                     >
                       ✕
                     </button>
-
-                    <h3 className="member-name-exact" style={{ marginBottom: '15px', fontSize: '1.3rem' }}>
-                      {member.name}
-                    </h3>
-
-                    <p className="member-bio-text">
+                    <div className="member-bio-text">
                       {member.bio}
-                    </p>
-
+                    </div>
                     <div className="member-stats-list">
                       {member.stats.map((stat, statIndex) => (
                         <div key={statIndex} className="member-stat-item">
@@ -875,7 +854,7 @@ export default function Home() {
           <h2 className="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
             Naše hry
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {games.map((game, index) => (
               <div
                 key={game.title}
@@ -913,239 +892,127 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Discord & Music Section - Enhanced Immersive with Discord Background */}
-      <section
-        id="discord"
-        className="relative z-10 py-12 overflow-hidden"
-        style={{
-          background: `
-            linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
-            url('/komplexaci/img/discord-bg.jpg'),
-            linear-gradient(135deg,
-              rgba(15, 15, 25, 0.95) 0%,
-              rgba(25, 15, 35, 0.95) 25%,
-              rgba(20, 25, 40, 0.95) 50%,
-              rgba(30, 20, 45, 0.95) 75%,
-              rgba(15, 15, 25, 0.95) 100%
-            )
-          `,
-          backgroundAttachment: 'scroll',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center center',
-          backgroundRepeat: 'no-repeat',
-          minHeight: '600px'
-        }}
-      >
-        {/* Simplified Background Layers - Performance Optimized */}
-        <div
-          className="absolute inset-0 opacity-20 pointer-events-none"
-          style={{
-            background: `
-              linear-gradient(45deg,
-                transparent 0%,
-                rgba(114, 137, 218, 0.03) 25%,
-                transparent 50%,
-                rgba(114, 137, 218, 0.05) 75%,
-                transparent 100%
-              )
-            `,
-            animation: 'discordWave 20s ease-in-out infinite',
-            transform: 'translateZ(0)'
-          }}
-        />
+      {/* Discord & Music Section - Enhanced Immersive */}
+      <section id="discord" className="discord-music-section relative z-10 py-20 overflow-hidden">
+        {/* Animated Background */}
+        <div className="discord-bg-animation"></div>
+        <div className="music-bg-animation"></div>
 
-        <div className="container mx-auto px-6 relative z-10">
-          <h2
-            className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent"
-            style={{
-              fontFamily: "'Exo 2', sans-serif",
-              fontSize: '2.2rem',
-              textShadow: '0 0 20px rgba(138, 43, 226, 0.5)'
-            }}
-          >
+        {/* Floating Particles */}
+        <div className="floating-particles">
+          <div className="particle particle-1"></div>
+          <div className="particle particle-2"></div>
+          <div className="particle particle-3"></div>
+          <div className="particle particle-4"></div>
+          <div className="particle particle-5"></div>
+          <div className="particle particle-6"></div>
+        </div>
+        <div className="container mx-auto px-6">
+          <h2 className="text-4xl font-bold text-center mb-12" style={{
+            fontFamily: "'Exo 2', sans-serif",
+            fontSize: '2.5rem',
+            color: 'var(--light-text)'
+          }}>
             Discord & Music
           </h2>
 
-          {/* Discord Main Content - More compact */}
-          <div className="max-w-2xl mx-auto text-center mb-6">
-            <div
-              className="backdrop-blur-lg rounded-xl p-6 border border-purple-500/30 shadow-2xl"
-              style={{
-                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)',
-                boxShadow: '0 15px 30px rgba(0, 0, 0, 0.3), 0 0 15px rgba(114, 137, 218, 0.2)'
-              }}
-            >
-              <div className="mb-4">
-                <div
-                  className="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center transform transition-transform duration-300 hover:scale-105"
-                  style={{
-                    background: 'linear-gradient(135deg, #5865F2, #7289DA)',
-                    boxShadow: '0 6px 12px rgba(88, 101, 242, 0.3)',
-                    transform: 'translateZ(0)'
-                  }}
-                >
-                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
-                  </svg>
-                </div>
-              </div>
-              <p
-                className="text-lg mb-5 leading-relaxed text-white"
-                style={{
-                  fontSize: '1.1rem',
-                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'
-                }}
-              >
-                Staň se součástí naší komunity na Discordu(která bohužel také upadá). Vlastně ani nevím, co zde najdeš
+          {/* Discord Section */}
+          <div className="max-w-4xl mx-auto mb-12">
+            <div className="discord-card enhanced-card text-center">
+              <h3 className="text-2xl font-bold mb-4" style={{ color: 'var(--accent-color)' }}>
+                Připoj se k naší komunitě
+              </h3>
+              <p className="text-lg mb-6 leading-relaxed" style={{ color: 'var(--medium-text)' }}>
+                Staň se součástí naší komunity na Discordu (která bohužel také upadá). Vlastně ani nevím, co zde najdeš
               </p>
               <a
                 href="https://discord.gg/e6BEQpQRBA"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center px-6 py-3 rounded-full text-base font-semibold transition-all duration-300 hover:scale-105 hover:shadow-2xl relative overflow-hidden group"
+                className="inline-flex items-center px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 hover:scale-105"
                 style={{
-                  background: 'linear-gradient(135deg, #5865F2, #7289DA)',
-                  color: 'white',
-                  boxShadow: '0 4px 15px rgba(88, 101, 242, 0.4)'
+                  backgroundColor: 'var(--discord-color)',
+                  color: 'white'
                 }}
               >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                <svg className="w-5 h-5 mr-2 relative z-10" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-6 h-6 mr-3" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
                 </svg>
-                <span className="relative z-10">Připojit se</span>
+                Připojit se na Discord
               </a>
             </div>
           </div>
 
-          {/* Music Dashboard Content - More compact with original spacing */}
-          <div className="max-w-4xl mx-auto" style={{ marginTop: '30px' }}>
-            <div
-              className="relative overflow-hidden rounded-2xl border border-purple-500/30 hover:border-purple-400/60 transition-all duration-500 group"
-              style={{
-                background: `
-                  linear-gradient(135deg,
-                    rgba(255, 255, 255, 0.08) 0%,
-                    rgba(255, 255, 255, 0.03) 100%
-                  )
-                `,
-                backdropFilter: 'blur(20px)',
-                boxShadow: `
-                  0 20px 40px rgba(0, 0, 0, 0.3),
-                  0 0 25px rgba(110, 79, 246, 0.15),
-                  inset 0 1px 0 rgba(255, 255, 255, 0.1)
-                `
-              }}
-            >
-              {/* Simplified Background Overlay */}
-              <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-50 transition-opacity duration-300 pointer-events-none"
-                style={{
-                  background: 'linear-gradient(45deg, transparent 0%, rgba(138, 43, 226, 0.05) 50%, transparent 100%)',
-                  transform: 'translateZ(0)'
-                }}
-              />
+          {/* Music Dashboard */}
+          <div className="max-w-4xl mx-auto">
+            <div className="music-card enhanced-card">
+              <div className="text-center mb-8">
+                <h3 className="text-3xl font-bold mb-4" style={{
+                  fontFamily: "'Exo 2', sans-serif",
+                  color: 'var(--accent-color)'
+                }}>
+                  🎵 Discord Music Bot Dashboard
+                </h3>
+                <p style={{ color: 'var(--medium-text)' }}>
+                  Ovládej náš Discord music bot přímo z webového rozhraní
+                </p>
+              </div>
 
-              {/* Music Dashboard Card with improved layout */}
-              <div className="relative z-10 p-6">
-                <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
-                  {/* Music Icon */}
-                  <div className="flex-shrink-0">
-                    <div
-                      className="w-16 h-16 rounded-full flex items-center justify-center relative group-hover:scale-105 transition-transform duration-300"
-                      style={{
-                        background: 'linear-gradient(135deg, #6e4ff6, #00d2ff)',
-                        boxShadow: '0 8px 16px rgba(110, 79, 246, 0.3)',
-                        transform: 'translateZ(0)'
-                      }}
-                    >
-                      <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-                      </svg>
-                    </div>
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+                <div className="music-feature-card">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-purple-600/20 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M8 5v14l11-7z"/>
+                    </svg>
                   </div>
-
-                  {/* Music Info - Expanded to take more space */}
-                  <div className="flex-1 text-center lg:text-left">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                      <div className="flex-1">
-                        <h3
-                          className="text-2xl font-bold mb-3 bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent"
-                          style={{
-                            fontSize: '1.6rem',
-                            fontWeight: '700',
-                            textShadow: '0 0 15px rgba(138, 43, 226, 0.5)'
-                          }}
-                        >
-                          🎵 Discord Music Bot Dashboard
-                        </h3>
-                        <p
-                          className="text-base leading-relaxed mb-4 text-gray-200"
-                          style={{
-                            fontSize: '1rem',
-                            lineHeight: '1.5',
-                            textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-                          }}
-                        >
-                          Ovládej náš Discord music bot přímo z webového rozhraní. Přidávej skladby, spravuj frontu, poslouchej rádio stanice a kontroluj přehrávání v reálném čase.
-                        </p>
-
-                        {/* Compact Feature tags */}
-                        <div className="grid grid-cols-2 gap-2 mb-4 lg:mb-0">
-                          {[
-                            { icon: "M8 5v14l11-7z", text: "Ovládání" },
-                            { icon: "M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z", text: "Fronta" },
-                            { icon: "M3.24 6.15C2.51 6.43 2 7.17 2 8v8c0 .83.51 1.57 1.24 1.85L12 21.5l8.76-3.65C21.49 17.57 22 16.83 22 16V8c0-.83-.51-1.57-1.24-1.85L12 2.5 3.24 6.15zM12 9L8.5 7.5 12 6l3.5 1.5L12 9z", text: "Rádio" },
-                            { icon: "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z", text: "Vyhledávání" }
-                          ].map((feature, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center px-3 py-2 rounded-lg border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 hover:scale-105 group/feature"
-                              style={{
-                                background: 'linear-gradient(135deg, rgba(138, 43, 226, 0.1), rgba(0, 210, 255, 0.05))',
-                                backdropFilter: 'blur(10px)',
-                                animationDelay: `${index * 0.1}s`
-                              }}
-                            >
-                              <div className="w-6 h-6 rounded-md bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center mr-2 group-hover/feature:scale-110 transition-transform duration-300">
-                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d={feature.icon}/>
-                                </svg>
-                              </div>
-                              <span className="text-xs font-medium text-purple-200 group-hover/feature:text-white transition-colors duration-300">
-                                {feature.text}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Action Button - Better positioned and sized */}
-                      <div className="flex-shrink-0 text-center lg:text-right">
-                        <a
-                          href="https://music.komplexaci.cz"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center px-5 py-2.5 rounded-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg text-white text-sm"
-                          style={{
-                            background: 'linear-gradient(135deg, #ff4655, #ff6b7a)',
-                            boxShadow: '0 4px 12px rgba(255, 70, 85, 0.3)',
-                            transform: 'translateZ(0)'
-                          }}
-                        >
-                          <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
-                            <path d="M19 19H5V5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7z"/>
-                          </svg>
-                          <span>Otevřít Dashboard</span>
-                        </a>
-                        <p className="text-xs mt-1.5 text-purple-300" style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
-                          Vyžaduje Discord přihlášení
-                        </p>
-                      </div>
-                    </div>
-                  </div>
+                  <span className="text-sm font-semibold" style={{ color: 'var(--light-text)' }}>Ovládání</span>
                 </div>
+                <div className="music-feature-card">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-purple-600/20 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z"/>
+                    </svg>
+                  </div>
+                  <span className="text-sm font-semibold" style={{ color: 'var(--light-text)' }}>Fronta</span>
+                </div>
+                <div className="music-feature-card">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-purple-600/20 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M3.24 6.15C2.51 6.43 2 7.17 2 8v8c0 .83.51 1.57 1.24 1.85L12 21.5l8.76-3.65C21.49 17.57 22 16.83 22 16V8c0-.83-.51-1.57-1.24-1.85L12 2.5 3.24 6.15zM12 9L8.5 7.5 12 6l3.5 1.5L12 9z"/>
+                    </svg>
+                  </div>
+                  <span className="text-sm font-semibold" style={{ color: 'var(--light-text)' }}>Rádio</span>
+                </div>
+                <div className="music-feature-card">
+                  <div className="w-12 h-12 mx-auto mb-3 bg-purple-600/20 rounded-full flex items-center justify-center">
+                    <svg className="w-6 h-6 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"/>
+                    </svg>
+                  </div>
+                  <span className="text-sm font-semibold" style={{ color: 'var(--light-text)' }}>Vyhledávání</span>
+                </div>
+              </div>
+
+              <div className="text-center">
+                <a
+                  href="https://music.komplexaci.cz"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center px-6 py-3 rounded-lg font-semibold transition-all duration-300 hover:scale-105"
+                  style={{
+                    backgroundColor: 'var(--primary-color)',
+                    color: 'white'
+                  }}
+                >
+                  <svg className="w-5 h-5 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                    <path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
+                    <path d="M19 19H5V5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7z"/>
+                  </svg>
+                  Otevřít Dashboard
+                </a>
+                <p className="text-sm mt-2" style={{ color: 'var(--medium-text)' }}>
+                  Vyžaduje Discord přihlášení
+                </p>
               </div>
             </div>
           </div>
@@ -1232,17 +1099,11 @@ export default function Home() {
         </div>
       </footer>
 
-      {/* KOMPG Trax Widget - Enhanced with Smart Features */}
-      <div
-        className={`trax-widget ${isTraxVisible ? 'active' : ''} ${isPlaying ? 'pulsating' : ''} ${isTraxAutoHidden ? 'auto-hidden' : ''} ${showBriefly ? 'show-briefly' : ''}`}
-      >
+      {/* KOMPG Trax Widget - EXACT Recreation */}
+      <div className={`trax-widget ${isTraxVisible ? 'active' : ''} ${isPlaying ? 'pulsating' : ''} ${isTraxAutoHidden ? 'auto-hidden' : ''} ${showBriefly ? 'show-briefly' : ''}`}>
         <button
           className="trax-close-button"
-          onClick={() => {
-            // Use auto-hidden instead of just hiding to keep mini icon glowing
-            setIsTraxAutoHidden(true);
-            console.log('❌ Manually closing Trax widget with X');
-          }}
+          onClick={() => setIsTraxVisible(false)}
           style={{
             position: 'absolute',
             top: '10px',
@@ -1349,7 +1210,7 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Trax Mini Icon - Always Visible */}
+      {/* Trax Mini Icon - Always visible */}
       <div
         className="trax-mini-icon"
         onClick={toggleTraxWidget}
