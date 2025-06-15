@@ -14,7 +14,7 @@ interface ServerStatus {
 export default function ServerStatus() {
   const [webServers, setWebServers] = useState<ServerStatus[]>([
     { name: 'KompG Website', url: 'https://www.komplexaci.cz', status: 'checking' },
-    { name: 'KompG Music Bot Dashboard', url: 'https://music.komplexaci.cz/dashboard', status: 'checking' },
+    { name: 'KompG Music Bot Dashboard', url: 'https://music.komplexaci.cz/health', status: 'checking' },
     { name: 'Komplexáci API', url: 'http://localhost:3000/api/health', status: 'checking' }
   ]);
 
