@@ -2,17 +2,25 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isMobileSubmenuOpen, setIsMobileSubmenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
   const pathname = usePathname();
 
   const toggleMobileMenu = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen);
+    // Reset submenu when closing main menu
+    if (isMobileMenuOpen) {
+      setIsMobileSubmenuOpen(false);
+    }
+  };
+
+  const toggleMobileSubmenu = () => {
+    setIsMobileSubmenuOpen(!isMobileSubmenuOpen);
   };
 
   // Scroll effect for header
@@ -149,15 +157,6 @@ const Header = () => {
     <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
       <div className="container">
         <div className="logo">
-          <div className="site-logo-placeholder">
-            <Image
-              src="/komplexaci/img/logo.png"
-              alt="Komplexáci Logo"
-              width={40}
-              height={40}
-              className="logo-image"
-            />
-          </div>
           <h1>Komplexáci</h1>
         </div>
         <nav className="main-nav">
@@ -171,7 +170,16 @@ const Header = () => {
             <span className="bar"></span>
           </button>
           <ul className={`nav-list ${isMobileMenuOpen ? 'active' : ''}`}>
-            <li><Link href="/" className="nav-link">Domů</Link></li>
+            <li className="mobile-menu-header">
+              <button
+                className="mobile-menu-close"
+                onClick={toggleMobileMenu}
+                aria-label="Close mobile menu"
+              >
+                <i className="fas fa-times"></i>
+              </button>
+            </li>
+            <li><Link href="/" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Domů</Link></li>
             <li>
               <a
                 href="/#o-nas"
@@ -200,23 +208,28 @@ const Header = () => {
                 Členové
               </a>
             </li>
-            <li className="has-submenu">
+            <li className={`has-submenu ${isMobileSubmenuOpen ? 'mobile-submenu-open' : ''}`}>
               <a
                 href="/#hry"
                 className={`nav-link ${isActive('hry') ? 'active' : ''}`}
                 onClick={(e) => {
-                  if (pathname === '/') {
+                  // On mobile, toggle submenu instead of navigating
+                  if (window.innerWidth <= 768) {
+                    e.preventDefault();
+                    toggleMobileSubmenu();
+                  } else if (pathname === '/') {
                     e.preventDefault();
                     handleNavClick('hry');
                   }
                 }}
               >
-                Hry <i className="fas fa-chevron-down submenu-arrow"></i>
+                <span>Hry</span>
+                <i className={`fas fa-chevron-down submenu-arrow ${isMobileSubmenuOpen ? 'rotated' : ''}`}></i>
               </a>
               <ul className="submenu">
-                <li><Link href="/league-of-legends" className="nav-link">League of Legends</Link></li>
-                <li><Link href="/cs2" className="nav-link">CS2</Link></li>
-                <li><Link href="/wwe-games" className="nav-link">WWE Games</Link></li>
+                <li><Link href="/league-of-legends" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>League of Legends</Link></li>
+                <li><Link href="/cs2" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>CS2</Link></li>
+                <li><Link href="/wwe-games" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>WWE Games</Link></li>
               </ul>
             </li>
             <li>
