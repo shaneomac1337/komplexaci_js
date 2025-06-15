@@ -1,15 +1,5 @@
 /* WWE SmackDown! 2 Industrial 2000s Style - Enhanced */
 
-/* CSS Variables */
-:root {
-  --accent-color: #6e4ff6;
-  --accent-hover: #5a3fd4;
-  --bg-color: #0a0a0f;
-  --text-color: #e0e0e0;
-  --medium-text: #bababa;
-  --light-text: #ffffff;
-}
-
 /* Arena Spotlight Effects */
 .heroSection::after {
   content: '';
