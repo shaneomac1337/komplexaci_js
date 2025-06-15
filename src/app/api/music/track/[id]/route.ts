@@ -1,28 +1,41 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { promises as fs } from 'fs';
 import path from 'path';
-import { cookies } from 'next/headers';
-import { jwtVerify } from 'jose';
+import { getServerSession } from 'next-auth/next';
+import { supabaseAdmin } from '@/lib/supabase';
 import type { Playlist, Track } from '../../playlist/route';
 
-const JWT_SECRET = new TextEncoder().encode(
-  process.env.JWT_SECRET || 'your-secret-key-change-this-in-production'
-);
-
-async function verifyAdminAuth(): Promise<boolean> {
+async function verifyAuth(requiredRole: 'admin' | 'moderator' | 'member' = 'member'): Promise<{ isAuthorized: boolean; user?: any }> {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get('auth-token')?.value;
+    const session = await getServerSession();
 
-    if (!token) {
-      return false;
+    if (!session?.user?.email) {
+      return { isAuthorized: false };
     }
 
-    const { payload } = await jwtVerify(token, JWT_SECRET);
-    return payload.role === 'admin';
+    // Get user profile from Supabase
+    const { data: profile } = await supabaseAdmin
+      .from('profiles')
+      .select('*')
+      .eq('email', session.user.email)
+      .single();
+
+    if (!profile || !profile.is_active) {
+      return { isAuthorized: false };
+    }
+
+    // Check role hierarchy: admin > moderator > member
+    const roleHierarchy = { admin: 3, moderator: 2, member: 1, guest: 0 };
+    const userLevel = roleHierarchy[profile.role as keyof typeof roleHierarchy] || 0;
+    const requiredLevel = roleHierarchy[requiredRole];
+
+    return {
+      isAuthorized: userLevel >= requiredLevel,
+      user: profile
+    };
   } catch (error) {
     console.error('Auth verification error:', error);
-    return false;
+    return { isAuthorized: false };
   }
 }
 
@@ -57,10 +70,10 @@ export async function PUT(
   { params }: { params: { id: string } }
 ) {
   try {
-    const isAdmin = await verifyAdminAuth();
-    if (!isAdmin) {
+    const { isAuthorized, user } = await verifyAuth('moderator');
+    if (!isAuthorized || !user) {
       return NextResponse.json(
-        { success: false, message: 'Authentication required' },
+        { success: false, message: 'Moderator access required' },
         { status: 401 }
       );
     }
@@ -115,10 +128,10 @@ export async function DELETE(
   { params }: { params: { id: string } }
 ) {
   try {
-    const isAdmin = await verifyAdminAuth();
-    if (!isAdmin) {
+    const { isAuthorized, user } = await verifyAuth('admin');
+    if (!isAuthorized || !user) {
       return NextResponse.json(
-        { success: false, message: 'Authentication required' },
+        { success: false, message: 'Admin access required' },
         { status: 401 }
       );
     }
