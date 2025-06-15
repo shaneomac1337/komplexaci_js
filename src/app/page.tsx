@@ -6,6 +6,7 @@ import './komplexaci.css';
 import Header from './components/Header';
 import ServerStatus from './components/ServerStatus';
 import DiscordServerStats from './components/DiscordServerStats';
+import PerformanceStatus from '../components/PerformanceStatus';
 
 // Import exact fonts from original
 if (typeof window !== 'undefined') {
@@ -903,17 +904,10 @@ export default function Home() {
             Připoj se k nám
           </a>
 
-          {/* Auto-play hint */}
-          {!hasUserInteracted && isLoaded && (
-            <div className="absolute bottom-10 left-1/2 transform -translate-x-1/2 bg-black/80 backdrop-blur-sm px-6 py-3 rounded-full border border-purple-500/30 animate-pulse">
-              <p className="text-sm text-purple-300 flex items-center">
-                <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-                </svg>
-                Klikni kamkoliv pro spuštění hudby
-              </p>
-            </div>
-          )}
+          {/* Performance Status - Hero Version */}
+          <PerformanceStatus showMusicHint={!hasUserInteracted && isLoaded} />
+
+
         </div>
       </section>
 
@@ -1508,7 +1502,7 @@ export default function Home() {
           ✕
         </button>
 
-        <div className="trax-title">KompG Trax</div>
+        <div className="trax-title">KOMPG Trax</div>
 
         <div className="trax-content">
           <div className="trax-logo">
@@ -1598,7 +1592,7 @@ export default function Home() {
       <div
         className="trax-mini-icon"
         onClick={toggleTraxWidget}
-        title="Toggle Kompg Trax"
+        title="Toggle KOMPG Trax"
       >
         <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
           <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
