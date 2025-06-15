@@ -1,4 +1,37 @@
 /* Enhanced League of Legends Page Specific Styles */
+
+/* Text Effects for Hero Section - LoL Gold Style */
+.textGlow {
+    color: #f0e6d2 !important; /* Classic LoL cream/gold color */
+    text-shadow:
+        2px 2px 4px rgba(0, 0, 0, 0.9), /* Strong dark shadow for readability */
+        0 0 8px rgba(200, 155, 60, 0.6), /* Golden glow */
+        0 0 16px rgba(200, 155, 60, 0.3); /* Outer golden glow */
+    font-weight: 500; /* Slightly bolder for better readability */
+}
+
+.textGradient {
+    background: linear-gradient(45deg, #c89b3c, #f0e6d2, #cdbe91);
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: textGradientShift 6s ease-in-out infinite; /* Slower animation */
+    /* Fallback for better browser support */
+    color: #f0e6d2;
+}
+
+@keyframes textGradientShift {
+    0%, 100% { background-position: 0% 50%; }
+    50% { background-position: 100% 50%; }
+}
+
+.textShadow {
+    text-shadow:
+        2px 2px 4px rgba(0, 0, 0, 0.9), /* Strong dark shadow */
+        0 0 8px rgba(200, 155, 60, 0.4); /* Golden glow */
+}
+
 .gameHero {
     position: relative;
     height: 80vh;
