@@ -495,10 +495,39 @@ export default function LeagueOfLegendsNextJS() {
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
-        <div className={styles.loadingContainer}>
-          <div className={styles.loadingSpinner}></div>
-          <p className="text-xl text-gray-300">Loading Champions...</p>
-        </div>
+        <Header />
+
+        {/* Static content that Google can see */}
+        <section className="relative h-[80vh] min-h-[600px] flex items-center justify-center">
+          <div className="text-center max-w-4xl px-4">
+            <h1 className="text-6xl font-bold mb-4 text-white">League of Legends</h1>
+            <p className="text-xl text-gray-200 mb-4">
+              Nejpopulárnější MOBA hra na světě od Riot Games
+            </p>
+            <p className="text-lg text-gray-300 mb-8">
+              Komplexáci se specializuje na League of Legends. Objevte více než 160 unikátních šampionů,
+              jejich schopnosti, role a herní strategie.
+            </p>
+
+            {/* Loading indicator */}
+            <div className="mt-8">
+              <div className={styles.loadingSpinner}></div>
+              <p className="text-xl text-gray-300 mt-4">Načítání šampionů...</p>
+            </div>
+          </div>
+        </section>
+
+        {/* Static game info that's always visible */}
+        <section className="py-16 px-4">
+          <div className="max-w-6xl mx-auto text-center">
+            <h2 className="text-4xl font-bold text-white mb-8">O hře League of Legends</h2>
+            <p className="text-xl text-gray-200 max-w-4xl mx-auto">
+              League of Legends (LoL) je týmová strategická hra, ve které dva týmy po pěti hráčích
+              bojují proti sobě s cílem zničit nepřátelskou základnu. Každý hráč ovládá jedinečného
+              šampiona s unikátními schopnostmi a rolí v týmu.
+            </p>
+          </div>
+        </section>
       </div>
     );
   }
@@ -506,22 +535,111 @@ export default function LeagueOfLegendsNextJS() {
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
-        <div className={styles.loadingContainer}>
-          <p className="text-xl text-red-400 mb-4">{error}</p>
-          <button
-            onClick={() => fetchChampions()}
-            className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            Try Again
-          </button>
-        </div>
+        <Header />
+
+        {/* Static content that Google can see even with errors */}
+        <section className="relative h-[80vh] min-h-[600px] flex items-center justify-center">
+          <div className="text-center max-w-4xl px-4">
+            <h1 className="text-6xl font-bold mb-4 text-white">League of Legends</h1>
+            <p className="text-xl text-gray-200 mb-4">
+              Nejpopulárnější MOBA hra na světě od Riot Games
+            </p>
+            <p className="text-lg text-gray-300 mb-8">
+              Komplexáci se specializuje na League of Legends. Objevte více než 160 unikátních šampionů,
+              jejich schopnosti, role a herní strategie.
+            </p>
+
+            {/* Error message */}
+            <div className="mt-8 bg-red-900/20 border border-red-500/50 rounded-lg p-6">
+              <p className="text-xl text-red-400 mb-4">{error}</p>
+              <button
+                onClick={() => fetchChampions()}
+                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Zkusit znovu
+              </button>
+            </div>
+          </div>
+        </section>
+
+        {/* Static game info that's always visible */}
+        <section className="py-16 px-4">
+          <div className="max-w-6xl mx-auto text-center">
+            <h2 className="text-4xl font-bold text-white mb-8">O hře League of Legends</h2>
+            <p className="text-xl text-gray-200 max-w-4xl mx-auto mb-8">
+              League of Legends (LoL) je týmová strategická hra, ve které dva týmy po pěti hráčích
+              bojují proti sobě s cílem zničit nepřátelskou základnu. Každý hráč ovládá jedinečného
+              šampiona s unikátními schopnostmi a rolí v týmu.
+            </p>
+
+            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              <div className="bg-black/30 border border-blue-500/30 rounded-lg p-6">
+                <h3 className="text-2xl font-bold text-white mb-4">Herní módy</h3>
+                <p className="text-gray-300">
+                  LoL nabízí různé herní módy od klasického 5v5 Ranked po rychlé ARAM zápasy
+                  a strategické Teamfight Tactics.
+                </p>
+              </div>
+              <div className="bg-black/30 border border-blue-500/30 rounded-lg p-6">
+                <h3 className="text-2xl font-bold text-white mb-4">Šampioni</h3>
+                <p className="text-gray-300">
+                  Více než 160 unikátních šampionů s různými schopnostmi, rolemi a herními styly.
+                  Každý šampion nabízí jiný způsob hry.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
     );
   }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900" style={{ fontFamily: "'Exo 2', 'Roboto', sans-serif" }}>
-        
+
+        {/* NoScript fallback for crawlers and users without JavaScript */}
+        <noscript>
+          <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 p-8">
+            <div className="max-w-6xl mx-auto">
+              <h1 className="text-6xl font-bold text-white text-center mb-8">League of Legends | Komplexáci</h1>
+              <p className="text-2xl text-gray-200 text-center mb-12">
+                Nejpopulárnější MOBA hra na světě od Riot Games
+              </p>
+
+              <div className="grid md:grid-cols-2 gap-8 mb-12">
+                <div className="bg-black/30 border border-blue-500/30 rounded-lg p-8">
+                  <h2 className="text-3xl font-bold text-white mb-4">O hře</h2>
+                  <p className="text-lg text-gray-300 mb-4">
+                    League of Legends (LoL) je týmová strategická hra, ve které dva týmy po pěti hráčích
+                    bojují proti sobě s cílem zničit nepřátelskou základnu.
+                  </p>
+                  <p className="text-lg text-gray-300">
+                    Každý hráč ovládá jedinečného šampiona s unikátními schopnostmi a rolí v týmu.
+                  </p>
+                </div>
+
+                <div className="bg-black/30 border border-blue-500/30 rounded-lg p-8">
+                  <h2 className="text-3xl font-bold text-white mb-4">Šampioni</h2>
+                  <p className="text-lg text-gray-300 mb-4">
+                    Více než 160 unikátních šampionů s různými schopnostmi, rolemi a herními styly.
+                  </p>
+                  <p className="text-lg text-gray-300">
+                    Pro zobrazení interaktivního seznamu šampionů povolte JavaScript.
+                  </p>
+                </div>
+              </div>
+
+              <div className="text-center">
+                <h3 className="text-2xl font-bold text-white mb-4">Komplexáci a League of Legends</h3>
+                <p className="text-lg text-gray-300 max-w-4xl mx-auto">
+                  Klan Komplexáci se specializuje na League of Legends a sdílí herní strategie,
+                  tipy a zážitky z této populární MOBA hry. Připojte se k naší komunitě!
+                </p>
+              </div>
+            </div>
+          </div>
+        </noscript>
+
         {/* Header */}
         <Header />
         
@@ -643,6 +761,50 @@ export default function LeagueOfLegendsNextJS() {
             <p style={{ textAlign: 'center', fontSize: '1.2rem', color: '#f0e6d2', maxWidth: '800px', margin: '0 auto 50px' }}>
               Objevte více než 160 unikátních championů, každý s vlastními schopnostmi a herním stylem.
             </p>
+
+            {/* Static content visible even before champions load */}
+            {champions.length === 0 && !loading && !error && (
+              <div className="text-center py-16">
+                <div className="max-w-4xl mx-auto">
+                  <h3 className="text-3xl font-bold text-white mb-6">League of Legends Champions</h3>
+                  <p className="text-xl text-gray-300 mb-8">
+                    League of Legends obsahuje více než 160 unikátních šampionů rozdělených do různých rolí:
+                  </p>
+
+                  <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-6 mb-12">
+                    <div className="bg-black/30 border border-blue-500/30 rounded-lg p-4">
+                      <div className="text-3xl mb-2">⚔️</div>
+                      <h4 className="text-lg font-bold text-white mb-2">Top Lane</h4>
+                      <p className="text-sm text-gray-300">Tanky a fighters pro horní linku</p>
+                    </div>
+                    <div className="bg-black/30 border border-green-500/30 rounded-lg p-4">
+                      <div className="text-3xl mb-2">🌲</div>
+                      <h4 className="text-lg font-bold text-white mb-2">Jungle</h4>
+                      <p className="text-sm text-gray-300">Šampioni pro džungli a ganky</p>
+                    </div>
+                    <div className="bg-black/30 border border-purple-500/30 rounded-lg p-4">
+                      <div className="text-3xl mb-2">🔮</div>
+                      <h4 className="text-lg font-bold text-white mb-2">Mid Lane</h4>
+                      <p className="text-sm text-gray-300">Mágové a assassini pro střed</p>
+                    </div>
+                    <div className="bg-black/30 border border-red-500/30 rounded-lg p-4">
+                      <div className="text-3xl mb-2">🏹</div>
+                      <h4 className="text-lg font-bold text-white mb-2">ADC</h4>
+                      <p className="text-sm text-gray-300">Střelci pro spodní linku</p>
+                    </div>
+                    <div className="bg-black/30 border border-yellow-500/30 rounded-lg p-4">
+                      <div className="text-3xl mb-2">🛡️</div>
+                      <h4 className="text-lg font-bold text-white mb-2">Support</h4>
+                      <p className="text-sm text-gray-300">Podpora pro ADC</p>
+                    </div>
+                  </div>
+
+                  <p className="text-lg text-gray-400">
+                    Načítání detailních informací o šampionech...
+                  </p>
+                </div>
+              </div>
+            )}
 
             {/* Search Bar */}
             <div className={styles.searchContainer}>
