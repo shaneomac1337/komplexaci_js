@@ -876,6 +876,31 @@
     animation: heroZoom 20s ease-in-out infinite, neonBackgroundPulse 8s ease-in-out infinite;
 }
 
+/* Mobile responsive breakpoints for hero section */
+@media (max-width: 768px) {
+    .hero-exact {
+        height: 80vh;
+        min-height: 600px;
+        background-attachment: scroll;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-exact {
+        height: 70vh;
+        min-height: 500px;
+        padding: 20px 0;
+    }
+}
+
+@media (max-width: 360px) {
+    .hero-exact {
+        height: 65vh;
+        min-height: 450px;
+        padding: 15px 0;
+    }
+}
+
 /* Hero Logo Styling */
 .hero-logo-container {
     position: relative;
@@ -895,6 +920,28 @@
     /* Better quality rendering - avoid over-sharpening */
     image-rendering: auto;
     image-rendering: -webkit-optimize-contrast;
+}
+
+/* Mobile responsive breakpoints for hero logo */
+@media (max-width: 768px) {
+    .hero-logo {
+        width: 200px;
+        height: 200px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-logo {
+        width: 150px;
+        height: 150px;
+    }
+}
+
+@media (max-width: 360px) {
+    .hero-logo {
+        width: 120px;
+        height: 120px;
+    }
 }
 
 .hero-logo:hover {
@@ -993,6 +1040,28 @@
     animation: heroContentFloat 6s ease-in-out infinite;
 }
 
+/* Mobile responsive breakpoints for hero content */
+@media (max-width: 768px) {
+    .hero-content-exact {
+        max-width: 90%;
+        padding: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-content-exact {
+        max-width: 95%;
+        padding: 10px;
+    }
+}
+
+@media (max-width: 360px) {
+    .hero-content-exact {
+        max-width: 100%;
+        padding: 5px;
+    }
+}
+
 @keyframes heroContentFloat {
     0%, 100% {
         transform: translateY(0px);
@@ -1026,6 +1095,31 @@
         titlePulse 2s ease-in-out infinite alternate;
 }
 
+/* Mobile responsive breakpoints for hero title */
+@media (max-width: 768px) {
+    .hero-title-exact {
+        font-size: 3rem;
+        letter-spacing: 2px;
+        margin-bottom: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-title-exact {
+        font-size: 2.5rem;
+        letter-spacing: 1px;
+        margin-bottom: 20px;
+    }
+}
+
+@media (max-width: 360px) {
+    .hero-title-exact {
+        font-size: 2rem;
+        letter-spacing: 0.5px;
+        margin-bottom: 20px;
+    }
+}
+
 @keyframes titleGradient {
     0%, 100% {
         background-position: 0% 50%;
@@ -1056,6 +1150,28 @@
     text-shadow: 0 0 15px rgba(0, 210, 255, 0.6);
 }
 
+/* Mobile responsive breakpoints for hero subtitle */
+@media (max-width: 768px) {
+    .hero-subtitle-exact {
+        font-size: 1.4rem;
+        margin-bottom: 15px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-subtitle-exact {
+        font-size: 1.2rem;
+        margin-bottom: 15px;
+    }
+}
+
+@media (max-width: 360px) {
+    .hero-subtitle-exact {
+        font-size: 1rem;
+        margin-bottom: 15px;
+    }
+}
+
 @keyframes subtitleFloat {
     0%, 100% {
         transform: translateY(0px) translateX(0px);
@@ -1083,6 +1199,62 @@
     color: var(--light-text);
     animation: descriptionFade 4s ease-in-out infinite alternate;
     text-shadow: 0 1px 3px rgba(0, 0, 0, 0.7);
+}
+
+/* Mobile responsive breakpoints for hero description */
+@media (max-width: 768px) {
+    .hero-desc-exact {
+        font-size: 1rem;
+        margin-bottom: 25px;
+        padding: 0 10px;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-desc-exact {
+        font-size: 0.9rem;
+        margin-bottom: 20px;
+        padding: 0 15px;
+        line-height: 1.5;
+    }
+}
+
+@media (max-width: 360px) {
+    .hero-desc-exact {
+        font-size: 0.85rem;
+        margin-bottom: 20px;
+        padding: 0 20px;
+        line-height: 1.4;
+    }
+}
+
+/* Mobile responsive breakpoints for buttons and CTAs */
+@media (max-width: 768px) {
+    .hero-exact a[href="#discord"] {
+        padding: 12px 24px !important;
+        font-size: 1rem !important;
+        margin: 10px 0 !important;
+    }
+}
+
+@media (max-width: 480px) {
+    .hero-exact a[href="#discord"] {
+        padding: 10px 20px !important;
+        font-size: 0.9rem !important;
+        margin: 15px 0 !important;
+        display: block !important;
+        max-width: 200px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+    }
+}
+
+@media (max-width: 360px) {
+    .hero-exact a[href="#discord"] {
+        padding: 8px 16px !important;
+        font-size: 0.85rem !important;
+        max-width: 180px !important;
+    }
 }
 
 @keyframes descriptionFade {
@@ -1124,6 +1296,37 @@
     .members-grid-exact {
         grid-template-columns: 1fr;
         gap: 15px;
+        padding: 0 10px;
+    }
+}
+
+/* Mobile touch target improvements */
+@media (max-width: 768px) {
+    /* Ensure touch targets are at least 44px */
+    button, .nav-link, a {
+        min-height: 44px;
+        min-width: 44px;
+    }
+
+    /* Better spacing for mobile */
+    .member-card-exact {
+        margin-bottom: 20px;
+    }
+
+    /* Improve text readability on mobile */
+    body {
+        -webkit-text-size-adjust: 100%;
+        text-size-adjust: 100%;
+    }
+
+    /* Prevent horizontal scroll */
+    html, body {
+        overflow-x: hidden;
+    }
+
+    /* Better mobile scrolling */
+    * {
+        -webkit-overflow-scrolling: touch;
     }
 }
 
@@ -1505,7 +1708,7 @@
     width: 100%;
     height: 100%;
     text-align: center;
-    transition: transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
     transform-style: preserve-3d;
     -webkit-transform-style: preserve-3d;
     min-height: 320px;
