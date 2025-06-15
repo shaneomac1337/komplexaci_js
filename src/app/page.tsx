@@ -124,22 +124,7 @@ const members = [
   }
 ];
 
-// Complete playlist data - Demo mode (replace with real MP3 files)
-const playlist = [
-  { title: "She Loves Me Not", artist: "Papa Roach", file: "/komplexaci/audio/track1.mp3" },
-  { title: "Keep On Moving", artist: "Jordiz", file: "/komplexaci/audio/track2.mp3" },
-  { title: "Forgive Me", artist: "Versus the World", file: "/komplexaci/audio/track3.mp3" },
-  { title: "Worlds Away", artist: "Lil Peep", file: "/komplexaci/audio/track4.mp3" },
-  { title: "Turn Your Back", artist: "Billy Talent feat Anti-Flag", file: "/komplexaci/audio/track5.mp3" },
-  { title: "Superman", artist: "Eminem", file: "/komplexaci/audio/track6.mp3" },
-  { title: "Hard Rock Hallelujah", artist: "Lordi", file: "/komplexaci/audio/track7.mp3" },
-  { title: "Bring Me To Life", artist: "Evanescence", file: "/komplexaci/audio/track8.mp3" },
-  { title: "Papercuts", artist: "Machine Gun Kelly", file: "/komplexaci/audio/track9.mp3" },
-  { title: "Hollywood Forever", artist: "Hollywood Undead", file: "/komplexaci/audio/track10.mp3" },
-  { title: "Stíny", artist: "Viktor Sheen", file: "/komplexaci/audio/track11.mp3" },
-  { title: "Hollywood Sucks", artist: "Kenny Hoopla", file: "/komplexaci/audio/track12.mp3" },
-  { title: "Bite Me", artist: "Avril Lavigne", file: "/komplexaci/audio/track13.mp3" }
-];
+import { usePlaylist } from '@/hooks/usePlaylist';
 
 const games = [
   {
@@ -218,6 +203,9 @@ export default function Home() {
   const [tabId] = useState(() => `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
   const [isPlayingInOtherTab, setIsPlayingInOtherTab] = useState(false);
   const [otherTabInfo, setOtherTabInfo] = useState<{track: string, tabId: string} | null>(null);
+
+  // Dynamic playlist
+  const { tracks: playlist, loading: playlistLoading } = usePlaylist();
   const [lastScrollY, setLastScrollY] = useState(0);
 
   const [scrollDownTimeout, setScrollDownTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -463,7 +451,7 @@ export default function Home() {
     setAudioElement(audio);
 
     // Load the random initial track (not always track 0)
-    if (playlist.length > 0) {
+    if (playlist && playlist.length > 0) {
       const initialTrack = Math.floor(Math.random() * playlist.length);
       setCurrentTrack(initialTrack);
       audio.src = playlist[initialTrack].file;
@@ -500,7 +488,7 @@ export default function Home() {
       window.removeEventListener('keydown', handleKeyPress);
       window.removeEventListener('mousemove', handleFirstInteraction);
     };
-  }, []); // Empty dependency array is correct here
+  }, [playlist]); // Add playlist dependency to reload when tracks change
 
   // Separate useEffect for scroll listener with proper dependencies
   useEffect(() => {
@@ -552,13 +540,15 @@ export default function Home() {
 
       // Calculate next track
       let next;
-      if (isShuffleMode) {
+      if (isShuffleMode && playlist && playlist.length > 0) {
         // Get random track different from current
         do {
           next = Math.floor(Math.random() * playlist.length);
         } while (next === currentTrack && playlist.length > 1);
-      } else {
+      } else if (playlist && playlist.length > 0) {
         next = (currentTrack + 1) % playlist.length;
+      } else {
+        return; // No playlist available
       }
 
       console.log('Auto-advancing to track:', playlist[next]?.title);
@@ -567,7 +557,7 @@ export default function Home() {
       setCurrentTrack(next);
 
       // Handle the audio source change directly to avoid conflicts
-      if (!isDemoMode && audioElement && playlist[next]) {
+      if (!isDemoMode && audioElement && playlist && playlist[next]) {
         // Pause and reset current track
         audioElement.pause();
         audioElement.currentTime = 0;
@@ -625,7 +615,7 @@ export default function Home() {
 
   // Watch for currentTrack changes and update audio source (only when not auto-advancing)
   useEffect(() => {
-    if (audioElement && playlist[currentTrack] && !isDemoMode) {
+    if (audioElement && playlist && playlist[currentTrack] && !isDemoMode) {
       console.log('Current track changed to:', currentTrack, playlist[currentTrack].title);
       // Only update src if it's different to avoid interrupting playback
       const newSrc = playlist[currentTrack].file;
@@ -633,7 +623,7 @@ export default function Home() {
         audioElement.src = newSrc;
       }
     }
-  }, [currentTrack, audioElement, isDemoMode]);
+  }, [currentTrack, audioElement, isDemoMode, playlist]);
 
   // Inactivity-based auto-hide (only when music is paused)
   useEffect(() => {
@@ -726,7 +716,7 @@ export default function Home() {
     // Demo mode - just toggle UI state
     if (isDemoMode) {
       setIsPlaying(!isPlaying);
-      console.log(isPlaying ? 'Demo: Music paused' : `Demo: Playing ${playlist[currentTrack]?.title}`);
+      console.log(isPlaying ? 'Demo: Music paused' : `Demo: Playing ${playlist?.[currentTrack]?.title || 'Unknown Track'}`);
       return;
     }
 
@@ -744,22 +734,24 @@ export default function Home() {
         console.log('Real audio paused');
       } else {
         // Ensure we have a valid source and it matches the current track
-        const expectedSrc = playlist[currentTrack]?.file || '';
+        const expectedSrc = playlist?.[currentTrack]?.file || '';
         const currentSrc = audioElement.src;
         const isValidSrc = currentSrc &&
                           currentSrc !== window.location.href &&
                           (currentSrc === expectedSrc || currentSrc === window.location.origin + expectedSrc);
 
-        if (!isValidSrc) {
+        if (!isValidSrc && expectedSrc) {
           console.log('Setting audio source to:', expectedSrc);
           audioElement.src = expectedSrc;
           // Wait a bit for the source to be set
           await new Promise(resolve => setTimeout(resolve, 50));
         }
 
-        await audioElement.play();
-        setIsPlaying(true);
-        console.log('Real audio playing:', playlist[currentTrack]?.title);
+        if (expectedSrc) {
+          await audioElement.play();
+          setIsPlaying(true);
+          console.log('Real audio playing:', playlist?.[currentTrack]?.title || 'Unknown Track');
+        }
       }
     } catch (error) {
       console.error('Audio playback error:', error);
@@ -771,6 +763,7 @@ export default function Home() {
   };
 
   const getRandomTrack = (excludeCurrent = true) => {
+    if (!playlist || playlist.length === 0) return 0;
     let randomTrack;
     do {
       randomTrack = Math.floor(Math.random() * playlist.length);
@@ -779,8 +772,8 @@ export default function Home() {
   };
 
   const nextTrack = () => {
-    if (isLoadingTrack) {
-      console.log('Already loading a track, ignoring next track request');
+    if (isLoadingTrack || !playlist || playlist.length === 0) {
+      console.log('Already loading a track or no playlist available, ignoring next track request');
       return;
     }
 
@@ -794,8 +787,8 @@ export default function Home() {
   };
 
   const prevTrack = () => {
-    if (isLoadingTrack) {
-      console.log('Already loading a track, ignoring previous track request');
+    if (isLoadingTrack || !playlist || playlist.length === 0) {
+      console.log('Already loading a track or no playlist available, ignoring previous track request');
       return;
     }
 
@@ -809,7 +802,7 @@ export default function Home() {
   };
 
   const loadTrack = async (trackIndex: number) => {
-    if (!audioElement || !playlist[trackIndex] || isLoadingTrack) return;
+    if (!audioElement || !playlist || !playlist[trackIndex] || isLoadingTrack) return;
 
     setIsLoadingTrack(true);
     const wasPlaying = isPlaying;
@@ -1663,7 +1656,7 @@ export default function Home() {
             ) : (
               <>
                 <ScrollingText
-                  text={playlist[currentTrack]?.title || 'Komplexáci Anthem'}
+                  text={playlist?.[currentTrack]?.title || 'Komplexáci Anthem'}
                   className="track-name"
                   maxWidth={120}
                 />
@@ -1671,10 +1664,10 @@ export default function Home() {
                   {isDemoMode ? '🎮 DEMO' : '🎵'}
                   {isShuffleMode ? ' 🔀' : ''}
                   {' '}
-                  {currentTrack + 1}/{playlist.length}
+                  {currentTrack + 1}/{playlist?.length || 0}
                 </p>
                 <ScrollingText
-                  text={playlist[currentTrack]?.artist || 'Komplexáci Gaming Clan'}
+                  text={playlist?.[currentTrack]?.artist || 'Komplexáci Gaming Clan'}
                   className="track-artist"
                   maxWidth={120}
                 />

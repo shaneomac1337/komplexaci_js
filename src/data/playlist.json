@@ -1,0 +1,173 @@
+{
+  "tracks": [
+    {
+      "id": "track_1",
+      "title": "She Loves Me Not",
+      "artist": "Papa Roach",
+      "file": "/komplexaci/audio/track1.mp3",
+      "duration": null,
+      "uploadedAt": "2025-01-15T00:00:00.000Z",
+      "uploadedBy": "system",
+      "tags": [
+        "rock",
+        "nu-metal"
+      ]
+    },
+    {
+      "id": "track_2",
+      "title": "Keep On Moving",
+      "artist": "Jordiz",
+      "file": "/komplexaci/audio/track2.mp3",
+      "duration": null,
+      "uploadedAt": "2025-01-15T00:00:00.000Z",
+      "uploadedBy": "system",
+      "tags": [
+        "electronic"
+      ]
+    },
+    {
+      "id": "track_3",
+      "title": "Forgive Me",
+      "artist": "Versus the World",
+      "file": "/komplexaci/audio/track3.mp3",
+      "duration": null,
+      "uploadedAt": "2025-01-15T00:00:00.000Z",
+      "uploadedBy": "system",
+      "tags": [
+        "rock",
+        "alternative"
+      ]
+    },
+    {
+      "id": "track_4",
+      "title": "Worlds Away",
+      "artist": "Lil Peep",
+      "file": "/komplexaci/audio/track4.mp3",
+      "duration": null,
+      "uploadedAt": "2025-01-15T00:00:00.000Z",
+      "uploadedBy": "system",
+      "tags": [
+        "hip-hop",
+        "emo-rap"
+      ]
+    },
+    {
+      "id": "track_5",
+      "title": "Turn Your Back",
+      "artist": "Billy Talent feat Anti-Flag",
+      "file": "/komplexaci/audio/track5.mp3",
+      "duration": null,
+      "uploadedAt": "2025-01-15T00:00:00.000Z",
+      "uploadedBy": "system",
+      "tags": [
+        "punk",
+        "rock"
+      ]
+    },
+    {
+      "id": "track_6",
+      "title": "Superman",
+      "artist": "Eminem",
+      "file": "/komplexaci/audio/track6.mp3",
+      "duration": null,
+      "uploadedAt": "2025-01-15T00:00:00.000Z",
+      "uploadedBy": "system",
+      "tags": [
+        "hip-hop",
+        "rap"
+      ]
+    },
+    {
+      "id": "track_7",
+      "title": "Hard Rock Hallelujah",
+      "artist": "Lordi",
+      "file": "/komplexaci/audio/track7.mp3",
+      "duration": null,
+      "uploadedAt": "2025-01-15T00:00:00.000Z",
+      "uploadedBy": "system",
+      "tags": [
+        "metal",
+        "hard-rock"
+      ]
+    },
+    {
+      "id": "track_8",
+      "title": "Bring Me To Life",
+      "artist": "Evanescence",
+      "file": "/komplexaci/audio/track8.mp3",
+      "duration": null,
+      "uploadedAt": "2025-01-15T00:00:00.000Z",
+      "uploadedBy": "system",
+      "tags": [
+        "rock",
+        "gothic"
+      ]
+    },
+    {
+      "id": "track_9",
+      "title": "Papercuts",
+      "artist": "Machine Gun Kelly",
+      "file": "/komplexaci/audio/track9.mp3",
+      "duration": null,
+      "uploadedAt": "2025-01-15T00:00:00.000Z",
+      "uploadedBy": "system",
+      "tags": [
+        "hip-hop",
+        "pop-punk"
+      ]
+    },
+    {
+      "id": "track_10",
+      "title": "Hollywood Forever",
+      "artist": "Hollywood Undead",
+      "file": "/komplexaci/audio/track10.mp3",
+      "duration": null,
+      "uploadedAt": "2025-01-15T00:00:00.000Z",
+      "uploadedBy": "system",
+      "tags": [
+        "rap-rock",
+        "nu-metal"
+      ]
+    },
+    {
+      "id": "track_11",
+      "title": "Stíny",
+      "artist": "Viktor Sheen",
+      "file": "/komplexaci/audio/track11.mp3",
+      "duration": null,
+      "uploadedAt": "2025-01-15T00:00:00.000Z",
+      "uploadedBy": "system",
+      "tags": [
+        "czech-rap",
+        "hip-hop"
+      ]
+    },
+    {
+      "id": "track_12",
+      "title": "Hollywood Sucks",
+      "artist": "Kenny Hoopla",
+      "file": "/komplexaci/audio/track12.mp3",
+      "duration": null,
+      "uploadedAt": "2025-01-15T00:00:00.000Z",
+      "uploadedBy": "system",
+      "tags": [
+        "pop-punk",
+        "alternative"
+      ]
+    },
+    {
+      "id": "track_13",
+      "title": "Bite Me",
+      "artist": "Avril Lavigne",
+      "file": "/komplexaci/audio/track13.mp3",
+      "duration": null,
+      "uploadedAt": "2025-01-15T00:00:00.000Z",
+      "uploadedBy": "system",
+      "tags": [
+        "pop-punk",
+        "rock"
+      ]
+    }
+  ],
+  "lastUpdated": "2025-06-15T13:57:13.262Z"
+}
