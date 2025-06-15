@@ -160,6 +160,10 @@ export default function LeagueOfLegendsNextJS() {
   const [modalError, setModalError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'abilities' | 'skins' | 'tips'>('overview');
   
+  // Background rotation state
+  const [currentChampionSplash, setCurrentChampionSplash] = useState<string | null>(null);
+  const [currentChampionName, setCurrentChampionName] = useState<string>('');
+  
   // DataDragon API state
   const [currentVersion, setCurrentVersion] = useState<string>('15.10.1');
   const [currentLocale, setCurrentLocale] = useState<string>('cs_CZ');
@@ -167,6 +171,32 @@ export default function LeagueOfLegendsNextJS() {
   const [showApiInfo, setShowApiInfo] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshSuccess, setRefreshSuccess] = useState(false);
+
+  // Background rotation functions
+  const getRandomChampionSplash = () => {
+    if (champions.length === 0) return null;
+    const randomChampion = champions[Math.floor(Math.random() * champions.length)];
+    setCurrentChampionName(randomChampion.name);
+    return randomChampion.splash;
+  };
+
+  // Initialize random champion splash on component mount
+  useEffect(() => {
+    if (champions.length > 0) {
+      setCurrentChampionSplash(getRandomChampionSplash());
+    }
+  }, [champions]);
+
+  // Change champion splash every 8 seconds
+  useEffect(() => {
+    if (champions.length === 0) return;
+
+    const interval = setInterval(() => {
+      setCurrentChampionSplash(getRandomChampionSplash());
+    }, 8000); // Change every 8 seconds
+
+    return () => clearInterval(interval);
+  }, [champions]);
 
   // DataDragon API functions
   const getLatestVersion = async () => {
@@ -507,10 +537,61 @@ export default function LeagueOfLegendsNextJS() {
         <Header />
         
         {/* Hero Section */}
-        <section className={styles.gameHero}>
-          <div className={styles.gameHeroContent}>
-            <h1 className={styles.gameHeroTitle}>League of Legends</h1>
-            <p className={styles.gameHeroSubtitle}>Nejpopulárnější MOBA hra na světě od Riot Games</p>
+        <section className={`relative h-[80vh] min-h-[600px] flex items-center justify-center ${styles.heroSection} ${styles.parallaxBg} overflow-hidden`}>
+          {/* Background Image using champion splash art */}
+          {currentChampionSplash && (
+            <>
+              {/* Blurred background layer */}
+              <img
+                src={currentChampionSplash}
+                alt="Champion Splash Background"
+                className="absolute inset-0 w-full h-full object-cover filter blur-xl brightness-30 scale-110"
+                style={{ zIndex: 1 }}
+              />
+
+              {/* Main image layer - shows full champion splash */}
+              <img
+                src={currentChampionSplash}
+                alt="Champion Splash"
+                className="absolute inset-0 w-full h-full object-contain filter brightness-75"
+                style={{ zIndex: 2 }}
+              />
+            </>
+          )}
+
+          <div className="relative z-10 text-center max-w-4xl px-4">
+            <div className="relative">
+              {/* LoL-style overlay */}
+              <div className="bg-black/30 border-2 border-blue-500/50 rounded-2xl p-8 mx-8 relative overflow-hidden">
+                {/* LoL-style corner accents */}
+                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-blue-400"></div>
+                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-blue-400"></div>
+                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-blue-400"></div>
+                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-blue-400"></div>
+
+                {/* Animated border effect */}
+                <div className="absolute inset-0 border-2 border-transparent bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 rounded-2xl opacity-50"></div>
+
+                {/* Content */}
+                <div className="relative z-10">
+                  <h1 className={`text-6xl font-bold mb-4 ${styles.textShadow} ${styles.textGradient}`}>
+                    League of Legends
+                  </h1>
+                  <p className="text-xl font-light text-gray-200 mb-4">
+                    <span className={styles.textGlow}>
+                      Nejpopulárnější MOBA hra na světě od Riot Games
+                    </span>
+                  </p>
+                  {currentChampionSplash && currentChampionName && (
+                    <div className="mt-4 text-sm text-blue-300 opacity-75"
+                         style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.6)' }}>
+                      <i className="fas fa-star mr-2"></i>
+                      Aktuální šampion: {currentChampionName}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
           </div>
         </section>
 

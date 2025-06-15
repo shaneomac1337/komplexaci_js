@@ -148,7 +148,10 @@ const Header = () => {
       // Smooth scroll to section on same page
       const element = document.getElementById(sectionId);
       if (element) {
-        element.scrollIntoView({ behavior: 'smooth' });
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
       }
     }
   };
@@ -179,7 +182,20 @@ const Header = () => {
                 <i className="fas fa-times"></i>
               </button>
             </li>
-            <li><Link href="/" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>Domů</Link></li>
+            <li>
+              <a
+                href="/#hero"
+                className={`nav-link ${isActive('hero') ? 'active' : ''}`}
+                onClick={(e) => {
+                  if (pathname === '/') {
+                    e.preventDefault();
+                    handleNavClick('hero');
+                  }
+                }}
+              >
+                Domů
+              </a>
+            </li>
             <li>
               <a
                 href="/#o-nas"
