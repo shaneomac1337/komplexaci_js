@@ -1265,7 +1265,7 @@ export default function Home() {
                       {/* Action Button - Better positioned and sized */}
                       <div className="flex-shrink-0 text-center lg:text-right">
                         <a
-                          href="https://music.komplexaci.cz"
+                          href="https://music.komplexaci.cz/dashboard"
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center px-5 py-2.5 rounded-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg text-white text-sm"
@@ -1459,7 +1459,7 @@ export default function Home() {
             © 2025 Komplexáci | Všechna práva vyhrazena
           </p>
           <p className="text-sm mt-2" style={{ color: 'var(--medium-text)', fontSize: '0.95em' }}>
-            S láskou vytvořil Martin Pěnkava - Migrated to Next.js with ❤️
+            S láskou vytvořil Martin Pěnkava • Běží na Next.js 15.3.3 ⚡
           </p>
         </div>
       </footer>

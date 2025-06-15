@@ -5,7 +5,7 @@ import { WWEEra } from '@/app/types/wwe';
 const wweErasData: WWEEra[] = [
   {
     id: 'golden',
-    title: 'Golden Era (1984-1993)',
+    title: 'Golden Era',
     subtitle: '1984 - 1993',
     description: 'Éra Hulkamanie! Doba Hulk Hogana, Ultimate Warriora a prvních WWF her. Období, které položilo základy pro všechny budoucí wrestling hry a definovalo populární kulturu 80. a začátku 90. let.',
     years: '1984-1993',
@@ -58,7 +58,7 @@ const wweErasData: WWEEra[] = [
   },
   {
     id: 'new-generation',
-    title: 'New Generation Era (1993-1997)',
+    title: 'New Generation Era',
     subtitle: '1993 - 1997',
     description: 'Éra nové generace! Doba Bret Harta, Shawn Michaelse a Undertakera. Přechod od Hulkamanie k mladším, atletičtějším wrestlerům, který připravil půdu pro nadcházející Attitude Era.',
     years: '1993-1997',
@@ -89,8 +89,8 @@ const wweErasData: WWEEra[] = [
   },
   {
     id: 'attitude',
-    title: 'Attitude Era (1997-2002)',
-    subtitle: 'November 1997 - May 2002',
+    title: 'Attitude Era',
+    subtitle: '1997 - 2002',
     description: 'Nejlegendárnější éra WWE/WWF historie! Doba Stone Cold Steve Austina, The Rocka, DX a Monday Night Wars. Hry z této éry zachycují surovou energii a rebelský duch, který definoval wrestling na přelomu tisíciletí.',
     years: '1997-2002',
     games: [
@@ -186,8 +186,8 @@ const wweErasData: WWEEra[] = [
   },
   {
     id: 'ruthless',
-    title: 'Ruthless Aggression Era (2002-2008)',
-    subtitle: 'June 2002 - July 2008',
+    title: 'Ruthless Aggression Era',
+    subtitle: '2002 - 2008',
     description: 'Éra nových hvězd jako John Cena, Batista, Randy Orton a Eddie Guerrero. Období inovací a experimentů, které přineslo některé z nejlepších wrestlingových her všech dob, včetně legendárního "Here Comes the Pain".',
     years: '2002-2008',
     games: [
@@ -316,7 +316,7 @@ const wweErasData: WWEEra[] = [
   },
   {
     id: 'pg',
-    title: 'PG Era (2008-2014)',
+    title: 'PG Era',
     subtitle: '2008 - 2014',
     description: 'Období přechodu na family-friendly obsah, zavedení ECW jako třetí značky a revoluce s WWE Universe Mode. Konec legendární série SmackDown vs. Raw a příprava na novou generaci WWE her.',
     years: '2008-2014',
@@ -413,7 +413,7 @@ const wweErasData: WWEEra[] = [
   },
   {
     id: 'reality',
-    title: 'Reality Era (2014-2016)',
+    title: 'Reality Era',
     subtitle: '2014 - 2016',
     description: 'Začátek Reality Era s Daniel Bryan Yes Movement! Přechod na next-gen konzole s WWE 2K15 a 2K16, které přinesly revoluční MyCareer mód a nejrealističtější wrestling gameplay.',
     years: '2014-2016',
@@ -444,7 +444,7 @@ const wweErasData: WWEEra[] = [
   },
   {
     id: 'new-era',
-    title: 'New Era (2016-2021)',
+    title: 'New Era',
     subtitle: '2016 - 2021',
     description: 'New Era s Brand Split návratem! Doba WWE 2K17-2K20 s vylepšenými funkcemi, Nintendo Switch debutem a Women\'s Evolution.',
     years: '2016-2021',
@@ -508,7 +508,7 @@ const wweErasData: WWEEra[] = [
   },
   {
     id: 'post-covid',
-    title: 'Post-COVID Era (2021-2023)',
+    title: 'Post-COVID Era',
     subtitle: '2021 - 2023',
     description: 'Post-COVID Era s návratem plných arén! WWE 2K22 "It Hits Different" a začátek Renaissance Era s WWE 2K23.',
     years: '2021-2023',
@@ -539,7 +539,7 @@ const wweErasData: WWEEra[] = [
   },
   {
     id: 'renaissance',
-    title: 'Renaissance Era (2023-present)',
+    title: 'Renaissance Era',
     subtitle: '2023 - present',
     description: 'Renaissance Era s Triple H jako Head of Creative! WWE 2K23-2K25 s nejpokročilejšími funkcemi a návratem k in-ring kvalitě.',
     years: '2023-present',

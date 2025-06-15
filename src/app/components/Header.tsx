@@ -219,7 +219,6 @@ const Header = () => {
                 <li><Link href="/wwe-games" className="nav-link">WWE Games</Link></li>
               </ul>
             </li>
-            <li><a href="/videotvorba" className="nav-link" target="_blank">VIDEOTVORBA</a></li>
             <li>
               <a
                 href="/#discord"

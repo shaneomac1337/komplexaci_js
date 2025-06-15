@@ -15,7 +15,7 @@ const maps: GameMap[] = [
   {
     id: 'ancient',
     name: 'Ancient',
-    description: 'Modern jungle-themed map with tight corridors and open bombsites, requiring strategic utility use and map control.',
+    description: 'Mapa je zasazena do archeologického naleziště v deštném pralese, s prvky jako jsou starobylé artefakty, kamenné stavby a bujná vegetace.',
     image: '/cs2/maps/ancient.jpg',
     type: 'defusal',
     active: true,
@@ -25,7 +25,7 @@ const maps: GameMap[] = [
   {
     id: 'anubis',
     name: 'Anubis',
-    description: 'Egyptian-themed map with water features, vertical gameplay, and unique rotations between bombsites.',
+    description: 'Anubis je mapa, která se vyznačuje egyptským tématem a kombinuje úzké uličky s otevřenými prostory a vodními kanály.',
     image: '/cs2/maps/anubis.jpg',
     type: 'defusal',
     active: true,
