@@ -1,0 +1,208 @@
+/* Low Performance Mode Overrides */
+/* This CSS disables GPU-intensive effects when .low-performance-mode class is applied to html */
+
+.low-performance-mode {
+  /* Disable most animations and transitions, but preserve essential functionality */
+  *, *::before, *::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+  }
+
+  /* Preserve essential card flip functionality - restore transition for flip animation */
+  .member-card-inner {
+    transition-duration: 0.3s !important; /* Restore flip animation */
+    transition-property: transform !important;
+    transition-timing-function: cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+  }
+
+  /* Preserve essential hover transitions for usability */
+  .member-card-exact,
+  .game-card-exact,
+  button,
+  a {
+    transition-duration: 0.1s !important; /* Very fast but still responsive */
+  }
+}
+
+/* Disable backdrop filters */
+.low-performance-mode .header {
+  backdrop-filter: none !important;
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+
+/* Disable fixed background attachments */
+.low-performance-mode .gameHero {
+  background-attachment: scroll !important;
+}
+
+/* Simplify text effects */
+.low-performance-mode .textGlow {
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.9) !important;
+  color: #f0e6d2 !important;
+}
+
+.low-performance-mode .textGradient {
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: unset !important;
+  background-clip: unset !important;
+  color: #f0e6d2 !important;
+}
+
+/* Simplify hero section */
+.low-performance-mode .gameHero::before {
+  background: rgba(110, 79, 246, 0.4) !important;
+  opacity: 0.6 !important;
+}
+
+.low-performance-mode .gameHeroTitle {
+  background: none !important;
+  -webkit-background-clip: unset !important;
+  -webkit-text-fill-color: unset !important;
+  background-clip: unset !important;
+  color: #6e4ff6 !important;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Disable decorative hover transforms but preserve card flip */
+.low-performance-mode .gameInfoCard:hover,
+.low-performance-mode .gameMapCard:hover,
+.low-performance-mode .championCard:hover,
+.low-performance-mode .weaponCard:hover,
+.low-performance-mode .mapCard:hover {
+  transform: none !important;
+}
+
+/* Preserve member card functionality but simplify */
+.low-performance-mode .member-card-exact:hover:not(.flipped) {
+  transform: translateY(-2px) !important; /* Minimal hover effect */
+}
+
+/* Preserve card flip transform */
+.low-performance-mode .member-card-exact.flipped .member-card-inner {
+  transform: translateZ(0) rotateY(180deg) !important; /* Keep flip functionality */
+}
+
+/* Disable image scaling on hover */
+.low-performance-mode .gameMapCard:hover .gameMapImage img,
+.low-performance-mode .championCard:hover .championImage {
+  transform: none !important;
+}
+
+/* Simplify gradients */
+.low-performance-mode .gameInfoCard,
+.low-performance-mode .gameMapCard,
+.low-performance-mode .championCard {
+  background: rgba(30, 30, 30, 0.95) !important;
+}
+
+/* Disable shimmer effects */
+.low-performance-mode .gameInfoCard::before {
+  display: none !important;
+}
+
+/* Simplify navigation effects */
+.low-performance-mode .nav-list li a:hover,
+.low-performance-mode .nav-link:hover {
+  transform: none !important;
+}
+
+.low-performance-mode .nav-list li a.active::before,
+.low-performance-mode .nav-link.active::before {
+  display: none !important;
+}
+
+/* Disable progress bar animations */
+.low-performance-mode .statProgressBar::after {
+  display: none !important;
+}
+
+/* Simplify box shadows */
+.low-performance-mode .gameInfoCard,
+.low-performance-mode .gameMapCard,
+.low-performance-mode .championCard {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+.low-performance-mode .gameInfoCard:hover,
+.low-performance-mode .gameMapCard:hover,
+.low-performance-mode .championCard:hover {
+  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3) !important;
+}
+
+/* Disable complex text shadows */
+.low-performance-mode .gameHeroSubtitle,
+.low-performance-mode .championName,
+.low-performance-mode .championTitle,
+.low-performance-mode .championDescription,
+.low-performance-mode .statLabel,
+.low-performance-mode .statValue,
+.low-performance-mode .statText {
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.8) !important;
+}
+
+/* Disable CSS filters */
+.low-performance-mode * {
+  filter: none !important;
+}
+
+/* Reduce border radius for better performance */
+.low-performance-mode .gameInfoCard,
+.low-performance-mode .gameMapCard,
+.low-performance-mode .championCard {
+  border-radius: 8px !important;
+}
+
+/* Preserve essential 3D transforms for card flipping */
+.low-performance-mode .member-card-exact {
+  perspective: 1000px !important; /* Keep perspective for card flip */
+  transform-style: preserve-3d !important;
+}
+
+.low-performance-mode .member-card-inner {
+  transform-style: preserve-3d !important;
+}
+
+.low-performance-mode .member-card-front,
+.low-performance-mode .member-card-back {
+  backface-visibility: hidden !important;
+}
+
+/* Disable other 3D transforms that aren't essential */
+.low-performance-mode *:not(.member-card-exact):not(.member-card-inner):not(.member-card-front):not(.member-card-back) {
+  transform-style: flat !important;
+  perspective: none !important;
+}
+
+/* Simplify submenu */
+.low-performance-mode .submenu {
+  backdrop-filter: none !important;
+  background: rgba(0, 0, 0, 0.95) !important;
+}
+
+/* Disable specific decorative animations */
+.low-performance-mode .animate-shimmer,
+.low-performance-mode [class*="shimmer"],
+.low-performance-mode [class*="pulse"],
+.low-performance-mode [class*="glow"],
+.low-performance-mode [class*="float"],
+.low-performance-mode .heroGlow,
+.low-performance-mode .titleShimmer,
+.low-performance-mode .progressShine,
+.low-performance-mode .backCardShimmer,
+.low-performance-mode .floatingParticles {
+  animation: none !important;
+}
+
+/* Disable complex pseudo-element animations */
+.low-performance-mode .gameInfoCard::before,
+.low-performance-mode .gameMapCard::before,
+.low-performance-mode .championCard::before,
+.low-performance-mode .member-card-exact::after {
+  animation: none !important;
+  opacity: 0 !important;
+}
+
+/* Performance notification removed - not needed */
