@@ -213,6 +213,11 @@ export default function Home() {
   const [isShuffleMode, setIsShuffleMode] = useState(true); // Enable shuffle by default, like original
   const [isTraxAutoHidden, setIsTraxAutoHidden] = useState(false);
   const [showBriefly, setShowBriefly] = useState(false);
+
+  // Cross-tab coordination state
+  const [tabId] = useState(() => `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [isPlayingInOtherTab, setIsPlayingInOtherTab] = useState(false);
+  const [otherTabInfo, setOtherTabInfo] = useState<{track: string, tabId: string} | null>(null);
   const [lastScrollY, setLastScrollY] = useState(0);
 
   const [scrollDownTimeout, setScrollDownTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -221,9 +226,9 @@ export default function Home() {
   const [hasShownMusicStart, setHasShownMusicStart] = useState(false);
   const [isLoadingTrack, setIsLoadingTrack] = useState(false);
 
-  // Cross-page music control
+  // Cross-page and cross-tab music control
   useEffect(() => {
-    // Listen for WWE page music events and stop signals
+    // Listen for WWE page music events, stop signals, and other tab events
     const handleStorageChange = (e: StorageEvent) => {
       if (e.key === 'wwe-music-state') {
         const wweState = JSON.parse(e.newValue || '{}');
@@ -244,6 +249,27 @@ export default function Home() {
         setIsPlaying(false);
         // Clear the stop signal
         localStorage.removeItem('stop-main-music');
+      } else if (e.key === 'kompg-music-state') {
+        // Another KOMPG Trax tab state changed
+        const state = JSON.parse(e.newValue || '{}');
+        if (state.isPlaying && state.tabId !== tabId) {
+          // Another tab started playing KOMPG Trax
+          console.log(`🎵 KOMPG Trax started in another tab (${state.tabId}), pausing this tab`);
+          if (audioElement && !isDemoMode && isPlaying) {
+            audioElement.pause();
+          }
+          setIsPlaying(false);
+          setIsPlayingInOtherTab(true);
+          setOtherTabInfo({
+            track: state.track || 'Unknown Track',
+            tabId: state.tabId
+          });
+        } else if (!state.isPlaying || !e.newValue) {
+          // Other tab stopped playing
+          console.log('🎵 KOMPG Trax stopped in other tab');
+          setIsPlayingInOtherTab(false);
+          setOtherTabInfo(null);
+        }
       }
     };
 
@@ -253,10 +279,21 @@ export default function Home() {
         localStorage.setItem('kompg-music-state', JSON.stringify({
           isPlaying: true,
           track: playlist[currentTrack]?.title || 'Main Track',
-          page: 'main'
+          page: 'main',
+          tabId: tabId,
+          timestamp: Date.now()
         }));
+        setIsPlayingInOtherTab(false);
+        setOtherTabInfo(null);
       } else {
-        localStorage.removeItem('kompg-music-state');
+        // Only remove if this tab was the one playing
+        const currentState = localStorage.getItem('kompg-music-state');
+        if (currentState) {
+          const state = JSON.parse(currentState);
+          if (state.tabId === tabId) {
+            localStorage.removeItem('kompg-music-state');
+          }
+        }
       }
     };
 
@@ -265,12 +302,49 @@ export default function Home() {
 
     return () => {
       window.removeEventListener('storage', handleStorageChange);
-      localStorage.removeItem('kompg-music-state');
+      // Only remove if this tab was the one playing
+      const currentState = localStorage.getItem('kompg-music-state');
+      if (currentState) {
+        const state = JSON.parse(currentState);
+        if (state.tabId === tabId) {
+          localStorage.removeItem('kompg-music-state');
+        }
+      }
     };
-  }, [isPlaying, currentTrack, audioElement, isDemoMode]);
+  }, [isPlaying, currentTrack, audioElement, isDemoMode, tabId]);
 
-  // Check for WWE music on mount and clean up stale data
+  // Check for existing KOMPG Trax playback in other tabs on mount
   useEffect(() => {
+    const checkExistingPlayback = () => {
+      const kompgState = localStorage.getItem('kompg-music-state');
+      if (kompgState) {
+        try {
+          const state = JSON.parse(kompgState);
+          if (state.isPlaying && state.tabId !== tabId) {
+            // Check if the state is recent (within last 30 seconds)
+            const isRecent = Date.now() - (state.timestamp || 0) < 30000;
+            if (isRecent) {
+              console.log(`🎵 KOMPG Trax is already playing in tab ${state.tabId}, preventing auto-start`);
+              setIsPlayingInOtherTab(true);
+              setOtherTabInfo({
+                track: state.track || 'Unknown Track',
+                tabId: state.tabId
+              });
+              setHasUserInteracted(true); // Prevent auto-start
+              return true;
+            } else {
+              console.log('🎵 Found stale KOMPG Trax state, clearing it');
+              localStorage.removeItem('kompg-music-state');
+            }
+          }
+        } catch (error) {
+          console.error('Error parsing KOMPG music state:', error);
+          localStorage.removeItem('kompg-music-state');
+        }
+      }
+      return false;
+    };
+
     const checkWWEMusic = () => {
       const wweState = localStorage.getItem('wwe-music-state');
       if (wweState) {
@@ -293,15 +367,69 @@ export default function Home() {
       return false;
     };
 
+    // Check for existing KOMPG Trax playback first
+    const hasExistingPlayback = checkExistingPlayback();
+
     // Clean up any stale WWE music state
     checkWWEMusic();
-    
+
     // Reset interaction state when returning to main page if music isn't playing
     // This ensures the ribbon always shows when visiting the main page
-    if (!isPlaying) {
+    if (!isPlaying && !hasExistingPlayback) {
       setHasUserInteracted(false);
       console.log('Reset hasUserInteracted to show auto-play ribbon on main page');
     }
+  }, [tabId]);
+
+  // Heartbeat system to detect stale tabs and update timestamps
+  useEffect(() => {
+    let heartbeatInterval: NodeJS.Timeout;
+
+    if (isPlaying) {
+      // Update timestamp every 5 seconds while playing
+      heartbeatInterval = setInterval(() => {
+        const currentState = localStorage.getItem('kompg-music-state');
+        if (currentState) {
+          const state = JSON.parse(currentState);
+          if (state.tabId === tabId && state.isPlaying) {
+            localStorage.setItem('kompg-music-state', JSON.stringify({
+              ...state,
+              timestamp: Date.now()
+            }));
+          }
+        }
+      }, 5000);
+    }
+
+    return () => {
+      if (heartbeatInterval) {
+        clearInterval(heartbeatInterval);
+      }
+    };
+  }, [isPlaying, tabId]);
+
+  // Cleanup stale states periodically
+  useEffect(() => {
+    const cleanupInterval = setInterval(() => {
+      const kompgState = localStorage.getItem('kompg-music-state');
+      if (kompgState) {
+        try {
+          const state = JSON.parse(kompgState);
+          // Remove states older than 30 seconds
+          if (Date.now() - (state.timestamp || 0) > 30000) {
+            console.log('🧹 Cleaning up stale KOMPG Trax state');
+            localStorage.removeItem('kompg-music-state');
+            setIsPlayingInOtherTab(false);
+            setOtherTabInfo(null);
+          }
+        } catch (error) {
+          console.error('Error cleaning up KOMPG state:', error);
+          localStorage.removeItem('kompg-music-state');
+        }
+      }
+    }, 10000); // Check every 10 seconds
+
+    return () => clearInterval(cleanupInterval);
   }, []);
 
   useEffect(() => {
@@ -586,6 +714,14 @@ export default function Home() {
   // Music player functions
   const togglePlay = async () => {
     setIsTraxVisible(true);
+
+    // If music is playing in another tab, take over playback
+    if (isPlayingInOtherTab && !isPlaying) {
+      console.log('🎵 Taking over playback from another tab');
+      setIsPlayingInOtherTab(false);
+      setOtherTabInfo(null);
+      // Continue with normal play logic
+    }
 
     // Demo mode - just toggle UI state
     if (isDemoMode) {
@@ -1510,22 +1646,40 @@ export default function Home() {
           </div>
 
           <div className="trax-track-info">
-            <ScrollingText
-              text={playlist[currentTrack]?.title || 'Komplexáci Anthem'}
-              className="track-name"
-              maxWidth={120}
-            />
-            <p className="track-debug">
-              {isDemoMode ? '🎮 DEMO' : '🎵'}
-              {isShuffleMode ? ' 🔀' : ''}
-              {' '}
-              {currentTrack + 1}/{playlist.length}
-            </p>
-            <ScrollingText
-              text={playlist[currentTrack]?.artist || 'Komplexáci Gaming Clan'}
-              className="track-artist"
-              maxWidth={120}
-            />
+            {isPlayingInOtherTab && otherTabInfo ? (
+              <>
+                <ScrollingText
+                  text={`🔗 ${otherTabInfo.track}`}
+                  className="track-name"
+                  maxWidth={120}
+                />
+                <p className="track-debug" style={{ color: '#ff9500' }}>
+                  🎵 Playing in another tab
+                </p>
+                <p className="track-artist" style={{ color: '#ff9500' }}>
+                  Click to take over playback
+                </p>
+              </>
+            ) : (
+              <>
+                <ScrollingText
+                  text={playlist[currentTrack]?.title || 'Komplexáci Anthem'}
+                  className="track-name"
+                  maxWidth={120}
+                />
+                <p className="track-debug">
+                  {isDemoMode ? '🎮 DEMO' : '🎵'}
+                  {isShuffleMode ? ' 🔀' : ''}
+                  {' '}
+                  {currentTrack + 1}/{playlist.length}
+                </p>
+                <ScrollingText
+                  text={playlist[currentTrack]?.artist || 'Komplexáci Gaming Clan'}
+                  className="track-artist"
+                  maxWidth={120}
+                />
+              </>
+            )}
           </div>
 
           <div className="trax-buttons">
@@ -1590,13 +1744,36 @@ export default function Home() {
 
       {/* Trax Mini Icon - Always Visible */}
       <div
-        className="trax-mini-icon"
+        className={`trax-mini-icon ${isPlayingInOtherTab ? 'other-tab-playing' : ''}`}
         onClick={toggleTraxWidget}
-        title="Toggle KOMPG Trax"
+        title={isPlayingInOtherTab ? `KOMPG Trax playing in another tab: ${otherTabInfo?.track || 'Unknown'}` : "Toggle KOMPG Trax"}
+        style={isPlayingInOtherTab ? {
+          background: 'linear-gradient(135deg, #ff9500, #ff6b00)',
+          animation: 'pulse 2s infinite'
+        } : {}}
       >
         <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
           <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
         </svg>
+        {isPlayingInOtherTab && (
+          <div style={{
+            position: 'absolute',
+            top: '-2px',
+            right: '-2px',
+            width: '12px',
+            height: '12px',
+            background: '#ff0000',
+            borderRadius: '50%',
+            border: '2px solid white',
+            fontSize: '8px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            color: 'white'
+          }}>
+            🔗
+          </div>
+        )}
       </div>
     </div>
     </>
