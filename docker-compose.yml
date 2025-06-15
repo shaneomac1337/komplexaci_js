@@ -1,5 +1,7 @@
 version: '3.8'
 
+# Komplexáci Gaming Clan Website
+# Uses host networking for better performance and direct access to host network
 services:
   komplexaci-app:
     build:
@@ -8,7 +10,6 @@ services:
     image: komplexaci:latest
     container_name: komplexaci-web
     restart: unless-stopped
-    network_mode: host
     environment:
       - NODE_ENV=production
       - PORT=3000
