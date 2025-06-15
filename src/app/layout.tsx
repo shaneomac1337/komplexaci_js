@@ -19,10 +19,19 @@ export const metadata: Metadata = {
   authors: [{ name: "Komplexáci" }],
   creator: "Komplexáci",
   publisher: "Komplexáci",
+  metadataBase: new URL("https://www.komplexaci.cz"),
+  alternates: {
+    canonical: "/",
+  },
   icons: {
-    icon: "/komplexaci/img/logo.png",
-    shortcut: "/komplexaci/img/logo.png",
-    apple: "/komplexaci/img/logo.png",
+    icon: [
+      { url: "/favicon.png", sizes: "32x32", type: "image/png" },
+      { url: "/favicon.png", sizes: "16x16", type: "image/png" },
+    ],
+    shortcut: "/favicon.png",
+    apple: [
+      { url: "/favicon.png", sizes: "180x180", type: "image/png" },
+    ],
   },
   openGraph: {
     title: "Komplexáci",
@@ -73,6 +82,33 @@ export default function RootLayout({
           integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
           crossOrigin="anonymous"
           referrerPolicy="no-referrer"
+        />
+        {/* Structured Data for Organization */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify({
+              "@context": "https://schema.org",
+              "@type": "Organization",
+              "name": "Komplexáci",
+              "url": "https://www.komplexaci.cz",
+              "logo": "https://www.komplexaci.cz/komplexaci/img/logo.png",
+              "description": "Komplexáci je česká herní komunita specializující se na League of Legends a Counter Strike 2. Vzpomínáme na staré dobré časy a sdílíme herní obsah.",
+              "sameAs": [
+                "https://www.facebook.com/penkava.martin",
+                "https://x.com/mpenkava1337",
+                "https://www.instagram.com/m_penkava/",
+                "https://www.twitch.tv/shanemc1337",
+                "https://www.youtube.com/user/Mercin1000",
+                "https://discord.gg/e6BEQpQRBA"
+              ],
+              "contactPoint": {
+                "@type": "ContactPoint",
+                "email": "info@komplexaci.cz",
+                "contactType": "customer service"
+              }
+            })
+          }}
         />
       </head>
       <body
