@@ -12,6 +12,20 @@ import SmartGrid from '../components/SmartGrid';
 import WWEMusicPlayer from '../components/WWEMusicPlayer';
 import Header from '../components/Header';
 
+// Optimized WWE 2K25 Screenshots from VGTimes (WebP format for better performance)
+const wwe2k25Screenshots = [
+  // High-quality WebP screenshots from VGTimes - much more optimized than PNG
+  "https://files.vgtimes.com/gallery/main/206323/9344981705_ss_7adc40c010c02b60411cb69b7f28a94f43c61.webp",
+  "https://files.vgtimes.com/gallery/main/206323/7512164258_ss_49b579cf1348f22f704c1e96aeec96db6111a.webp",
+  "https://files.vgtimes.com/gallery/main/206323/83447946_ss_cd5d75da49b7c9fd0e2ce49b6a93f9f7d7aa5.webp",
+  "https://files.vgtimes.com/gallery/main/206323/4457359374_ss_3f1b547e1a81ffed600e8f2bb1b8cb0c2e4f9.webp",
+  "https://files.vgtimes.com/gallery/main/206323/4914032688_ss_9fd41962e47b65976bfce6cc3b452191e0c11.webp",
+  "https://files.vgtimes.com/gallery/main/206323/5777564405_ss_8e4cddee3e1ae6d54a5a562053db657856ee7.webp",
+  "https://files.vgtimes.com/gallery/main/206323/6034787668_ss_cc253c5f32a159138f2942dbe4f07c49e5826.webp",
+  "https://files.vgtimes.com/gallery/main/206323/690796440_ss_4eb01e0ede11951b874306b62f3cf21594801.webp",
+  "https://files.vgtimes.com/gallery/main/206323/393924380_ss_4bb721d03f9bc470cba3157d92abceb659c79.webp"
+];
+
 
 
 export default function WWEGamesPage() {
@@ -22,6 +36,27 @@ export default function WWEGamesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [hasUserInteracted, setHasUserInteracted] = useState(false);
+  const [currentScreenshot, setCurrentScreenshot] = useState<string>('');
+
+  // Function to get a random screenshot
+  const getRandomWWEScreenshot = () => {
+    const randomIndex = Math.floor(Math.random() * wwe2k25Screenshots.length);
+    return wwe2k25Screenshots[randomIndex];
+  };
+
+  // Initialize random screenshot on component mount
+  useEffect(() => {
+    setCurrentScreenshot(getRandomWWEScreenshot());
+  }, []);
+
+  // Change screenshot every 15 seconds
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentScreenshot(getRandomWWEScreenshot());
+    }, 15000); // Change every 15 seconds
+
+    return () => clearInterval(interval);
+  }, []);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -111,7 +146,7 @@ export default function WWEGamesPage() {
       <div className="min-h-screen bg-gray-900">
         {/* Hero Section Skeleton */}
         <section className="relative h-[60vh] bg-gray-800 flex items-center justify-center">
-          <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/20 to-red-600/20 animate-pulse"></div>
+          <div className="absolute inset-0 bg-gradient-to-r from-blue-500/20 to-purple-600/20 animate-pulse"></div>
           <div className="relative z-10 text-center max-w-4xl px-4">
             <div className="h-16 bg-gray-700 rounded-lg mb-4 w-96 mx-auto animate-pulse"></div>
             <div className="h-6 bg-gray-600 rounded w-64 mx-auto animate-pulse"></div>
@@ -163,7 +198,7 @@ export default function WWEGamesPage() {
         </div>
 
         {/* Loading Indicator */}
-        <div className="fixed bottom-8 right-8 bg-gray-800 rounded-full p-4 border border-yellow-500/30 animate-pulse">
+        <div className="fixed bottom-8 right-8 bg-gray-800 rounded-full p-4 border border-blue-500/30 animate-pulse">
           <div className={styles.loadingSpinner}></div>
         </div>
       </div>
@@ -187,16 +222,49 @@ export default function WWEGamesPage() {
       <Header />
       
       {/* Hero Section */}
-      <section className={`relative h-[60vh] flex items-center justify-center ${styles.heroSection} ${styles.parallaxBg}`}>
-        <div className="absolute inset-0 bg-gradient-to-r from-yellow-500/30 to-red-600/30"></div>
-        <div className="absolute inset-0 bg-black/20"></div>
+      <section className={`relative h-[80vh] min-h-[600px] flex items-center justify-center ${styles.heroSection} ${styles.parallaxBg} overflow-hidden`}>
+        {/* Background Image using img element for better control */}
+        {currentScreenshot && (
+          <>
+            {/* Blurred background layer */}
+            <img
+              src={currentScreenshot}
+              alt="WWE 2K25 Screenshot Background"
+              className="absolute inset-0 w-full h-full object-cover filter blur-xl brightness-30 scale-110"
+              style={{ zIndex: 1 }}
+            />
+
+            {/* Main image layer - shows full image */}
+            <img
+              src={currentScreenshot}
+              alt="WWE 2K25 Screenshot"
+              className="absolute inset-0 w-full h-full object-contain filter brightness-75"
+              style={{ zIndex: 2 }}
+            />
+          </>
+        )}
+
+
         <AnimatedSection
           className="relative z-10 text-center max-w-4xl px-4"
           animation="fadeInUp"
           duration={1.2}
         >
-          <div className={`${styles.heroGlow} rounded-2xl p-8 backdrop-blur-sm`}>
-            <h1 className={`font-bold mb-4 ${styles.textShadow} ${styles.textGradient}`}>
+          <div className="relative">
+            {/* Clean WWE-style overlay */}
+            <div className="bg-black/30 border-2 border-blue-500/50 rounded-2xl p-8 mx-8 relative overflow-hidden">
+              {/* Static corner accents */}
+              <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-blue-400"></div>
+              <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-blue-400"></div>
+              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-blue-400"></div>
+              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-blue-400"></div>
+
+              {/* Static subtle glow */}
+              <div className="absolute inset-0 bg-gradient-to-r from-blue-500/10 via-transparent to-purple-500/10 rounded-2xl"></div>
+
+              {/* Content */}
+              <div className="relative z-10">
+            <h1 className={`font-bold mb-4 ${styles.textShadow} ${styles.textGradient} ${styles.textGlow}`}>
               {gameInfo?.title}
             </h1>
             <AnimatedSection
@@ -204,8 +272,19 @@ export default function WWEGamesPage() {
               delay={0.3}
               className="text-xl font-light text-gray-200"
             >
-              Legendární kolekce wrestlingových klasik
+              <span className={styles.textGlow}>
+                Legendární kolekce wrestlingových klasik
+              </span>
             </AnimatedSection>
+            {currentScreenshot && (
+              <div className="mt-4 text-sm text-blue-300 opacity-75"
+                   style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.6)' }}>
+                <i className="fas fa-camera mr-2"></i>
+                Od herních počátků až po současnost
+              </div>
+            )}
+              </div>
+            </div>
           </div>
         </AnimatedSection>
       </section>
@@ -226,9 +305,9 @@ export default function WWEGamesPage() {
               <AnimatedSection
                 animation="fadeInLeft"
                 delay={0.2}
-                className={`bg-gray-800/50 rounded-lg p-8 border border-yellow-500/30 ${styles.glowEffect} ${styles.cardHover}`}
+                className={`bg-gray-800/50 rounded-lg p-8 border border-blue-500/30 ${styles.glowEffect} ${styles.cardHover}`}
               >
-                <h3 className="text-2xl font-semibold mb-6 text-yellow-400">Základní informace</h3>
+                <h3 className="text-2xl font-semibold mb-6 text-blue-400">Základní informace</h3>
                 <ul className="space-y-3">
                   <li><strong>Vývojář:</strong> {gameInfo.basicInfo.developer}</li>
                   <li><strong>Vydavatel:</strong> {gameInfo.basicInfo.publisher}</li>
@@ -244,14 +323,14 @@ export default function WWEGamesPage() {
               <AnimatedSection
                 animation="fadeInRight"
                 delay={0.4}
-                className={`bg-gray-800/50 rounded-lg p-8 border border-yellow-500/30 ${styles.glowEffect} ${styles.cardHover}`}
+                className={`bg-gray-800/50 rounded-lg p-8 border border-blue-500/30 ${styles.glowEffect} ${styles.cardHover}`}
               >
-                <h3 className="text-2xl font-semibold mb-6 text-yellow-400">{gameInfo.legacy.title}</h3>
+                <h3 className="text-2xl font-semibold mb-6 text-blue-400">{gameInfo.legacy.title}</h3>
                 <p className="mb-4 text-gray-300">{gameInfo.legacy.description}</p>
                 <ul className="space-y-2 text-sm">
                   {gameInfo.legacy.highlights.map((highlight, index) => (
                     <li key={index} className="flex items-start">
-                      <span className="text-yellow-400 mr-2">•</span>
+                      <span className="text-blue-400 mr-2">•</span>
                       {highlight}
                     </li>
                   ))}
@@ -266,7 +345,7 @@ export default function WWEGamesPage() {
       <section className="py-10 px-4 bg-gray-800/30">
         <div className="max-w-6xl mx-auto">
           <AnimatedSection animation="fadeInUp" className={styles.filterSection}>
-            <h3 className="text-yellow-400 text-xl font-semibold mb-6 text-center">Filtrovat hry</h3>
+            <h3 className="text-blue-400 text-xl font-semibold mb-6 text-center">Filtrovat hry</h3>
             <div className="grid md:grid-cols-3 gap-6 items-end">
               <div className="flex flex-col gap-2">
                 <label htmlFor="era-filter" className="text-gray-300 font-medium">Éra:</label>
@@ -277,15 +356,15 @@ export default function WWEGamesPage() {
                   className={styles.filterSelect}
                 >
                   <option value="all">Všechny éry</option>
-                  <option value="golden">Golden Era (1984-1993)</option>
-                  <option value="new-generation">New Generation Era (1993-1997)</option>
-                  <option value="attitude">Attitude Era (1997-2002)</option>
-                  <option value="ruthless">Ruthless Aggression Era (2002-2008)</option>
-                  <option value="pg">PG Era (2008-2014)</option>
-                  <option value="reality">Reality Era (2014-2016)</option>
-                  <option value="new-era">New Era (2016-2021)</option>
-                  <option value="post-covid">Post-COVID Era (2021-2023)</option>
-                  <option value="renaissance">Renaissance Era (2023-present)</option>
+                  <option value="golden">Golden Era</option>
+                  <option value="new-generation">New Generation Era</option>
+                  <option value="attitude">Attitude Era</option>
+                  <option value="ruthless">Ruthless Aggression Era</option>
+                  <option value="pg">PG Era</option>
+                  <option value="reality">Reality Era</option>
+                  <option value="new-era">New Era</option>
+                  <option value="post-covid">Post-COVID Era</option>
+                  <option value="renaissance">Renaissance Era</option>
                 </select>
               </div>
 
@@ -319,7 +398,7 @@ export default function WWEGamesPage() {
 
             {(selectedEra !== 'all' || selectedSeries !== 'all') && (
               <div className="mt-4 text-center">
-                <span className="bg-yellow-500 text-black px-4 py-2 rounded-full text-sm font-semibold">
+                <span className="bg-blue-500 text-white px-4 py-2 rounded-full text-sm font-semibold">
                   Zobrazeno {getTotalGamesCount()} her
                 </span>
               </div>
@@ -345,7 +424,7 @@ export default function WWEGamesPage() {
               <p className="text-gray-400 mb-8">Zkuste změnit kritéria filtru nebo resetovat filtry.</p>
               <button
                 onClick={resetFilters}
-                className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-3 px-8 rounded-full transition-all duration-300 hover:scale-105"
+                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 hover:scale-105"
               >
                 <i className="fas fa-undo mr-2"></i> Resetovat filtry
               </button>
@@ -361,7 +440,7 @@ export default function WWEGamesPage() {
                 >
                   <div className={styles.eraTitle}>
                     <h2 className={`text-xl font-bold mb-2 ${styles.textGradient}`}>{era.title}</h2>
-                    <p className="text-yellow-400 font-semibold">{era.subtitle}</p>
+                    <p className="text-blue-400 font-semibold">{era.subtitle}</p>
                   </div>
                   <p className="text-gray-300 max-w-4xl mx-auto mt-6 text-lg leading-relaxed">
                     {era.description}
@@ -436,7 +515,7 @@ export default function WWEGamesPage() {
           <AnimatedSection animation="fadeInUp" delay={0.5} className="text-center mt-12">
             <Link
               href="/"
-              className={`inline-block bg-gradient-to-r from-yellow-500 to-red-500 hover:from-red-500 hover:to-yellow-500 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg ${styles.pulseGlow}`}
+              className={`inline-block bg-gradient-to-r from-blue-500 to-purple-500 hover:from-purple-500 hover:to-blue-500 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg ${styles.pulseGlow}`}
             >
               Zpět na hlavní stránku
             </Link>
