@@ -4,6 +4,9 @@ export const metadata: Metadata = {
   title: "League of Legends | Komplexáci",
   description: "League of Legends - MOBA hra od Riot Games, ve které se specializuje klan Komplexáci. Objevte více než 160 unikátních šampionů a jejich schopnosti.",
   keywords: ["League of Legends", "LoL", "MOBA", "Riot Games", "šampioni", "champions", "esports", "Komplexáci"],
+  alternates: {
+    canonical: "/league-of-legends",
+  },
   openGraph: {
     title: "League of Legends | Komplexáci",
     description: "League of Legends - MOBA hra od Riot Games, ve které se specializuje klan Komplexáci. Objevte více než 160 unikátních šampionů a jejich schopnosti.",
@@ -33,5 +36,89 @@ export default function LeagueOfLegendsLayout({
 }: {
   children: React.ReactNode;
 }) {
-  return <>{children}</>;
+  return (
+    <>
+      {/* Structured Data for League of Legends VideoGame */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "VideoGame",
+            "name": "League of Legends",
+            "alternateName": "LoL",
+            "description": "League of Legends je MOBA hra od Riot Games s více než 160 unikátními šampiony. Komplexáci se specializuje na týmové strategie a kompetitivní hraní.",
+            "genre": ["MOBA", "Strategy", "Multiplayer", "Esports"],
+            "gamePlatform": "PC",
+            "publisher": {
+              "@type": "Organization",
+              "name": "Riot Games"
+            },
+            "developer": {
+              "@type": "Organization",
+              "name": "Riot Games"
+            },
+            "url": "https://www.leagueoflegends.com",
+            "image": "https://www.komplexaci.cz/komplexaci/img/lol.jpg",
+            "applicationCategory": "Game",
+            "operatingSystem": "Windows, macOS",
+            "offers": {
+              "@type": "Offer",
+              "price": "0",
+              "priceCurrency": "USD",
+              "availability": "https://schema.org/InStock"
+            }
+          })
+        }}
+      />
+
+      {/* Structured Data for WebPage */}
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify({
+            "@context": "https://schema.org",
+            "@type": "WebPage",
+            "name": "League of Legends | Komplexáci",
+            "url": "https://www.komplexaci.cz/league-of-legends",
+            "description": "League of Legends stránka klanu Komplexáci. Objevte více než 160 šampionů, jejich schopnosti a naše herní strategie.",
+            "inLanguage": "cs-CZ",
+            "isPartOf": {
+              "@type": "WebSite",
+              "name": "Komplexáci",
+              "url": "https://www.komplexaci.cz"
+            },
+            "about": {
+              "@type": "VideoGame",
+              "name": "League of Legends"
+            },
+            "mainEntity": {
+              "@type": "Organization",
+              "name": "Komplexáci",
+              "url": "https://www.komplexaci.cz"
+            },
+            "breadcrumb": {
+              "@type": "BreadcrumbList",
+              "itemListElement": [
+                {
+                  "@type": "ListItem",
+                  "position": 1,
+                  "name": "Domů",
+                  "item": "https://www.komplexaci.cz"
+                },
+                {
+                  "@type": "ListItem",
+                  "position": 2,
+                  "name": "League of Legends",
+                  "item": "https://www.komplexaci.cz/league-of-legends"
+                }
+              ]
+            }
+          })
+        }}
+      />
+
+      {children}
+    </>
+  );
 }
