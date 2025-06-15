@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import Head from 'next/head';
 import styles from './lol.module.css';
 import '../komplexaci.css';
 import Header from '../components/Header';
@@ -521,17 +520,7 @@ export default function LeagueOfLegendsNextJS() {
   }
 
   return (
-    <>
-      <Head>
-        <title>League of Legends | Komplexáci</title>
-        <meta name="description" content="League of Legends - MOBA hra od Riot Games, ve které se specializuje klan Komplexáci" />
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;800&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-      </Head>
-
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900" style={{ fontFamily: "'Exo 2', 'Roboto', sans-serif" }}>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900" style={{ fontFamily: "'Exo 2', 'Roboto', sans-serif" }}>
         
         {/* Header */}
         <Header />
@@ -1543,7 +1532,6 @@ export default function LeagueOfLegendsNextJS() {
             </div>
           </div>
         )}
-      </div>
-    </>
+    </div>
   );
 }
