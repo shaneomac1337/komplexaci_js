@@ -874,6 +874,19 @@ export default function Home() {
       {/* Hero Section - EXACT Recreation */}
       <section id="hero" className="hero-exact">
         <div className="hero-content-exact">
+          {/* Large Logo Display */}
+          <div className="hero-logo-container mb-8">
+            <Image
+              src="/komplexaci/img/logo.png"
+              alt="Komplexáci Logo"
+              width={300}
+              height={300}
+              className="hero-logo mx-auto"
+              quality={100}
+              priority={true}
+              unoptimized={true}
+            />
+          </div>
           <h2 className="hero-title-exact">
             Komplexáci
           </h2>
