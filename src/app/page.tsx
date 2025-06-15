@@ -200,12 +200,12 @@ export default function Home() {
   const [showBriefly, setShowBriefly] = useState(false);
 
   // Cross-tab coordination state
-  const [tabId] = useState(() => `tab_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`);
+  const [tabId] = useState(() => `tab_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`);
   const [isPlayingInOtherTab, setIsPlayingInOtherTab] = useState(false);
   const [otherTabInfo, setOtherTabInfo] = useState<{track: string, tabId: string} | null>(null);
 
   // Dynamic playlist
-  const { tracks: playlist, loading: playlistLoading } = usePlaylist();
+  const { tracks: playlist } = usePlaylist();
   const [lastScrollY, setLastScrollY] = useState(0);
 
   const [scrollDownTimeout, setScrollDownTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -309,8 +309,8 @@ export default function Home() {
         try {
           const state = JSON.parse(kompgState);
           if (state.isPlaying && state.tabId !== tabId) {
-            // Check if the state is recent (within last 30 seconds)
-            const isRecent = Date.now() - (state.timestamp || 0) < 30000;
+            // More aggressive timeout for Firefox - only 10 seconds instead of 30
+            const isRecent = Date.now() - (state.timestamp || 0) < 10000;
             if (isRecent) {
               console.log(`🎵 KOMPG Trax is already playing in tab ${state.tabId}, preventing auto-start`);
               setIsPlayingInOtherTab(true);
@@ -321,9 +321,13 @@ export default function Home() {
               setHasUserInteracted(true); // Prevent auto-start
               return true;
             } else {
-              console.log('🎵 Found stale KOMPG Trax state, clearing it');
+              console.log('🎵 Found stale KOMPG Trax state (older than 10s), clearing it');
               localStorage.removeItem('kompg-music-state');
             }
+          } else if (state.tabId !== tabId) {
+            // If state shows not playing from another tab, clear it
+            console.log('🎵 Found non-playing state from another tab, clearing it');
+            localStorage.removeItem('kompg-music-state');
           }
         } catch (error) {
           console.error('Error parsing KOMPG music state:', error);
@@ -355,7 +359,32 @@ export default function Home() {
       return false;
     };
 
-    // Check for existing KOMPG Trax playback first
+    // Aggressive cleanup on page load for Firefox compatibility
+    const aggressiveCleanup = () => {
+      const kompgState = localStorage.getItem('kompg-music-state');
+      if (kompgState) {
+        try {
+          const state = JSON.parse(kompgState);
+          // On page refresh/load, be more aggressive about clearing old states
+          const age = Date.now() - (state.timestamp || 0);
+          if (age > 5000) { // Clear anything older than 5 seconds on page load
+            console.log(`🧹 Page load: Clearing old KOMPG state (${age}ms old)`);
+            localStorage.removeItem('kompg-music-state');
+            return false;
+          }
+        } catch (error) {
+          console.log('🧹 Page load: Clearing invalid KOMPG state');
+          localStorage.removeItem('kompg-music-state');
+          return false;
+        }
+      }
+      return true;
+    };
+
+    // Perform aggressive cleanup first
+    aggressiveCleanup();
+
+    // Check for existing KOMPG Trax playback after cleanup
     const hasExistingPlayback = checkExistingPlayback();
 
     // Clean up any stale WWE music state
@@ -396,16 +425,23 @@ export default function Home() {
     };
   }, [isPlaying, tabId]);
 
-  // Cleanup stale states periodically
+  // Cleanup stale states periodically - more aggressive for Firefox
   useEffect(() => {
     const cleanupInterval = setInterval(() => {
       const kompgState = localStorage.getItem('kompg-music-state');
       if (kompgState) {
         try {
           const state = JSON.parse(kompgState);
-          // Remove states older than 30 seconds
-          if (Date.now() - (state.timestamp || 0) > 30000) {
-            console.log('🧹 Cleaning up stale KOMPG Trax state');
+          // Remove states older than 10 seconds (more aggressive for Firefox)
+          if (Date.now() - (state.timestamp || 0) > 10000) {
+            console.log('🧹 Cleaning up stale KOMPG Trax state (older than 10s)');
+            localStorage.removeItem('kompg-music-state');
+            setIsPlayingInOtherTab(false);
+            setOtherTabInfo(null);
+          }
+          // Also clean up if state shows not playing
+          else if (!state.isPlaying && state.tabId !== tabId) {
+            console.log('🧹 Cleaning up non-playing state from another tab');
             localStorage.removeItem('kompg-music-state');
             setIsPlayingInOtherTab(false);
             setOtherTabInfo(null);
@@ -413,12 +449,45 @@ export default function Home() {
         } catch (error) {
           console.error('Error cleaning up KOMPG state:', error);
           localStorage.removeItem('kompg-music-state');
+          setIsPlayingInOtherTab(false);
+          setOtherTabInfo(null);
         }
       }
-    }, 10000); // Check every 10 seconds
+    }, 5000); // Check every 5 seconds instead of 10
 
     return () => clearInterval(cleanupInterval);
-  }, []);
+  }, [tabId]);
+
+  // Additional cleanup when page becomes visible (tab switching)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // Page became visible, check for stale states
+        const kompgState = localStorage.getItem('kompg-music-state');
+        if (kompgState) {
+          try {
+            const state = JSON.parse(kompgState);
+            if (state.tabId !== tabId) {
+              const age = Date.now() - (state.timestamp || 0);
+              if (age > 8000) { // Clear if older than 8 seconds when tab becomes visible
+                console.log('🧹 Tab visible: Clearing stale KOMPG state');
+                localStorage.removeItem('kompg-music-state');
+                setIsPlayingInOtherTab(false);
+                setOtherTabInfo(null);
+              }
+            }
+          } catch (error) {
+            localStorage.removeItem('kompg-music-state');
+            setIsPlayingInOtherTab(false);
+            setOtherTabInfo(null);
+          }
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [tabId]);
 
   useEffect(() => {
     setIsLoaded(true);
@@ -458,26 +527,9 @@ export default function Home() {
       console.log('Attempting to load random initial track:', playlist[initialTrack].title, 'from:', playlist[initialTrack].file);
     }
 
-    // Add various interaction listeners
-    const handleKeyPress = () => {
-      if (!hasUserInteracted) {
-        handleFirstInteraction();
-      }
-    };
-
-    window.addEventListener('keydown', handleKeyPress);
-    window.addEventListener('mousemove', handleFirstInteraction);
-
-    // Auto-start music after 3 seconds if no interaction
-    const autoStartTimer = setTimeout(() => {
-      if (!hasUserInteracted) {
-        console.log('Auto-starting music after 3 seconds');
-        handleFirstInteraction();
-      }
-    }, 3000);
+    // No auto-start timer - music only starts when user explicitly clicks
 
     return () => {
-      clearTimeout(autoStartTimer);
       if (audio) {
         audio.pause();
         audio.src = '';
@@ -485,18 +537,32 @@ export default function Home() {
         audio.removeEventListener('loadstart', handleLoadStart);
         audio.removeEventListener('canplay', handleCanPlay);
       }
-      window.removeEventListener('keydown', handleKeyPress);
-      window.removeEventListener('mousemove', handleFirstInteraction);
     };
   }, [playlist]); // Add playlist dependency to reload when tracks change
+
+  // Separate useEffect for click handler to avoid re-adding listeners
+  useEffect(() => {
+    const handleClick = () => {
+      if (!hasUserInteracted) {
+        handleFirstInteraction();
+      }
+    };
+
+    window.addEventListener('click', handleClick);
+
+    return () => {
+      window.removeEventListener('click', handleClick);
+    };
+  }, [hasUserInteracted]); // Only depend on hasUserInteracted - handleFirstInteraction is stable
 
   // Separate useEffect for scroll listener with proper dependencies
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
 
+      // Only handle scroll-based hiding, not interaction detection
       if (!hasUserInteracted) {
-        handleFirstInteraction();
+        return; // Don't trigger interaction on scroll
       }
 
       // Check if we're scrolling down by comparing with last position
@@ -755,10 +821,18 @@ export default function Home() {
       }
     } catch (error) {
       console.error('Audio playback error:', error);
-      // Switch to demo mode if audio fails
-      setIsDemoMode(true);
-      setIsPlaying(!isPlaying);
-      console.log('Switched to demo mode due to audio error');
+
+      // Only switch to demo mode for actual file loading errors, not autoplay restrictions
+      if (error instanceof DOMException && error.name === 'NotAllowedError') {
+        console.log('Autoplay blocked by browser - this is normal, user needs to interact with play button');
+        // Don't switch to demo mode for autoplay restrictions
+        return;
+      } else {
+        // Switch to demo mode only for actual audio loading/file errors
+        console.log('Actual audio error detected, switching to demo mode:', error);
+        setIsDemoMode(true);
+        setIsPlaying(!isPlaying);
+      }
     }
   };
 
@@ -924,45 +998,53 @@ export default function Home() {
     }
   };
 
-  // Handle first user interaction to start music
+  // Handle first user interaction to start music automatically
   const handleFirstInteraction = async () => {
-    if (!hasUserInteracted && audioElement && !isDemoMode) {
-      setHasUserInteracted(true);
-      setIsTraxVisible(true);
+    // Only run once when user hasn't interacted yet
+    if (hasUserInteracted) {
+      return; // Already handled, don't run again
+    }
 
-      // Stop WWE music when main music starts
-      localStorage.removeItem('wwe-music-state');
-      localStorage.setItem('stop-wwe-music', 'true');
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'stop-wwe-music',
-        newValue: 'true'
-      }));
-      console.log('Main page interaction: Stopping WWE music and starting main music');
+    console.log('🎵 First user click detected, starting music...');
+    setHasUserInteracted(true);
+    setIsTraxVisible(true);
 
-      try {
-        await audioElement.play();
-        setIsPlaying(true);
-        console.log('Auto-started music on first user interaction');
-      } catch (error) {
-        console.log('Could not auto-start music:', error);
-        // Switch to demo mode if autoplay fails
-        setIsDemoMode(true);
+    // Stop WWE music when main music starts
+    localStorage.removeItem('wwe-music-state');
+    localStorage.setItem('stop-wwe-music', 'true');
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'stop-wwe-music',
+      newValue: 'true'
+    }));
+
+    // Check if music is already playing in another tab
+    if (isPlayingInOtherTab) {
+      console.log('🎵 Music is playing in another tab, not auto-starting here');
+      return;
+    }
+
+    // Start playing a random track automatically
+    if (playlist && playlist.length > 0) {
+      const randomTrack = Math.floor(Math.random() * playlist.length);
+      setCurrentTrack(randomTrack);
+      console.log('🎵 Auto-starting random track:', playlist[randomTrack]?.title);
+
+      // Start playing the track
+      if (audioElement && !isDemoMode) {
+        try {
+          audioElement.src = playlist[randomTrack].file;
+          await audioElement.play();
+          setIsPlaying(true);
+          console.log('✅ Successfully auto-started music:', playlist[randomTrack]?.title);
+        } catch (error) {
+          console.log('❌ Could not auto-start music, user needs to click play button:', error);
+          // Don't switch to demo mode for autoplay restrictions
+          // Just show the widget and let user click play
+        }
+      } else if (isDemoMode) {
+        console.log('🎮 Starting in demo mode...');
         setIsPlaying(true);
       }
-    } else if (!hasUserInteracted && isDemoMode) {
-      // Even in demo mode, show the player on first interaction
-      setHasUserInteracted(true);
-      setIsTraxVisible(true);
-      setIsPlaying(true);
-
-      // Stop WWE music when main music starts in demo mode
-      localStorage.removeItem('wwe-music-state');
-      localStorage.setItem('stop-wwe-music', 'true');
-      window.dispatchEvent(new StorageEvent('storage', {
-        key: 'stop-wwe-music',
-        newValue: 'true'
-      }));
-      console.log('Auto-started demo mode on first user interaction');
     }
   };
 
@@ -1154,7 +1236,7 @@ export default function Home() {
               <a
                 key={game.title}
                 href={game.link}
-                target="_blank"
+                target={game.title === 'WWE Games' ? '_self' : '_blank'}
                 rel="noopener noreferrer"
                 className={`group bg-gray-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-purple-500/20 transition-all duration-500 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/25 hover:border-purple-400/50 cursor-pointer block ${
                   isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'

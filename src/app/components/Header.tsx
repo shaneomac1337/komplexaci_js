@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { AuthButton } from '@/components/AuthButton';
 
 const Header = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -37,6 +38,9 @@ const Header = () => {
   // Scroll spy functionality - only on main page
   useEffect(() => {
     if (pathname !== '/') return;
+
+    // Disable scroll spy on mobile for better performance
+    if (window.innerWidth <= 768) return;
 
     const sections = ['hero', 'o-nas', 'clenove', 'hry', 'discord', 'kontakt'];
     let currentIntersecting: { id: string; ratio: number }[] = [];
@@ -278,6 +282,11 @@ const Header = () => {
             </li>
           </ul>
         </nav>
+
+        {/* Auth Button */}
+        <div className="auth-section">
+          <AuthButton />
+        </div>
       </div>
     </header>
   );
