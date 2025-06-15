@@ -107,17 +107,31 @@ export default function WWEGamesPage() {
     return eras.reduce((total, era) => total + era.games.length, 0);
   };
 
-  // Handle first user interaction to stop main music and start WWE music
+  // Stop KOMPG Trax immediately when WWE page loads
+  useEffect(() => {
+    // Stop main page music immediately when WWE page loads
+    console.log('WWE page loaded: Stopping KOMPG Trax immediately');
+
+    // Stop main page music by clearing its localStorage state
+    localStorage.removeItem('kompg-music-state');
+
+    // Signal to main page that it should stop playing
+    localStorage.setItem('stop-main-music', 'true');
+
+    // Trigger a storage event for cross-page communication
+    window.dispatchEvent(new StorageEvent('storage', {
+      key: 'stop-main-music',
+      newValue: 'true'
+    }));
+
+    console.log('WWE page: KOMPG Trax stopped immediately on page load');
+  }, []); // Run once on mount
+
+  // Handle first user interaction to start WWE music
   const handleFirstInteraction = () => {
     if (!hasUserInteracted) {
       setHasUserInteracted(true);
-      
-      // Stop main page music by clearing its localStorage state
-      localStorage.removeItem('kompg-music-state');
-      
-      // Signal to main page that it should stop playing
-      localStorage.setItem('stop-main-music', 'true');
-      
+
       // Start WWE music by setting its state
       localStorage.setItem('wwe-music-state', JSON.stringify({
         isPlaying: true,
@@ -125,7 +139,7 @@ export default function WWEGamesPage() {
         page: 'wwe',
         autoStart: true
       }));
-      
+
       // Trigger a storage event for cross-page communication
       window.dispatchEvent(new StorageEvent('storage', {
         key: 'wwe-music-state',
@@ -136,8 +150,8 @@ export default function WWEGamesPage() {
           autoStart: true
         })
       }));
-      
-      console.log('WWE page interaction: Stopping main music and starting WWE music');
+
+      console.log('WWE page interaction: Starting WWE music');
     }
   };
 

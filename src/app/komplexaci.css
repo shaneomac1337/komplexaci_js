@@ -34,12 +34,12 @@
     width: 100%;
     z-index: 1002;
     background: linear-gradient(135deg,
-        var(--cyber-dark) 0%,
-        var(--cyber-accent) 30%,
-        var(--cyber-darker) 70%,
-        var(--cyber-dark) 100%
+        rgba(10, 10, 15, 0.65) 0%,
+        rgba(26, 10, 31, 0.65) 30%,
+        rgba(5, 5, 8, 0.65) 70%,
+        rgba(10, 10, 15, 0.65) 100%
     );
-    backdrop-filter: blur(25px) saturate(200%);
+    backdrop-filter: blur(5px) saturate(120%);
     border-bottom: 2px solid transparent;
     border-image: linear-gradient(90deg,
         transparent 0%,
@@ -84,12 +84,12 @@
 /* Cyberpunk Header scroll effect */
 .header.scrolled {
     background: linear-gradient(135deg,
-        var(--cyber-darker) 0%,
-        rgba(26, 10, 31, 0.98) 30%,
-        rgba(5, 5, 8, 0.98) 70%,
-        var(--cyber-darker) 100%
+        rgba(5, 5, 8, 0.75) 0%,
+        rgba(26, 10, 31, 0.75) 30%,
+        rgba(5, 5, 8, 0.75) 70%,
+        rgba(5, 5, 8, 0.75) 100%
     );
-    backdrop-filter: blur(30px) saturate(250%);
+    backdrop-filter: blur(8px) saturate(130%);
     border-image: linear-gradient(90deg,
         transparent 0%,
         var(--cyber-cyan) 20%,
@@ -116,6 +116,14 @@
     position: relative;
     z-index: 2;
     overflow: visible;
+}
+
+/* Auth Section Styles */
+.auth-section {
+    margin-left: auto;
+    padding-left: 1rem;
+    display: flex;
+    align-items: center;
 }
 
 .logo {
@@ -269,6 +277,7 @@
     display: flex;
     align-items: center;
     overflow: visible;
+    margin-left: 2rem; /* Add space between logo and navigation */
 }
 
 .nav-list {
@@ -522,14 +531,26 @@
         0 0 25px rgba(0, 255, 255, 0.3);
 }
 
+/* Medium screen adjustments */
+@media (max-width: 1024px) and (min-width: 769px) {
+    .main-nav {
+        margin-left: 1.5rem; /* Moderate spacing on medium screens */
+    }
+}
+
 /* Mobile responsive */
 @media (max-width: 768px) {
     .mobile-menu-toggle {
         display: flex;
     }
 
+    .main-nav {
+        margin-left: 1rem; /* Reduce spacing on mobile */
+    }
+
     .header .container {
-        padding: 6px 15px;
+        padding: 8px 12px;
+        gap: 8px;
     }
 
     /* Reset desktop nav-list completely for mobile */
@@ -770,6 +791,38 @@
 
     .mobile-menu-close:active {
         transform: scale(0.95);
+    }
+
+    /* Auth Section Mobile Styles */
+    .auth-section {
+        padding-left: 0.5rem;
+        margin-left: 0;
+    }
+
+    /* Ensure auth buttons are properly sized for mobile */
+    .auth-section button {
+        min-height: 44px;
+        min-width: 44px;
+        padding: 8px 12px;
+        font-size: 0.85rem;
+    }
+
+    /* User profile adjustments for mobile */
+    .auth-section img {
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    .auth-section .flex.flex-col span {
+        font-size: 0.75rem;
+        line-height: 1.2;
+    }
+
+    /* Hide user role text on very small screens */
+    @media (max-width: 480px) {
+        .auth-section .text-gray-400 {
+            display: none;
+        }
     }
 }
 

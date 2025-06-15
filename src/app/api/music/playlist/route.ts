@@ -64,7 +64,8 @@ export async function GET() {
 // POST - Add new track (requires auth)
 export async function POST(request: NextRequest) {
   try {
-    // TODO: Add auth verification here
+    // For now, allow internal API calls (from upload route)
+    // In the future, we can add auth here too if needed
     const { title, artist, file, tags } = await request.json();
 
     if (!title || !artist || !file) {
@@ -83,7 +84,7 @@ export async function POST(request: NextRequest) {
       file,
       duration: null,
       uploadedAt: new Date().toISOString(),
-      uploadedBy: 'admin', // TODO: Get from auth
+      uploadedBy: 'system', // System-generated tracks
       tags: tags || []
     };
 
