@@ -81,8 +81,9 @@ export default function LeagueOfLegendsLayout({
             "@type": "WebPage",
             "name": "League of Legends | Komplexáci",
             "url": "https://www.komplexaci.cz/league-of-legends",
-            "description": "League of Legends stránka klanu Komplexáci. Objevte více než 160 šampionů, jejich schopnosti a naše herní strategie.",
+            "description": "League of Legends stránka klanu Komplexáci. Objevte více než 160 šampionů, jejich schopnosti a naše herní strategie. Kompletní databáze šampionů s filtry a detailními informacemi.",
             "inLanguage": "cs-CZ",
+            "keywords": ["League of Legends", "LoL", "šampioni", "champions", "Komplexáci", "MOBA", "Riot Games", "herní strategie"],
             "isPartOf": {
               "@type": "WebSite",
               "name": "Komplexáci",
@@ -90,12 +91,18 @@ export default function LeagueOfLegendsLayout({
             },
             "about": {
               "@type": "VideoGame",
-              "name": "League of Legends"
+              "name": "League of Legends",
+              "description": "MOBA hra s více než 160 unikátními šampiony",
+              "publisher": {
+                "@type": "Organization",
+                "name": "Riot Games"
+              }
             },
             "mainEntity": {
-              "@type": "Organization",
-              "name": "Komplexáci",
-              "url": "https://www.komplexaci.cz"
+              "@type": "ItemList",
+              "name": "League of Legends Champions",
+              "description": "Kompletní seznam více než 160 šampionů v League of Legends",
+              "numberOfItems": "160+"
             },
             "breadcrumb": {
               "@type": "BreadcrumbList",
@@ -113,6 +120,11 @@ export default function LeagueOfLegendsLayout({
                   "item": "https://www.komplexaci.cz/league-of-legends"
                 }
               ]
+            },
+            "potentialAction": {
+              "@type": "SearchAction",
+              "target": "https://www.komplexaci.cz/league-of-legends?search={search_term_string}",
+              "query-input": "required name=search_term_string"
             }
           })
         }}
