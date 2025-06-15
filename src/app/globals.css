@@ -3,6 +3,14 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+
+  /* WWE Games CSS Variables */
+  --accent-color: #6e4ff6;
+  --accent-hover: #5a3fd4;
+  --bg-color: #0a0a0f;
+  --text-color: #e0e0e0;
+  --medium-text: #bababa;
+  --light-text: #ffffff;
 }
 
 @theme inline {
