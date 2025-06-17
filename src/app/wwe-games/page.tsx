@@ -474,18 +474,24 @@ export default function WWEGamesPage() {
                     >
                       {/* Game Cover */}
                       <div className="flex justify-center mb-6">
-                        <div className="relative">
-                          <Image
-                            src={game.cover}
-                            alt={game.title}
-                            width={210}
-                            height={260}
-                            className={`${styles.gameCover} rounded-2xl object-cover`}
-                            unoptimized
-                            onError={(e) => {
-                              console.error('Game cover failed to load:', game.cover, e);
-                            }}
-                          />
+                        <div className={`relative ${styles.gameCoverContainer}`}>
+                          <div className={`${styles.gameCoverWrapper}`}>
+                            <Image
+                              src={game.cover}
+                              alt={game.title}
+                              fill
+                              className={`${styles.gameCover} rounded-2xl`}
+                              style={{
+                                objectFit: 'contain',
+                                objectPosition: 'center'
+                              }}
+                              unoptimized
+
+                              onError={(e) => {
+                                console.error('Game cover failed to load:', game.cover, e);
+                              }}
+                            />
+                          </div>
                         </div>
                       </div>
 
