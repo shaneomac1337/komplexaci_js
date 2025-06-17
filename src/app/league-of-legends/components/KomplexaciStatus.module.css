@@ -1,0 +1,261 @@
+.komplexaciSection {
+  margin-top: 2rem;
+  padding: 1.5rem;
+  background: linear-gradient(135deg, rgba(14, 14, 35, 0.95), rgba(20, 20, 45, 0.95));
+  border: 1px solid rgba(110, 79, 246, 0.3);
+  border-radius: 12px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding-bottom: 1rem;
+  border-bottom: 1px solid rgba(110, 79, 246, 0.2);
+}
+
+.title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  color: #f0e6d2;
+  font-size: 1.5rem;
+  font-weight: 600;
+}
+
+.icon {
+  font-size: 1.8rem;
+}
+
+.refreshButton {
+  padding: 0.5rem 1rem;
+  background: rgba(110, 79, 246, 0.2);
+  border: 1px solid rgba(110, 79, 246, 0.5);
+  border-radius: 6px;
+  color: #f0e6d2;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 0.9rem;
+}
+
+.refreshButton:hover:not(:disabled) {
+  background: rgba(110, 79, 246, 0.3);
+  border-color: rgba(110, 79, 246, 0.7);
+}
+
+.refreshButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.membersGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.memberCard {
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(110, 79, 246, 0.2);
+  border-radius: 8px;
+  transition: all 0.3s ease;
+}
+
+.memberCard:hover {
+  border-color: rgba(110, 79, 246, 0.4);
+  box-shadow: 0 4px 16px rgba(110, 79, 246, 0.1);
+}
+
+.memberCard.inGame {
+  border-color: rgba(16, 185, 129, 0.5);
+  background: rgba(16, 185, 129, 0.05);
+}
+
+.memberHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 0.75rem;
+}
+
+.memberInfo {
+  flex: 1;
+}
+
+.memberName {
+  margin: 0 0 0.25rem 0;
+  color: #f0e6d2;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.memberTag {
+  color: #c9aa71;
+  font-size: 0.85rem;
+  opacity: 0.8;
+}
+
+.statusIndicator {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1rem;
+  border: 2px solid transparent;
+}
+
+.statusIndicator.loading {
+  background: rgba(255, 193, 7, 0.2);
+  border-color: rgba(255, 193, 7, 0.5);
+  animation: pulse 2s infinite;
+}
+
+.statusIndicator.inGame {
+  background: rgba(16, 185, 129, 0.2);
+  border-color: rgba(16, 185, 129, 0.5);
+  animation: glow 2s ease-in-out infinite alternate;
+}
+
+
+
+.statusIndicator.offline {
+  background: rgba(107, 114, 128, 0.2);
+  border-color: rgba(107, 114, 128, 0.5);
+}
+
+.statusText {
+  color: #f0e6d2;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.loadingText {
+  color: #fbbf24;
+  font-style: italic;
+}
+
+.errorText {
+  color: #ef4444;
+  font-style: italic;
+}
+
+
+
+.offlineText {
+  color: #9ca3af;
+}
+
+.gameInfo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.gameStatus {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.gameMode {
+  color: #10b981;
+  font-weight: 500;
+  font-size: 0.9rem;
+}
+
+.gameDuration {
+  color: #c9aa71;
+  font-size: 0.85rem;
+}
+
+.gameDetails {
+  padding-top: 0.25rem;
+  border-top: 1px solid rgba(110, 79, 246, 0.1);
+}
+
+.champion {
+  color: #6e4ff6;
+  font-weight: 500;
+  font-size: 0.85rem;
+}
+
+.lastSeen {
+  margin-top: 0.75rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid rgba(110, 79, 246, 0.1);
+  color: #9ca3af;
+  font-size: 0.75rem;
+}
+
+.footer {
+  text-align: center;
+  padding-top: 1rem;
+  border-top: 1px solid rgba(110, 79, 246, 0.1);
+}
+
+.footerText {
+  margin: 0;
+  color: #9ca3af;
+  font-size: 0.8rem;
+  font-style: italic;
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+@keyframes glow {
+  from {
+    box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+  }
+  to {
+    box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
+  }
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .komplexaciSection {
+    margin-top: 1.5rem;
+    padding: 1rem;
+  }
+  
+  .header {
+    flex-direction: column;
+    gap: 1rem;
+    align-items: stretch;
+  }
+  
+  .title {
+    justify-content: center;
+  }
+  
+  .membersGrid {
+    grid-template-columns: 1fr;
+  }
+  
+  .memberCard {
+    padding: 0.75rem;
+  }
+  
+  .memberHeader {
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+  
+  .statusIndicator {
+    align-self: flex-start;
+  }
+}
