@@ -6,6 +6,7 @@ import Image from 'next/image';
 import styles from './lol.module.css';
 import '../komplexaci.css';
 import Header from '../components/Header';
+import SummonerSearch from './components/SummonerSearch';
 
 // Types
 interface Champion {
@@ -753,6 +754,9 @@ export default function LeagueOfLegendsNextJS() {
             </div>
           </div>
         </section>
+
+        {/* Summoner Search Section */}
+        <SummonerSearch />
 
         {/* Champions Section */}
         <section className={`${styles.section}`} style={{ background: 'rgba(0, 0, 0, 0.2)' }}>

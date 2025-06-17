@@ -1,0 +1,222 @@
+import {
+  RiotAccount,
+  Summoner,
+  LeagueEntry,
+  ChampionMastery,
+  Match,
+  CurrentGameInfo,
+  SummonerProfile,
+  RiotAPIError
+} from '../types/summoner';
+import { enrichMatchWithChampionData, enrichMasteryWithChampionData } from '../utils/championUtils';
+
+export class RiotAPIService {
+  private apiKey: string;
+  private baseUrls = {
+    // Regional routing for account-v1 and match-v5
+    americas: 'https://americas.api.riotgames.com',
+    asia: 'https://asia.api.riotgames.com',
+    europe: 'https://europe.api.riotgames.com',
+    sea: 'https://sea.api.riotgames.com',
+    
+    // Platform routing for other APIs
+    euw1: 'https://euw1.api.riotgames.com',
+    eun1: 'https://eun1.api.riotgames.com',
+    na1: 'https://na1.api.riotgames.com',
+    kr: 'https://kr.api.riotgames.com',
+    jp1: 'https://jp1.api.riotgames.com',
+    br1: 'https://br1.api.riotgames.com',
+    la1: 'https://la1.api.riotgames.com',
+    la2: 'https://la2.api.riotgames.com',
+    oc1: 'https://oc1.api.riotgames.com',
+    tr1: 'https://tr1.api.riotgames.com',
+    ru: 'https://ru.api.riotgames.com'
+  };
+
+  constructor() {
+    this.apiKey = process.env.RIOT_API_KEY || '';
+    if (!this.apiKey) {
+      throw new Error('RIOT_API_KEY environment variable is required');
+    }
+  }
+
+  private getRegionalUrl(region: string): string {
+    // Map platform regions to regional clusters
+    const regionMapping: Record<string, string> = {
+      'euw1': 'europe',
+      'eun1': 'europe',
+      'tr1': 'europe',
+      'ru': 'europe',
+      'na1': 'americas',
+      'br1': 'americas',
+      'la1': 'americas',
+      'la2': 'americas',
+      'kr': 'asia',
+      'jp1': 'asia',
+      'oc1': 'sea'
+    };
+    
+    const regionalCluster = regionMapping[region] || 'europe';
+    return this.baseUrls[regionalCluster as keyof typeof this.baseUrls];
+  }
+
+  private getPlatformUrl(region: string): string {
+    return this.baseUrls[region as keyof typeof this.baseUrls] || this.baseUrls.euw1;
+  }
+
+  private async makeRequest<T>(url: string): Promise<T> {
+    const response = await fetch(url, {
+      headers: {
+        'X-Riot-Token': this.apiKey,
+      },
+      next: { revalidate: 300 } // Cache for 5 minutes
+    });
+
+    if (!response.ok) {
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Riot API Error: ${response.status} - ${errorData.status?.message || response.statusText}`);
+    }
+
+    return response.json();
+  }
+
+  // Get account by Riot ID (gameName#tagLine)
+  async getAccountByRiotId(gameName: string, tagLine: string, region: string = 'euw1'): Promise<RiotAccount> {
+    const regionalUrl = this.getRegionalUrl(region);
+    const url = `${regionalUrl}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
+    return this.makeRequest<RiotAccount>(url);
+  }
+
+  // Get summoner by PUUID
+  async getSummonerByPuuid(puuid: string, region: string = 'euw1'): Promise<Summoner> {
+    const platformUrl = this.getPlatformUrl(region);
+    const url = `${platformUrl}/lol/summoner/v4/summoners/by-puuid/${puuid}`;
+    return this.makeRequest<Summoner>(url);
+  }
+
+  // Get ranked stats by summoner ID
+  async getRankedStats(summonerId: string, region: string = 'euw1'): Promise<LeagueEntry[]> {
+    const platformUrl = this.getPlatformUrl(region);
+    const url = `${platformUrl}/lol/league/v4/entries/by-summoner/${summonerId}`;
+    return this.makeRequest<LeagueEntry[]>(url);
+  }
+
+  // Get champion mastery by PUUID
+  async getChampionMastery(puuid: string, region: string = 'euw1', count: number = 10): Promise<ChampionMastery[]> {
+    const platformUrl = this.getPlatformUrl(region);
+    const url = `${platformUrl}/lol/champion-mastery/v4/champion-masteries/by-puuid/${puuid}/top?count=${count}`;
+    const masteryData = await this.makeRequest<ChampionMastery[]>(url);
+
+    // Enrich with champion data
+    const enrichedMastery = await Promise.all(
+      masteryData.map(mastery => enrichMasteryWithChampionData(mastery))
+    );
+
+    return enrichedMastery;
+  }
+
+  // Get match IDs by PUUID
+  async getMatchIds(puuid: string, region: string = 'euw1', start: number = 0, count: number = 20): Promise<string[]> {
+    const regionalUrl = this.getRegionalUrl(region);
+    const url = `${regionalUrl}/lol/match/v5/matches/by-puuid/${puuid}/ids?start=${start}&count=${count}`;
+    return this.makeRequest<string[]>(url);
+  }
+
+  // Get match details by match ID
+  async getMatchDetails(matchId: string, region: string = 'euw1'): Promise<Match> {
+    const regionalUrl = this.getRegionalUrl(region);
+    const url = `${regionalUrl}/lol/match/v5/matches/${matchId}`;
+    return this.makeRequest<Match>(url);
+  }
+
+  // Get current game info by PUUID
+  async getCurrentGame(puuid: string, region: string = 'euw1'): Promise<CurrentGameInfo | null> {
+    try {
+      const platformUrl = this.getPlatformUrl(region);
+      const url = `${platformUrl}/lol/spectator/v5/active-games/by-summoner/${puuid}`;
+      return await this.makeRequest<CurrentGameInfo>(url);
+    } catch (error) {
+      // 404 means not in game, which is expected
+      if (error instanceof Error && error.message.includes('404')) {
+        return null;
+      }
+      throw error;
+    }
+  }
+
+  // Get complete summoner profile
+  async getSummonerProfile(gameName: string, tagLine: string, region: string = 'euw1'): Promise<SummonerProfile> {
+    try {
+      // Step 1: Get account by Riot ID
+      const account = await this.getAccountByRiotId(gameName, tagLine, region);
+      
+      // Step 2: Get summoner details
+      const summoner = await this.getSummonerByPuuid(account.puuid, region);
+      
+      // Step 3: Get ranked stats
+      const rankedStats = await this.getRankedStats(summoner.id, region);
+      
+      // Step 4: Get champion mastery
+      const championMastery = await this.getChampionMastery(account.puuid, region, 5);
+      
+      // Step 5: Check if in game
+      const currentGame = await this.getCurrentGame(account.puuid, region);
+      
+      return {
+        account,
+        summoner,
+        rankedStats,
+        championMastery,
+        isInGame: currentGame !== null,
+        currentGame: currentGame || undefined
+      };
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Failed to get summoner profile: ${error.message}`);
+      }
+      throw error;
+    }
+  }
+
+  // Get match history with details
+  async getMatchHistory(puuid: string, region: string = 'euw1', count: number = 10): Promise<Match[]> {
+    try {
+      // Get match IDs
+      const matchIds = await this.getMatchIds(puuid, region, 0, count);
+
+      // Get match details for each match
+      const matchPromises = matchIds.map(matchId => this.getMatchDetails(matchId, region));
+      const matches = await Promise.all(matchPromises);
+
+      // Enrich matches with champion data
+      const enrichedMatches = await Promise.all(
+        matches.map(match => enrichMatchWithChampionData(match))
+      );
+
+      return enrichedMatches;
+    } catch (error) {
+      if (error instanceof Error) {
+        throw new Error(`Failed to get match history: ${error.message}`);
+      }
+      throw error;
+    }
+  }
+
+  // Validate region
+  isValidRegion(region: string): boolean {
+    const validRegions = ['euw1', 'eun1', 'na1', 'kr', 'jp1', 'br1', 'la1', 'la2', 'oc1', 'tr1', 'ru'];
+    return validRegions.includes(region);
+  }
+
+  // Parse Riot ID from string (gameName#tagLine)
+  static parseRiotId(riotId: string): { gameName: string; tagLine: string } | null {
+    const parts = riotId.split('#');
+    if (parts.length !== 2 || !parts[0] || !parts[1]) {
+      return null;
+    }
+    return {
+      gameName: parts[0].trim(),
+      tagLine: parts[1].trim()
+    };
+  }
+}
