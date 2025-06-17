@@ -12,6 +12,21 @@ export default function LiveGame({ currentGame, summonerPuuid }: LiveGameProps) 
   const [gameTimer, setGameTimer] = useState(0);
   const [championData, setChampionData] = useState<Map<number, any>>(new Map());
 
+  // Debug: Log the game data to see what we're receiving
+  useEffect(() => {
+    if (currentGame) {
+      console.log('🔍 Live Game Debug - Full game data:', currentGame);
+      console.log('🔍 Live Game Debug - Participants:', currentGame.participants);
+      currentGame.participants.forEach((participant, index) => {
+        console.log(`🔍 Participant ${index}:`, {
+          summonerName: participant.summonerName,
+          championId: participant.championId,
+          puuid: participant.puuid
+        });
+      });
+    }
+  }, [currentGame]);
+
   useEffect(() => {
     setGameData(currentGame);
     if (currentGame) {
@@ -286,10 +301,48 @@ export default function LiveGame({ currentGame, summonerPuuid }: LiveGameProps) 
 
                 {/* Summoner Name */}
                 <div className={`${styles.participantName} ${participant.puuid === summonerPuuid ? styles.highlighted : ''}`}>
-                  {participant.summonerName}
-                  {participant.puuid === summonerPuuid && (
-                    <span className={styles.participantIndicator}>●</span>
-                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <button
+                        onClick={() => {
+                          const currentUrl = new URL(window.location.href);
+                          const region = currentUrl.searchParams.get('region') || 'eun1';
+                          const summonerUrl = `/league-of-legends?summoner=${encodeURIComponent(participant.summonerName)}&region=${region}`;
+                          window.open(summonerUrl, '_blank');
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: participant.puuid === summonerPuuid ? '#6e4ff6' : '#f0e6d2',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          fontWeight: participant.puuid === summonerPuuid ? 'bold' : 'normal',
+                          textDecoration: 'underline',
+                          padding: 0
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#10b981';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = participant.puuid === summonerPuuid ? '#6e4ff6' : '#f0e6d2';
+                        }}
+                        title={`Klikněte pro zobrazení profilu ${participant.summonerName}`}
+                      >
+                        {participant.summonerName}
+                      </button>
+                      {participant.puuid === summonerPuuid && (
+                        <span className={styles.participantIndicator}>●</span>
+                      )}
+                    </div>
+                    {/* Champion Name */}
+                    <div style={{
+                      fontSize: '0.7rem',
+                      color: '#c9aa71',
+                      marginTop: '1px'
+                    }}>
+                      {getChampionName(participant.championId)}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -379,10 +432,48 @@ export default function LiveGame({ currentGame, summonerPuuid }: LiveGameProps) 
 
                 {/* Summoner Name */}
                 <div className={`${styles.participantName} ${participant.puuid === summonerPuuid ? styles.highlighted : ''}`}>
-                  {participant.summonerName}
-                  {participant.puuid === summonerPuuid && (
-                    <span className={styles.participantIndicator}>●</span>
-                  )}
+                  <div style={{ display: 'flex', flexDirection: 'column', flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                      <button
+                        onClick={() => {
+                          const currentUrl = new URL(window.location.href);
+                          const region = currentUrl.searchParams.get('region') || 'eun1';
+                          const summonerUrl = `/league-of-legends?summoner=${encodeURIComponent(participant.summonerName)}&region=${region}`;
+                          window.open(summonerUrl, '_blank');
+                        }}
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          color: participant.puuid === summonerPuuid ? '#6e4ff6' : '#f0e6d2',
+                          cursor: 'pointer',
+                          fontSize: '0.8rem',
+                          fontWeight: participant.puuid === summonerPuuid ? 'bold' : 'normal',
+                          textDecoration: 'underline',
+                          padding: 0
+                        }}
+                        onMouseEnter={(e) => {
+                          e.currentTarget.style.color = '#10b981';
+                        }}
+                        onMouseLeave={(e) => {
+                          e.currentTarget.style.color = participant.puuid === summonerPuuid ? '#6e4ff6' : '#f0e6d2';
+                        }}
+                        title={`Klikněte pro zobrazení profilu ${participant.summonerName}`}
+                      >
+                        {participant.summonerName}
+                      </button>
+                      {participant.puuid === summonerPuuid && (
+                        <span className={styles.participantIndicator}>●</span>
+                      )}
+                    </div>
+                    {/* Champion Name */}
+                    <div style={{
+                      fontSize: '0.7rem',
+                      color: '#c9aa71',
+                      marginTop: '1px'
+                    }}>
+                      {getChampionName(participant.championId)}
+                    </div>
+                  </div>
                 </div>
               </div>
             ))}
@@ -390,14 +481,70 @@ export default function LiveGame({ currentGame, summonerPuuid }: LiveGameProps) 
         </div>
       </div>
 
-      {/* Refresh Button */}
+      {/* Action Buttons */}
       <div className={styles.liveGameRefresh}>
-        <button
-          onClick={() => window.location.reload()}
-          className={styles.refreshButton}
-        >
-          🔄 Aktualizovat Live Game
-        </button>
+        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+          <button
+            onClick={() => window.location.reload()}
+            className={styles.refreshButton}
+          >
+            🔄 Aktualizovat
+          </button>
+
+          <button
+            onClick={() => {
+              const gameInfo = `
+🔴 Live Game - ${getGameModeDisplay(gameData.gameQueueConfigId)}
+📍 ${getMapName(gameData.mapId)}
+⏱️ ${formatGameDuration(gameTimer)}
+
+🔵 Modrý Tým:
+${team1.map(p => `• ${p.summonerName} (${getChampionName(p.championId)})`).join('\n')}
+
+🔴 Červený Tým:
+${team2.map(p => `• ${p.summonerName} (${getChampionName(p.championId)})`).join('\n')}
+
+${team1Bans.length > 0 ? `\n🚫 Bany Modrý: ${team1Bans.map(b => getChampionName(b.championId)).join(', ')}` : ''}
+${team2Bans.length > 0 ? `🚫 Bany Červený: ${team2Bans.map(b => getChampionName(b.championId)).join(', ')}` : ''}
+              `.trim();
+
+              navigator.clipboard.writeText(gameInfo).then(() => {
+                // Show temporary success message
+                const button = document.activeElement as HTMLButtonElement;
+                const originalText = button.textContent;
+                button.textContent = '✅ Zkopírováno!';
+                button.style.background = 'linear-gradient(135deg, #10b981, #059669)';
+                setTimeout(() => {
+                  button.textContent = originalText;
+                  button.style.background = 'linear-gradient(135deg, #6e4ff6, #8b5cf6)';
+                }, 2000);
+              }).catch(() => {
+                alert('Nepodařilo se zkopírovat do schránky');
+              });
+            }}
+            style={{
+              background: 'linear-gradient(135deg, #6e4ff6, #8b5cf6)',
+              border: 'none',
+              borderRadius: '8px',
+              color: 'white',
+              padding: '0.5rem 1rem',
+              fontSize: '0.9rem',
+              fontWeight: '600',
+              cursor: 'pointer',
+              transition: 'all 0.3s ease'
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'translateY(-1px)';
+              e.currentTarget.style.boxShadow = '0 4px 15px rgba(110, 79, 246, 0.3)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'translateY(0)';
+              e.currentTarget.style.boxShadow = 'none';
+            }}
+          >
+            📋 Kopírovat Info
+          </button>
+        </div>
       </div>
     </div>
   );

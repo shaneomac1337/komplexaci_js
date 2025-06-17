@@ -9,6 +9,7 @@ export default function MatchHistory({ matches, summonerPuuid, onLoadMore, isLoa
   const [displayedMatches, setDisplayedMatches] = useState<MatchHistoryEntry[]>([]);
   const [isLoadingMore, setIsLoadingMore] = useState(false);
 
+
   useEffect(() => {
     setDisplayedMatches(matches);
   }, [matches]);
@@ -105,6 +106,8 @@ export default function MatchHistory({ matches, summonerPuuid, onLoadMore, isLoa
     }
   };
 
+
+
   if (!matches || matches.length === 0) {
     return (
       <div className={styles.matchHistorySection}>
@@ -176,14 +179,16 @@ export default function MatchHistory({ matches, summonerPuuid, onLoadMore, isLoa
                     alt="Spell 1"
                     width={20}
                     height={20}
-                    style={{ borderRadius: '2px' }}
+                    style={{ borderRadius: '2px', cursor: 'pointer' }}
+                    title={`Summoner Spell ${participant.summoner1Id}`}
                   />
                   <Image
                     src={getSpellImageUrl(participant.summoner2Id)}
                     alt="Spell 2"
                     width={20}
                     height={20}
-                    style={{ borderRadius: '2px' }}
+                    style={{ borderRadius: '2px', cursor: 'pointer' }}
+                    title={`Summoner Spell ${participant.summoner2Id}`}
                   />
                 </div>
               </div>
@@ -215,6 +220,7 @@ export default function MatchHistory({ matches, summonerPuuid, onLoadMore, isLoa
                         width={24}
                         height={24}
                         style={{ borderRadius: '2px' }}
+                        title={`Item ${itemId}`}
                       />
                     )}
                   </div>
