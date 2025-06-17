@@ -83,7 +83,55 @@ export class RiotAPIService {
   // Get account by Riot ID (gameName#tagLine)
   async getAccountByRiotId(gameName: string, tagLine: string, region: string = 'euw1'): Promise<RiotAccount> {
     const regionalUrl = this.getRegionalUrl(region);
-    const url = `${regionalUrl}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}`;
+
+    // Try multiple variations to handle edge cases
+    const variations = [
+      { name: gameName, tag: tagLine },
+      { name: gameName.toLowerCase(), tag: tagLine.toLowerCase() },
+      { name: gameName.toLowerCase(), tag: tagLine.toUpperCase() },
+      { name: gameName, tag: tagLine.toUpperCase() }
+    ];
+
+    for (let i = 0; i < variations.length; i++) {
+      const { name, tag } = variations[i];
+      const url = `${regionalUrl}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`;
+
+      console.log(`🔍 Riot API Debug - Attempt ${i + 1}:`, {
+        originalGameName: gameName,
+        originalTagLine: tagLine,
+        tryingGameName: name,
+        tryingTagLine: tag,
+        region,
+        regionalUrl,
+        fullUrl: url
+      });
+
+      try {
+        const result = await this.makeRequest<RiotAccount>(url);
+        console.log(`✅ Success on attempt ${i + 1}:`, result);
+        return result;
+      } catch (error) {
+        console.log(`❌ Attempt ${i + 1} failed:`, error instanceof Error ? error.message : error);
+
+        // If this is the last attempt, provide helpful error message
+        if (i === variations.length - 1) {
+          const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+          throw new Error(`Account not found: "${gameName}#${tagLine}". ${errorMessage}. Try checking the spelling or use a different region.`);
+        }
+
+        // Wait a bit between attempts to avoid rate limiting
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+    }
+
+    // This should never be reached, but TypeScript requires it
+    throw new Error('All account lookup attempts failed');
+  }
+
+  // Get account by PUUID
+  async getAccountByPuuid(puuid: string, region: string = 'euw1'): Promise<RiotAccount> {
+    const regionalUrl = this.getRegionalUrl(region);
+    const url = `${regionalUrl}/riot/account/v1/accounts/by-puuid/${puuid}`;
     return this.makeRequest<RiotAccount>(url);
   }
 
@@ -134,7 +182,36 @@ export class RiotAPIService {
     try {
       const platformUrl = this.getPlatformUrl(region);
       const url = `${platformUrl}/lol/spectator/v5/active-games/by-summoner/${puuid}`;
-      return await this.makeRequest<CurrentGameInfo>(url);
+      const gameInfo = await this.makeRequest<CurrentGameInfo>(url);
+
+      // Enrich with summoner names if they're missing
+      if (gameInfo && gameInfo.participants) {
+        const enrichedParticipants = await Promise.all(
+          gameInfo.participants.map(async (participant) => {
+            // If summonerName is missing or is a champion name, fetch it using PUUID
+            if (!participant.summonerName || participant.summonerName.length < 3) {
+              try {
+                const account = await this.getAccountByPuuid(participant.puuid, region);
+                return {
+                  ...participant,
+                  summonerName: account.gameName && account.tagLine ? `${account.gameName}#${account.tagLine}` : `Player${participant.puuid.slice(-4)}`
+                };
+              } catch (error) {
+                console.warn(`Failed to fetch summoner name for PUUID ${participant.puuid}:`, error);
+                return participant;
+              }
+            }
+            return participant;
+          })
+        );
+
+        return {
+          ...gameInfo,
+          participants: enrichedParticipants
+        };
+      }
+
+      return gameInfo;
     } catch (error) {
       // 404 means not in game, which is expected
       if (error instanceof Error && error.message.includes('404')) {
@@ -210,13 +287,38 @@ export class RiotAPIService {
 
   // Parse Riot ID from string (gameName#tagLine)
   static parseRiotId(riotId: string): { gameName: string; tagLine: string } | null {
-    const parts = riotId.split('#');
+    // Handle URL-encoded hashtags
+    const decodedRiotId = decodeURIComponent(riotId);
+
+    // Try different separators (# is the standard, but handle edge cases)
+    let parts: string[] = [];
+    if (decodedRiotId.includes('#')) {
+      parts = decodedRiotId.split('#');
+    } else if (decodedRiotId.includes('-') && decodedRiotId.split('-').length === 2) {
+      // Fallback for dash-separated format (like op.gg URLs)
+      parts = decodedRiotId.split('-');
+    }
+
     if (parts.length !== 2 || !parts[0] || !parts[1]) {
+      console.warn('🔍 Failed to parse Riot ID:', {
+        original: riotId,
+        decoded: decodedRiotId,
+        parts: parts
+      });
       return null;
     }
-    return {
+
+    const result = {
       gameName: parts[0].trim(),
       tagLine: parts[1].trim()
     };
+
+    console.log('🔍 Parsed Riot ID:', {
+      original: riotId,
+      decoded: decodedRiotId,
+      result: result
+    });
+
+    return result;
   }
 }

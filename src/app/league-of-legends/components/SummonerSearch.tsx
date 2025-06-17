@@ -10,6 +10,10 @@ import ChampionMastery from './ChampionMastery';
 import MatchHistory from './MatchHistory';
 import MatchStatistics from './MatchStatistics';
 import LiveGame from './LiveGame';
+import PlayedWithAnalysis from './PlayedWithAnalysis';
+import SearchHistory from './SearchHistory';
+import EnhancedLoading from './EnhancedLoading';
+import KeyboardShortcuts from './KeyboardShortcuts';
 
 interface SummonerSearchProps {
   onProfileFound?: (profile: SummonerProfile) => void;
@@ -27,10 +31,37 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
   const [riotId, setRiotId] = useState('');
   const [regions, setRegions] = useState<Region[]>([]);
 
-  // Load regions on component mount
+
+  // Load regions on component mount and check URL parameters
   useEffect(() => {
     loadRegions();
+    checkUrlParameters();
   }, []);
+
+  // Check URL parameters and auto-search if present
+  const checkUrlParameters = () => {
+    if (typeof window !== 'undefined') {
+      const urlParams = new URLSearchParams(window.location.search);
+      const summonerParam = urlParams.get('summoner');
+      const regionParam = urlParams.get('region');
+
+      if (summonerParam) {
+        setRiotId(decodeURIComponent(summonerParam));
+
+        if (regionParam) {
+          setSearchState(prev => ({
+            ...prev,
+            selectedRegion: regionParam
+          }));
+        }
+
+        // Auto-trigger search after a short delay to ensure state is set
+        setTimeout(() => {
+          performSearch(decodeURIComponent(summonerParam), regionParam || 'euw1');
+        }, 100);
+      }
+    }
+  };
 
   const loadRegions = async () => {
     try {
@@ -44,19 +75,20 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
     }
   };
 
-  const handleSearch = async (e: React.FormEvent) => {
-    e.preventDefault();
-    
-    if (!riotId.trim()) {
+
+
+  // Perform search with given parameters
+  const performSearch = async (searchRiotId: string, searchRegion: string) => {
+    if (!searchRiotId.trim()) {
       setSearchState(prev => ({ ...prev, error: 'Please enter a Riot ID' }));
       return;
     }
 
     // Validate Riot ID format
-    if (!riotId.includes('#')) {
-      setSearchState(prev => ({ 
-        ...prev, 
-        error: 'Invalid Riot ID format. Use: gameName#tagLine (e.g., Faker#T1)' 
+    if (!searchRiotId.includes('#')) {
+      setSearchState(prev => ({
+        ...prev,
+        error: 'Invalid Riot ID format. Use: gameName#tagLine (e.g., Faker#T1)'
       }));
       return;
     }
@@ -65,12 +97,13 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
       ...prev,
       isLoading: true,
       error: null,
-      profile: null
+      profile: null,
+      selectedRegion: searchRegion
     }));
 
     try {
       const response = await fetch(
-        `/api/lol/summoner?riotId=${encodeURIComponent(riotId)}&region=${searchState.selectedRegion}`
+        `/api/lol/summoner?riotId=${encodeURIComponent(searchRiotId)}&region=${searchRegion}`
       );
 
       if (!response.ok) {
@@ -81,7 +114,7 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
       const profile: SummonerProfile = await response.json();
 
       // Load match history
-      const matches = await loadMatchHistory(profile.account.puuid, 10);
+      const matches = await loadMatchHistory(profile.account.puuid, 10, searchRegion);
 
       setSearchState(prev => ({
         ...prev,
@@ -90,6 +123,24 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
         matchHistory: matches,
         error: null
       }));
+
+      // Add to search history
+      if ((window as any).addToSearchHistory) {
+        (window as any).addToSearchHistory(searchRiotId, searchRegion, {
+          level: profile.summoner.summonerLevel,
+          rank: profile.rankedStats.soloQueue?.tier ?
+            `${profile.rankedStats.soloQueue.tier} ${profile.rankedStats.soloQueue.rank}` :
+            'Unranked'
+        });
+      }
+
+      // Update URL to reflect current search
+      if (typeof window !== 'undefined') {
+        const newUrl = new URL(window.location.href);
+        newUrl.searchParams.set('summoner', searchRiotId);
+        newUrl.searchParams.set('region', searchRegion);
+        window.history.replaceState({}, '', newUrl.toString());
+      }
 
       // Notify parent component
       if (onProfileFound) {
@@ -105,9 +156,16 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
     }
   };
 
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await performSearch(riotId, searchState.selectedRegion);
+  };
+
   const handleRegionChange = (region: string) => {
     setSearchState(prev => ({ ...prev, selectedRegion: region }));
   };
+
+
 
   const handleRefresh = async () => {
     if (searchState.profile && riotId) {
@@ -115,10 +173,11 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
     }
   };
 
-  const loadMatchHistory = async (puuid: string, count: number = 10) => {
+  const loadMatchHistory = async (puuid: string, count: number = 10, region?: string) => {
     try {
+      const targetRegion = region || searchState.selectedRegion;
       const response = await fetch(
-        `/api/lol/matches?puuid=${puuid}&region=${searchState.selectedRegion}&count=${count}`
+        `/api/lol/matches?puuid=${puuid}&region=${targetRegion}&count=${count}`
       );
 
       if (!response.ok) {
@@ -186,6 +245,24 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
           Zadejte Riot ID pro zobrazení statistik, ranku a historie zápasů
         </p>
 
+        {/* Search History */}
+        <SearchHistory
+          onSelectSummoner={(summonerName, region) => {
+            setRiotId(summonerName);
+            setSearchState(prev => ({
+              ...prev,
+              selectedRegion: region
+            }));
+            // Trigger search automatically
+            setTimeout(() => {
+              const form = document.querySelector('form') as HTMLFormElement;
+              if (form) {
+                form.dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+              }
+            }, 100);
+          }}
+        />
+
         <form onSubmit={handleSearch} className={styles.searchForm}>
           <input
             type="text"
@@ -220,13 +297,31 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
 
         {/* Loading State */}
         {searchState.isLoading && (
-          <div className={styles.loadingSpinner}></div>
+          <EnhancedLoading
+            message="Načítám summoner data"
+            submessage="Získávám informace z Riot Games API..."
+            showProgress={false}
+          />
         )}
 
         {/* Error State */}
         {searchState.error && (
           <div className={styles.errorMessage}>
             <strong>Chyba:</strong> {searchState.error}
+
+            {/* Helpful suggestions for common issues */}
+            {searchState.error.includes('not found') && (
+              <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(255, 193, 7, 0.1)', borderRadius: '8px', border: '1px solid rgba(255, 193, 7, 0.3)' }}>
+                <h4 style={{ color: '#ffc107', margin: '0 0 0.5rem 0', fontSize: '0.9rem' }}>💡 Tipy pro hledání:</h4>
+                <ul style={{ color: '#c9aa71', fontSize: '0.8rem', margin: 0, paddingLeft: '1.2rem' }}>
+                  <li>Zkontrolujte přesný formát: <code style={{ color: '#6e4ff6' }}>HerníJméno#Tag</code></li>
+                  <li>Ověřte správný region (EUW, EUNE, NA, atd.)</li>
+                  <li>Zkuste hledat na <a href="https://op.gg" target="_blank" style={{ color: '#10b981' }}>op.gg</a> pro ověření správného jména</li>
+                  <li>Některé tagy mohou být case-sensitive (velká/malá písmena)</li>
+                  <li>Zkuste jiný region, pokud si nejste jisti</li>
+                </ul>
+              </div>
+            )}
           </div>
         )}
 
@@ -263,6 +358,14 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
                 />
               )}
 
+              {/* Played With Analysis */}
+              {searchState.matchHistory.length > 0 && (
+                <PlayedWithAnalysis
+                  matches={searchState.matchHistory}
+                  summonerPuuid={searchState.profile.account.puuid}
+                />
+              )}
+
               {/* Match History */}
               {searchState.matchHistory.length > 0 && (
                 <MatchHistory
@@ -282,8 +385,40 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
             💡 <strong>Tip:</strong> Riot ID se skládá z herního jména a tagu oddělených #<br/>
             Například: <code style={{ color: '#6e4ff6' }}>Faker#T1</code> nebo <code style={{ color: '#6e4ff6' }}>YourName#EUW</code>
           </p>
+
+          {/* Riot ID Helper */}
+          <details style={{ marginTop: '1rem', textAlign: 'left' }}>
+            <summary style={{ color: '#6e4ff6', cursor: 'pointer', fontSize: '0.9rem' }}>
+              🔍 Jak najít svůj Riot ID?
+            </summary>
+            <div style={{
+              marginTop: '0.5rem',
+              padding: '1rem',
+              background: 'rgba(110, 79, 246, 0.1)',
+              borderRadius: '8px',
+              border: '1px solid rgba(110, 79, 246, 0.3)'
+            }}>
+              <ol style={{ color: '#c9aa71', fontSize: '0.8rem', margin: 0, paddingLeft: '1.2rem' }}>
+                <li>Otevřete League of Legends klienta</li>
+                <li>V pravém horním rohu uvidíte své jméno a tag (např. "YourName#EUW")</li>
+                <li>Nebo se podívejte do hry - vaše Riot ID je zobrazeno v profilu</li>
+                <li>Můžete také zkontrolovat na <a href="https://op.gg" target="_blank" style={{ color: '#10b981' }}>op.gg</a></li>
+                <li>Pokud máte starý účet, váš tag může být region (EUW, EUNE, NA1, atd.)</li>
+              </ol>
+
+              <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: 'rgba(255, 193, 7, 0.1)', borderRadius: '4px' }}>
+                <strong style={{ color: '#ffc107', fontSize: '0.8rem' }}>⚠️ Poznámka:</strong>
+                <span style={{ color: '#c9aa71', fontSize: '0.8rem', marginLeft: '0.5rem' }}>
+                  Některé uživatele s velmi specifickými tagy nemusí být dostupní přes API
+                </span>
+              </div>
+            </div>
+          </details>
         </div>
       </div>
+
+      {/* Keyboard Shortcuts */}
+      <KeyboardShortcuts />
     </section>
   );
 }

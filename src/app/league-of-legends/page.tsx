@@ -7,6 +7,7 @@ import styles from './lol.module.css';
 import '../komplexaci.css';
 import Header from '../components/Header';
 import SummonerSearch from './components/SummonerSearch';
+import KomplexaciStatus from './components/KomplexaciStatus';
 
 // Types
 interface Champion {
@@ -757,6 +758,9 @@ export default function LeagueOfLegendsNextJS() {
 
         {/* Summoner Search Section */}
         <SummonerSearch />
+
+        {/* Komplexáci Status Section */}
+        <KomplexaciStatus />
 
         {/* Champions Section */}
         <section className={`${styles.section}`} style={{ background: 'rgba(0, 0, 0, 0.2)' }}>
