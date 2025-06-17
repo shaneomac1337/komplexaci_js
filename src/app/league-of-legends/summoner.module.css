@@ -1,0 +1,821 @@
+/* Summoner Search Components Styles */
+
+/* Search Section */
+.summonerSearchSection {
+  padding: 4rem 1rem;
+  background: rgba(0, 0, 0, 0.3);
+  border-top: 1px solid rgba(110, 79, 246, 0.3);
+}
+
+.searchContainer {
+  max-width: 1200px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.searchTitle {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: #f0e6d2;
+  margin-bottom: 1rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.searchSubtitle {
+  font-size: 1.2rem;
+  color: #c9aa71;
+  margin-bottom: 2rem;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
+}
+
+.searchForm {
+  display: flex;
+  gap: 1rem;
+  max-width: 600px;
+  margin: 0 auto 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.searchInput {
+  flex: 1;
+  min-width: 250px;
+  padding: 0.75rem 1rem;
+  border: 2px solid rgba(110, 79, 246, 0.5);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #f0e6d2;
+  font-size: 1rem;
+  transition: all 0.3s ease;
+}
+
+.searchInput:focus {
+  outline: none;
+  border-color: #6e4ff6;
+  box-shadow: 0 0 10px rgba(110, 79, 246, 0.3);
+}
+
+.searchInput::placeholder {
+  color: #c9aa71;
+  opacity: 0.7;
+}
+
+.regionSelect {
+  padding: 0.75rem;
+  border: 2px solid rgba(110, 79, 246, 0.5);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #f0e6d2;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.regionSelect:focus {
+  outline: none;
+  border-color: #6e4ff6;
+  box-shadow: 0 0 10px rgba(110, 79, 246, 0.3);
+}
+
+.searchButton {
+  padding: 0.75rem 2rem;
+  background: linear-gradient(135deg, #6e4ff6, #8b5cf6);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.searchButton:hover {
+  background: linear-gradient(135deg, #5b3fd6, #7c3aed);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(110, 79, 246, 0.4);
+}
+
+.searchButton:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+/* Summoner Profile Card */
+.summonerCard {
+  background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(110, 79, 246, 0.1));
+  border: 2px solid rgba(110, 79, 246, 0.3);
+  border-radius: 16px;
+  padding: 2rem;
+  margin: 2rem auto;
+  max-width: 1200px;
+  position: relative;
+  overflow: hidden;
+}
+
+.summonerCard::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(110, 79, 246, 0.1), rgba(200, 155, 60, 0.1));
+  z-index: 1;
+  pointer-events: none;
+}
+
+.summonerCardContent {
+  position: relative;
+  z-index: 2;
+}
+
+.summonerHeader {
+  display: flex;
+  align-items: center;
+  gap: 2rem;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+}
+
+.summonerIcon {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  border: 3px solid #c9aa71;
+  box-shadow: 0 0 20px rgba(201, 170, 113, 0.3);
+}
+
+.summonerInfo h2 {
+  font-size: 2rem;
+  color: #f0e6d2;
+  margin: 0 0 0.5rem 0;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.summonerLevel {
+  font-size: 1.2rem;
+  color: #c9aa71;
+  margin: 0;
+}
+
+.liveGameBadge {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Rank Display */
+.rankSection {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin: 2rem 0;
+}
+
+.rankCard {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(110, 79, 246, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  text-align: center;
+}
+
+.rankTitle {
+  font-size: 1.1rem;
+  color: #c9aa71;
+  margin-bottom: 1rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.rankTier {
+  font-size: 1.8rem;
+  font-weight: bold;
+  color: #f0e6d2;
+  margin-bottom: 0.5rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.rankLP {
+  font-size: 1.2rem;
+  color: #6e4ff6;
+  margin-bottom: 1rem;
+}
+
+.rankStats {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.9rem;
+  color: #c9aa71;
+}
+
+.winRate {
+  font-weight: 600;
+}
+
+.winRate.positive {
+  color: #10b981;
+}
+
+.winRate.negative {
+  color: #ef4444;
+}
+
+/* Champion Mastery */
+.masterySection {
+  margin: 2rem 0;
+}
+
+.masteryTitle {
+  font-size: 1.5rem;
+  color: #f0e6d2;
+  margin-bottom: 1rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.masteryGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
+}
+
+.masteryCard {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(110, 79, 246, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  text-align: center;
+  transition: all 0.3s ease;
+}
+
+.masteryCard:hover {
+  border-color: #6e4ff6;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(110, 79, 246, 0.2);
+}
+
+.championImage {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  margin: 0 auto 0.5rem;
+  display: block;
+}
+
+.championName {
+  font-size: 1rem;
+  color: #f0e6d2;
+  margin-bottom: 0.5rem;
+  font-weight: 600;
+}
+
+.masteryLevel {
+  font-size: 0.9rem;
+  color: #c9aa71;
+  margin-bottom: 0.25rem;
+}
+
+.masteryPoints {
+  font-size: 0.8rem;
+  color: #6e4ff6;
+}
+
+/* Loading and Error States */
+.loadingSpinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(110, 79, 246, 0.3);
+  border-top: 3px solid #6e4ff6;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin: 2rem auto;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.errorMessage {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  color: #fca5a5;
+  text-align: center;
+  margin: 2rem auto;
+  max-width: 600px;
+}
+
+/* Match History */
+.matchHistorySection {
+  margin: 2rem 0;
+}
+
+.matchHistoryTitle {
+  font-size: 1.5rem;
+  color: #f0e6d2;
+  margin-bottom: 1rem;
+  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+}
+
+.matchCard {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(110, 79, 246, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+}
+
+.matchCard:hover {
+  border-color: #6e4ff6;
+  transform: translateY(-1px);
+}
+
+.matchCard.win {
+  border-left: 4px solid #10b981;
+}
+
+.matchCard.loss {
+  border-left: 4px solid #ef4444;
+}
+
+.matchResult {
+  font-weight: 600;
+  font-size: 0.9rem;
+  text-transform: uppercase;
+}
+
+.matchResult.win {
+  color: #10b981;
+}
+
+.matchResult.loss {
+  color: #ef4444;
+}
+
+.matchChampion {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.matchChampionImage {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+}
+
+.matchKDA {
+  font-size: 0.9rem;
+  color: #f0e6d2;
+}
+
+.matchDuration {
+  font-size: 0.8rem;
+  color: #c9aa71;
+}
+
+/* Statistics Cards */
+.statsCard {
+  background: rgba(0, 0, 0, 0.4);
+  border: 1px solid rgba(110, 79, 246, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.statsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 1rem;
+}
+
+.statItem {
+  text-align: center;
+}
+
+.statValue {
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 0.25rem;
+}
+
+.statLabel {
+  color: #c9aa71;
+  font-size: 0.9rem;
+  margin-bottom: 0.25rem;
+}
+
+.statSubtext {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+/* Champion Performance Cards */
+.championPerformanceGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 0.5rem;
+}
+
+.championPerformanceCard {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(110, 79, 246, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  transition: all 0.3s ease;
+}
+
+.championPerformanceCard:hover {
+  border-color: #6e4ff6;
+  transform: translateY(-1px);
+}
+
+.championPerformanceInfo {
+  flex: 1;
+}
+
+.championPerformanceStats {
+  text-align: right;
+}
+
+/* Game Mode Cards */
+.gameModeGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+  gap: 0.5rem;
+}
+
+.gameModeCard {
+  background: rgba(0, 0, 0, 0.3);
+  border: 1px solid rgba(110, 79, 246, 0.2);
+  border-radius: 8px;
+  padding: 1rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.gameModeCard:hover {
+  border-color: #6e4ff6;
+  transform: translateY(-1px);
+}
+
+/* Win Rate Colors */
+.winRateExcellent {
+  color: #10b981;
+}
+
+.winRateGood {
+  color: #22c55e;
+}
+
+.winRateAverage {
+  color: #eab308;
+}
+
+.winRatePoor {
+  color: #f97316;
+}
+
+.winRateBad {
+  color: #ef4444;
+}
+
+/* Item Grid */
+.itemGrid {
+  display: flex;
+  gap: 2px;
+  flex-wrap: wrap;
+  max-width: 200px;
+}
+
+.itemSlot {
+  width: 24px;
+  height: 24px;
+  border-radius: 2px;
+  border: 1px solid rgba(110, 79, 246, 0.3);
+  overflow: hidden;
+}
+
+.itemSlot.empty {
+  background-color: rgba(0, 0, 0, 0.3);
+}
+
+/* Spell Icons */
+.spellGrid {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.spellIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: 2px;
+}
+
+/* Live Game Styles */
+.liveGameContainer {
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(110, 79, 246, 0.2));
+  border: 1px solid rgba(16, 185, 129, 0.3);
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin-bottom: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.liveGameContainer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(45deg, rgba(16, 185, 129, 0.1), rgba(110, 79, 246, 0.1));
+  z-index: 1;
+  pointer-events: none;
+}
+
+.liveGameHeader {
+  text-align: center;
+  position: relative;
+  z-index: 2;
+}
+
+.liveGameTitle {
+  font-size: 1.3rem;
+  font-weight: bold;
+  color: #f0e6d2;
+  margin-bottom: 0.5rem;
+}
+
+.liveGameSubtitle {
+  color: #c9aa71;
+  font-size: 1rem;
+}
+
+.liveGameTimer {
+  color: #10b981;
+  font-size: 0.9rem;
+  margin-top: 0.5rem;
+  font-weight: 600;
+}
+
+.teamsContainer {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  position: relative;
+  z-index: 2;
+}
+
+.teamContainer {
+  border-radius: 12px;
+  padding: 1rem;
+}
+
+.teamBlue {
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.teamRed {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.teamTitle {
+  text-align: center;
+  margin-bottom: 1rem;
+  font-size: 1.1rem;
+  font-weight: bold;
+}
+
+.teamTitleBlue {
+  color: #3b82f6;
+}
+
+.teamTitleRed {
+  color: #ef4444;
+}
+
+.bansContainer {
+  margin-bottom: 1rem;
+}
+
+.bansTitle {
+  color: #c9aa71;
+  font-size: 0.8rem;
+  margin-bottom: 0.5rem;
+}
+
+.bansGrid {
+  display: flex;
+  gap: 4px;
+  justify-content: center;
+}
+
+.banItem {
+  position: relative;
+}
+
+.banOverlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  color: #ef4444;
+  font-size: 16px;
+  font-weight: bold;
+}
+
+.participantsList {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.participantCard {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.5rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.participantCard.highlighted {
+  background: rgba(110, 79, 246, 0.2);
+  border: 1px solid #6e4ff6;
+}
+
+.participantCard:hover {
+  background: rgba(110, 79, 246, 0.1);
+}
+
+.participantChampion {
+  width: 32px;
+  height: 32px;
+  border-radius: 4px;
+}
+
+.participantSpells {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.participantSpell {
+  width: 14px;
+  height: 14px;
+  border-radius: 2px;
+}
+
+.participantIcon {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+}
+
+.participantName {
+  flex: 1;
+  font-size: 0.8rem;
+  color: #f0e6d2;
+}
+
+.participantName.highlighted {
+  color: #6e4ff6;
+  font-weight: bold;
+}
+
+.participantIndicator {
+  color: #10b981;
+  margin-left: 0.25rem;
+}
+
+.liveGameRefresh {
+  text-align: center;
+  margin-top: 1rem;
+  position: relative;
+  z-index: 2;
+}
+
+.refreshButton {
+  background: linear-gradient(135deg, #10b981, #059669);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  padding: 0.5rem 1rem;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.refreshButton:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .searchForm {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .searchInput,
+  .regionSelect,
+  .searchButton {
+    width: 100%;
+  }
+
+  .summonerHeader {
+    flex-direction: column;
+    text-align: center;
+  }
+
+  .rankSection {
+    grid-template-columns: 1fr;
+  }
+
+  .masteryGrid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  }
+
+  .matchCard {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .statsGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .championPerformanceGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .gameModeGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .itemGrid {
+    max-width: 150px;
+  }
+
+  .teamsContainer {
+    grid-template-columns: 1fr;
+    gap: 0.5rem;
+  }
+
+  .participantCard {
+    flex-wrap: wrap;
+    gap: 0.25rem;
+  }
+
+  .participantName {
+    font-size: 0.7rem;
+  }
+
+  .bansGrid {
+    flex-wrap: wrap;
+  }
+
+  .liveGameTitle {
+    font-size: 1.1rem;
+  }
+
+  .liveGameSubtitle {
+    font-size: 0.9rem;
+  }
+}
