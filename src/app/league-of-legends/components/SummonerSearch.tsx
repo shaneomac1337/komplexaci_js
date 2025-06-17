@@ -240,7 +240,7 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
   return (
     <section className={styles.summonerSearchSection}>
       <div className={styles.searchContainer}>
-        <h2 className={styles.searchTitle}>Hledat Summoner</h2>
+        <h2 className={styles.searchTitle}>Vyhledat vyvolávače</h2>
         <p className={styles.searchSubtitle}>
           Zadejte Riot ID pro zobrazení statistik, ranku a historie zápasů
         </p>
