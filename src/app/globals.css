@@ -260,17 +260,9 @@ html {
     transform: translateY(-2px);
 }
 
+/* Remove white dot from all navigation items for consistency */
 .nav-link.active::before {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 50%;
-    transform: translateX(-50%);
-    width: 6px;
-    height: 6px;
-    background: #fff;
-    border-radius: 50%;
-    animation: pulse 2s infinite;
+    display: none;
 }
 
 /* Submenu styles */

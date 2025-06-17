@@ -8,6 +8,7 @@ import ServerStatus from './components/ServerStatus';
 import DiscordServerStats from './components/DiscordServerStats';
 import PerformanceStatus from '../components/PerformanceStatus';
 
+
 // Import exact fonts from original
 if (typeof window !== 'undefined') {
   const link1 = document.createElement('link');
@@ -1115,8 +1116,10 @@ export default function Home() {
             Připoj se k nám
           </a>
 
-          {/* Performance Status - Hero Version */}
-          <PerformanceStatus showMusicHint={!hasUserInteracted && isLoaded} />
+          {/* Minimalistic Performance Status */}
+          <div className="mt-6">
+            <PerformanceStatus showMusicHint={!hasUserInteracted && isLoaded} />
+          </div>
 
 
         </div>
