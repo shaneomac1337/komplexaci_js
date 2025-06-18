@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import Image from 'next/image';
 import styles from '../summoner.module.css';
 import { SummonerProfile, Region, SummonerSearchState } from '../types/summoner-ui';
@@ -14,6 +14,9 @@ import PlayedWithAnalysis from './PlayedWithAnalysis';
 import SearchHistory from './SearchHistory';
 import EnhancedLoading from './EnhancedLoading';
 import KeyboardShortcuts from './KeyboardShortcuts';
+import FilterPanel, { FilterState, defaultFilterState } from './FilterPanel';
+import FilterChips from './FilterChips';
+import { filterMatches, filterChampionMastery, getUniqueChampions, getUniqueGameModes, calculateMatchStats, MatchData, ChampionMasteryData } from '../utils/filterUtils';
 
 interface SummonerSearchProps {
   onProfileFound?: (profile: SummonerProfile) => void;
@@ -31,6 +34,81 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
   const [riotId, setRiotId] = useState('');
   const [regions, setRegions] = useState<Region[]>([]);
 
+  // Filter state
+  const [filters, setFilters] = useState<FilterState>(defaultFilterState);
+  const [isFilterPanelVisible, setIsFilterPanelVisible] = useState(false);
+
+  // Memoized filtered data
+  const filteredMatchHistory = useMemo(() => {
+    if (!searchState.matchHistory.length || !searchState.profile) return searchState.matchHistory;
+
+    // Convert match history to MatchData format for filtering
+    const matchData: MatchData[] = searchState.matchHistory.map(match => {
+      // Find the participant data for the current summoner
+      const participant = match.info.participants.find(p => p.puuid === searchState.profile?.account.puuid);
+
+      if (!participant) return null;
+
+      return {
+        ...participant,
+        gameId: match.metadata.matchId,
+        gameMode: match.info.gameMode,
+        gameType: match.info.gameType,
+        gameCreation: match.info.gameCreation,
+        gameDuration: match.info.gameDuration,
+        role: participant.teamPosition || participant.lane || participant.role,
+        teamPosition: participant.teamPosition,
+        lane: participant.lane
+      };
+    }).filter(Boolean) as MatchData[];
+
+    const filteredData = filterMatches(matchData, filters);
+
+    // Convert back to MatchHistoryEntry format by filtering original matches
+    const filteredMatchIds = new Set(filteredData.map(match => match.gameId));
+    return searchState.matchHistory.filter(match => filteredMatchIds.has(match.metadata.matchId));
+  }, [searchState.matchHistory, searchState.profile, filters]);
+
+  const filteredChampionMastery = useMemo(() => {
+    if (!searchState.profile?.championMastery.length) return [];
+
+    // Convert champion mastery to ChampionMasteryData format for filtering
+    const masteryData: ChampionMasteryData[] = searchState.profile.championMastery.map(mastery => ({
+      ...mastery,
+      championId: mastery.championId.toString(),
+      championName: mastery.championName || `Champion ${mastery.championId}`
+    }));
+
+    return filterChampionMastery(masteryData, filters);
+  }, [searchState.profile?.championMastery, filters]);
+
+  // Available filter options
+  const availableChampions = useMemo(() => {
+    if (!searchState.matchHistory.length || !searchState.profile) return [];
+
+    const champions = new Set<string>();
+    searchState.matchHistory.forEach(match => {
+      const participant = match.info.participants.find(p => p.puuid === searchState.profile?.account.puuid);
+      if (participant) {
+        champions.add(participant.championName);
+      }
+    });
+
+    return Array.from(champions).sort();
+  }, [searchState.matchHistory, searchState.profile]);
+
+
+
+  const availableGameModes = useMemo(() => {
+    if (!searchState.matchHistory.length) return [];
+
+    const gameModes = new Set<string>();
+    searchState.matchHistory.forEach(match => {
+      gameModes.add(match.info.gameMode);
+    });
+
+    return Array.from(gameModes).sort();
+  }, [searchState.matchHistory]);
 
   // Load regions on component mount and check URL parameters
   useEffect(() => {
@@ -44,6 +122,19 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
       const urlParams = new URLSearchParams(window.location.search);
       const summonerParam = urlParams.get('summoner');
       const regionParam = urlParams.get('region');
+
+      // Check if we should scroll to summoner search section
+      if (window.location.hash === '#summoner-search') {
+        setTimeout(() => {
+          const element = document.getElementById('summoner-search');
+          if (element) {
+            element.scrollIntoView({
+              behavior: 'smooth',
+              block: 'start'
+            });
+          }
+        }, 100);
+      }
 
       if (summonerParam) {
         setRiotId(decodeURIComponent(summonerParam));
@@ -238,7 +329,7 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
   }, [searchState.profile?.isInGame]);
 
   return (
-    <section className={styles.summonerSearchSection}>
+    <section id="summoner-search" className={styles.summonerSearchSection}>
       <div className={styles.searchContainer}>
         <h2 className={styles.searchTitle}>Vyhledat vyvolávače</h2>
         <p className={styles.searchSubtitle}>
@@ -325,6 +416,30 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
           </div>
         )}
 
+        {/* Filter Controls - Show only when profile is loaded */}
+        {searchState.profile && (
+          <>
+            <FilterChips
+              filters={filters}
+              onFiltersChange={setFilters}
+              onTogglePanel={() => setIsFilterPanelVisible(!isFilterPanelVisible)}
+            />
+
+
+
+            <FilterPanel
+              filters={filters}
+              onFiltersChange={setFilters}
+              availableChampions={availableChampions}
+              availableGameModes={availableGameModes}
+              isVisible={isFilterPanelVisible}
+              onToggle={() => setIsFilterPanelVisible(!isFilterPanelVisible)}
+              matchCount={filteredMatchHistory.length}
+              totalMatches={searchState.matchHistory.length}
+            />
+          </>
+        )}
+
         {/* Success State - Summoner Profile */}
         {searchState.profile && (
           <div className={styles.summonerCard}>
@@ -353,7 +468,7 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
               {/* Match Statistics */}
               {searchState.matchHistory.length > 0 && (
                 <MatchStatistics
-                  matches={searchState.matchHistory}
+                  matches={filteredMatchHistory}
                   summonerPuuid={searchState.profile.account.puuid}
                 />
               )}
@@ -361,19 +476,35 @@ export default function SummonerSearch({ onProfileFound }: SummonerSearchProps) 
               {/* Played With Analysis */}
               {searchState.matchHistory.length > 0 && (
                 <PlayedWithAnalysis
-                  matches={searchState.matchHistory}
+                  matches={filteredMatchHistory}
                   summonerPuuid={searchState.profile.account.puuid}
                 />
               )}
 
               {/* Match History */}
               {searchState.matchHistory.length > 0 && (
-                <MatchHistory
-                  matches={searchState.matchHistory}
-                  summonerPuuid={searchState.profile.account.puuid}
-                  onLoadMore={handleLoadMoreMatches}
-                  isLoading={searchState.isLoading}
-                />
+                <>
+                  {filteredMatchHistory.length !== searchState.matchHistory.length && (
+                    <div style={{
+                      background: 'rgba(110, 79, 246, 0.1)',
+                      border: '1px solid rgba(110, 79, 246, 0.3)',
+                      borderRadius: '8px',
+                      padding: '1rem',
+                      margin: '1rem 0',
+                      textAlign: 'center'
+                    }}>
+                      <p style={{ color: '#c9aa71', margin: 0 }}>
+                        📊 Zobrazeno {filteredMatchHistory.length} z {searchState.matchHistory.length} zápasů na základě aktivních filtrů
+                      </p>
+                    </div>
+                  )}
+                  <MatchHistory
+                    matches={filteredMatchHistory}
+                    summonerPuuid={searchState.profile.account.puuid}
+                    onLoadMore={handleLoadMoreMatches}
+                    isLoading={searchState.isLoading}
+                  />
+                </>
               )}
             </div>
           </div>

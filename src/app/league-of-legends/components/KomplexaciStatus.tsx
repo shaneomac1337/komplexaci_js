@@ -41,10 +41,10 @@ const KOMPLEXACI_MEMBERS: KomplexaciMember[] = [
   },
   {
     name: 'Barber',
-    riotId: 'Barbers#EUNE',
+    riotId: 'JESUS#KENCH',
     region: 'eun1',
     displayName: 'Barber',
-    gameName: 'Barbers'
+    gameName: 'JESUS'
   },
   {
     name: 'Roseck',
@@ -218,7 +218,7 @@ function GameDetailsModal({
                     <div className={`${styles.summonerName} ${participant.puuid === game.memberPuuid ? styles.highlighted : ''}`}>
                       <button
                         onClick={() => {
-                          const summonerUrl = `/league-of-legends?summoner=${encodeURIComponent(participant.summonerName)}&region=${game.memberRegion}`;
+                          const summonerUrl = `/league-of-legends?summoner=${encodeURIComponent(participant.summonerName)}&region=${game.memberRegion}#summoner-search`;
                           window.open(summonerUrl, '_blank');
                         }}
                         className={styles.summonerButton}
@@ -290,7 +290,7 @@ function GameDetailsModal({
                     <div className={`${styles.summonerName} ${participant.puuid === game.memberPuuid ? styles.highlighted : ''}`}>
                       <button
                         onClick={() => {
-                          const summonerUrl = `/league-of-legends?summoner=${encodeURIComponent(participant.summonerName)}&region=${game.memberRegion}`;
+                          const summonerUrl = `/league-of-legends?summoner=${encodeURIComponent(participant.summonerName)}&region=${game.memberRegion}#summoner-search`;
                           window.open(summonerUrl, '_blank');
                         }}
                         className={styles.summonerButton}
@@ -575,6 +575,12 @@ export default function KomplexaciStatus() {
     }
   };
 
+  const handleMemberNameClick = (member: KomplexaciMember, e: React.MouseEvent) => {
+    e.stopPropagation(); // Prevent triggering the game card click
+    const summonerUrl = `/league-of-legends?summoner=${encodeURIComponent(member.riotId)}&region=${member.region}#summoner-search`;
+    window.location.href = summonerUrl;
+  };
+
   // Get players currently in game
   const playersInGame = memberStatuses.filter(status => status.isInGame);
 
@@ -652,8 +658,14 @@ export default function KomplexaciStatus() {
           >
             <div className={styles.memberHeader}>
               <div className={styles.memberInfo}>
-                <h3 className={styles.memberName}>{status.member.displayName}</h3>
-                <span className={styles.memberTag}>@{status.member.gameName}</span>
+                <button
+                  className={styles.memberNameButton}
+                  onClick={(e) => handleMemberNameClick(status.member, e)}
+                  title={`Klikněte pro zobrazení profilu ${status.member.riotId}`}
+                >
+                  <h3 className={styles.memberName}>{status.member.displayName}</h3>
+                  <span className={styles.memberTag}>@{status.member.gameName}</span>
+                </button>
               </div>
               <div className={`${styles.statusIndicator} ${
                 status.loading ? styles.loading :
@@ -721,7 +733,7 @@ export default function KomplexaciStatus() {
 
       <div className={styles.footer}>
         <p className={styles.footerText}>
-          🎮 = Hraje právě teď (klikněte pro detaily) • 💤 = Nehraje • Status se obnovuje každé 2 minuty
+          🎮 = Hraje právě teď (klikněte pro detaily) • 💤 = Nehraje • 👤 Klikněte na jméno pro profil • Status se obnovuje každé 2 minuty
         </p>
       </div>
 
