@@ -245,6 +245,33 @@
   opacity: 0.8;
 }
 
+.memberNameButton {
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: all 0.3s ease;
+  border-radius: 6px;
+  padding: 0.25rem;
+  margin: -0.25rem;
+}
+
+.memberNameButton:hover {
+  background: rgba(110, 79, 246, 0.1);
+  transform: translateY(-1px);
+}
+
+.memberNameButton:hover .memberName {
+  color: #6e4ff6;
+}
+
+.memberNameButton:hover .memberTag {
+  color: #8b7cf6;
+  opacity: 1;
+}
+
 .statusIndicator {
   width: 2rem;
   height: 2rem;

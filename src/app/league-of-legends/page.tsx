@@ -174,7 +174,7 @@ export default function LeagueOfLegendsNextJS() {
   const [refreshSuccess, setRefreshSuccess] = useState(false);
 
   // Toggle state for Champions vs Summoner Search
-  const [showChampions, setShowChampions] = useState(true);
+  const [showChampions, setShowChampions] = useState(false);
 
   // Background rotation functions
   const getRandomChampionSplash = () => {

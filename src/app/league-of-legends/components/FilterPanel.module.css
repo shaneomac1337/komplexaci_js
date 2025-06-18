@@ -1,0 +1,305 @@
+.filterPanel {
+  position: fixed;
+  top: 0;
+  right: -400px;
+  width: 380px;
+  height: 100vh;
+  background: linear-gradient(135deg, rgba(14, 14, 35, 0.98), rgba(20, 20, 45, 0.98));
+  border-left: 2px solid rgba(110, 79, 246, 0.3);
+  box-shadow: -5px 0 20px rgba(0, 0, 0, 0.5);
+  transition: right 0.3s ease;
+  z-index: 1000;
+  overflow-y: auto;
+  backdrop-filter: blur(10px);
+}
+
+.filterPanel.visible {
+  right: 0;
+}
+
+.filterHeader {
+  padding: 1.5rem;
+  border-bottom: 1px solid rgba(110, 79, 246, 0.2);
+  background: rgba(110, 79, 246, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+
+.filterTitle {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #f0e6d2;
+  font-size: 1.2rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.toggleButton {
+  background: none;
+  border: none;
+  color: #f0e6d2;
+  font-size: 1.2rem;
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.toggleButton:hover {
+  background: rgba(110, 79, 246, 0.2);
+  color: #6e4ff6;
+}
+
+.resultCount {
+  color: #c9aa71;
+  font-size: 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.clearButton {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+  border: none;
+  color: white;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  width: 100%;
+}
+
+.clearButton:hover {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+}
+
+.filterContent {
+  padding: 1rem;
+}
+
+.filterSection {
+  margin-bottom: 1.5rem;
+  border: 1px solid rgba(110, 79, 246, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.sectionHeader {
+  width: 100%;
+  background: rgba(110, 79, 246, 0.1);
+  border: none;
+  padding: 1rem;
+  color: #f0e6d2;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: all 0.3s ease;
+}
+
+.sectionHeader:hover {
+  background: rgba(110, 79, 246, 0.2);
+}
+
+.arrow {
+  transition: transform 0.3s ease;
+  color: #6e4ff6;
+}
+
+.arrow.expanded {
+  transform: rotate(180deg);
+}
+
+.sectionContent {
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.filterGroup {
+  margin-bottom: 1rem;
+}
+
+.filterGroup:last-child {
+  margin-bottom: 0;
+}
+
+.filterLabel {
+  display: block;
+  color: #c9aa71;
+  font-size: 0.9rem;
+  font-weight: 500;
+  margin-bottom: 0.5rem;
+}
+
+.buttonGroup {
+  display: flex;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.filterButton {
+  background: rgba(110, 79, 246, 0.1);
+  border: 1px solid rgba(110, 79, 246, 0.3);
+  color: #f0e6d2;
+  padding: 0.5rem 1rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+}
+
+.filterButton:hover {
+  background: rgba(110, 79, 246, 0.2);
+  border-color: rgba(110, 79, 246, 0.5);
+}
+
+.filterButton.active {
+  background: linear-gradient(135deg, #6e4ff6, #8b5cf6);
+  border-color: #6e4ff6;
+  color: white;
+  font-weight: 600;
+}
+
+.roleGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+  gap: 0.5rem;
+}
+
+.roleButton {
+  background: rgba(110, 79, 246, 0.1);
+  border: 1px solid rgba(110, 79, 246, 0.3);
+  color: #f0e6d2;
+  padding: 0.75rem 0.5rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.roleButton:hover {
+  background: rgba(110, 79, 246, 0.2);
+  border-color: rgba(110, 79, 246, 0.5);
+  transform: translateY(-1px);
+}
+
+.roleButton.active {
+  background: linear-gradient(135deg, #6e4ff6, #8b5cf6);
+  border-color: #6e4ff6;
+  color: white;
+  font-weight: 600;
+}
+
+.roleIcon {
+  font-size: 1.2rem;
+}
+
+.roleName {
+  font-size: 0.7rem;
+  font-weight: 500;
+}
+
+.championGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+  gap: 0.5rem;
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.championButton {
+  background: rgba(110, 79, 246, 0.1);
+  border: 1px solid rgba(110, 79, 246, 0.3);
+  color: #f0e6d2;
+  padding: 0.5rem;
+  border-radius: 6px;
+  font-size: 0.7rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.championButton:hover {
+  background: rgba(110, 79, 246, 0.2);
+  border-color: rgba(110, 79, 246, 0.5);
+  transform: translateY(-1px);
+}
+
+.championButton.active {
+  background: linear-gradient(135deg, #6e4ff6, #8b5cf6);
+  border-color: #6e4ff6;
+  color: white;
+  font-weight: 600;
+}
+
+.moreChampions {
+  text-align: center;
+  color: #c9aa71;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+  font-style: italic;
+}
+
+/* Mobile Responsiveness */
+@media (max-width: 768px) {
+  .filterPanel {
+    width: 100vw;
+    right: -100vw;
+  }
+  
+  .filterPanel.visible {
+    right: 0;
+  }
+  
+  .roleGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+  
+  .championGrid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+  }
+}
+
+/* Scrollbar Styling */
+.filterPanel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.filterPanel::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.filterPanel::-webkit-scrollbar-thumb {
+  background: rgba(110, 79, 246, 0.5);
+  border-radius: 3px;
+}
+
+.filterPanel::-webkit-scrollbar-thumb:hover {
+  background: rgba(110, 79, 246, 0.7);
+}
+
+.championGrid::-webkit-scrollbar {
+  width: 4px;
+}
+
+.championGrid::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.1);
+}
+
+.championGrid::-webkit-scrollbar-thumb {
+  background: rgba(110, 79, 246, 0.3);
+  border-radius: 2px;
+}

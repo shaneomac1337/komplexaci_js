@@ -307,7 +307,7 @@ export default function LiveGame({ currentGame, summonerPuuid }: LiveGameProps) 
                         onClick={() => {
                           const currentUrl = new URL(window.location.href);
                           const region = currentUrl.searchParams.get('region') || 'eun1';
-                          const summonerUrl = `/league-of-legends?summoner=${encodeURIComponent(participant.summonerName)}&region=${region}`;
+                          const summonerUrl = `/league-of-legends?summoner=${encodeURIComponent(participant.summonerName)}&region=${region}#summoner-search`;
                           window.open(summonerUrl, '_blank');
                         }}
                         style={{
@@ -438,7 +438,7 @@ export default function LiveGame({ currentGame, summonerPuuid }: LiveGameProps) 
                         onClick={() => {
                           const currentUrl = new URL(window.location.href);
                           const region = currentUrl.searchParams.get('region') || 'eun1';
-                          const summonerUrl = `/league-of-legends?summoner=${encodeURIComponent(participant.summonerName)}&region=${region}`;
+                          const summonerUrl = `/league-of-legends?summoner=${encodeURIComponent(participant.summonerName)}&region=${region}#summoner-search`;
                           window.open(summonerUrl, '_blank');
                         }}
                         style={{
