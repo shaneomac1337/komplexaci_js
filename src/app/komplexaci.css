@@ -552,6 +552,8 @@
     .header .container {
         padding: 8px 12px;
         gap: 8px;
+        min-height: 60px; /* Ensure consistent header height */
+        align-items: center;
     }
 
     /* Reset desktop nav-list completely for mobile */
@@ -616,6 +618,14 @@
 
     .logo {
         gap: 8px;
+    }
+
+    .logo h1 {
+        font-size: 1.5rem !important;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        max-width: 200px;
     }
 
     /* Mobile Hero Logo */
@@ -798,6 +808,9 @@
     .auth-section {
         padding-left: 0.5rem;
         margin-left: 0;
+        flex-shrink: 0;
+        display: flex;
+        align-items: center;
     }
 
     /* Ensure auth buttons are properly sized for mobile */
@@ -806,12 +819,32 @@
         min-width: 44px;
         padding: 8px 12px;
         font-size: 0.85rem;
+        white-space: nowrap;
     }
 
     /* User profile adjustments for mobile */
     .auth-section img {
         width: 32px !important;
         height: 32px !important;
+    }
+
+    /* Better mobile header layout */
+    .header .container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+
+    .main-nav {
+        order: 2;
+        margin-left: auto;
+        margin-right: 0.5rem;
+    }
+
+    .auth-section {
+        order: 3;
+        margin-left: 0;
     }
 
     .auth-section .flex.flex-col span {
@@ -823,6 +856,32 @@
     @media (max-width: 480px) {
         .auth-section .text-gray-400 {
             display: none;
+        }
+
+        .logo h1 {
+            font-size: 1.3rem !important;
+            max-width: 150px;
+        }
+
+        .header .container {
+            padding: 6px 10px;
+            gap: 6px;
+        }
+
+        .auth-section button {
+            padding: 6px 10px;
+            font-size: 0.8rem;
+            min-width: 40px;
+            min-height: 40px;
+        }
+
+        .mobile-menu-toggle {
+            padding: 3px;
+        }
+
+        .mobile-menu-toggle .bar {
+            width: 22px;
+            height: 2px;
         }
     }
 }

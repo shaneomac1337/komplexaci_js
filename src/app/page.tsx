@@ -215,6 +215,16 @@ export default function Home() {
   const [hasShownMusicStart, setHasShownMusicStart] = useState(false);
   const [isLoadingTrack, setIsLoadingTrack] = useState(false);
 
+  // Add ref to track if component is mounted
+  const isMountedRef = useRef(true);
+
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
+
   // Cross-page and cross-tab music control
   useEffect(() => {
     // Listen for WWE page music events, stop signals, and other tab events
@@ -577,8 +587,10 @@ export default function Home() {
       // If scrolling down and widget is visible, start 0.1-second timer to hide
       if (isScrollingDown && isTraxVisible && !isTraxAutoHidden && currentScrollY > 50) {
         const newScrollDownTimeout = setTimeout(() => {
-          console.log('🔽 Hiding Trax - scrolled down for 0.1 seconds:', currentScrollY);
-          setIsTraxAutoHidden(true);
+          if (isMountedRef.current) {
+            console.log('🔽 Hiding Trax - scrolled down for 0.1 seconds:', currentScrollY);
+            setIsTraxAutoHidden(true);
+          }
         }, 100); // Hide after 0.1 seconds of scrolling down
 
         setScrollDownTimeout(newScrollDownTimeout);
@@ -596,7 +608,7 @@ export default function Home() {
         clearTimeout(scrollDownTimeout);
       }
     };
-  }, [isTraxVisible, isTraxAutoHidden, hasUserInteracted, scrollDownTimeout]); // Dependencies for scroll handler
+  }, [isTraxVisible, isTraxAutoHidden, hasUserInteracted, lastScrollY]); // Dependencies for scroll handler
 
   // Separate useEffect for handling track ended event with current state
   useEffect(() => {
@@ -645,9 +657,11 @@ export default function Home() {
 
             // Auto-hide after 4 seconds for auto-advance
             setTimeout(() => {
-              setShowBriefly(false);
-              setIsTraxAutoHidden(true);
-              console.log('⏰ Auto-hiding Kompg Trax after auto-advance');
+              if (isMountedRef.current) {
+                setShowBriefly(false);
+                setIsTraxAutoHidden(true);
+                console.log('⏰ Auto-hiding Kompg Trax after auto-advance');
+              }
             }, 4000);
           })
           .catch((error) => {
@@ -666,9 +680,11 @@ export default function Home() {
 
         // Auto-hide after 4 seconds for demo auto-advance
         setTimeout(() => {
-          setShowBriefly(false);
-          setIsTraxAutoHidden(true);
-          console.log('⏰ Auto-hiding Kompg Trax after demo auto-advance');
+          if (isMountedRef.current) {
+            setShowBriefly(false);
+            setIsTraxAutoHidden(true);
+            console.log('⏰ Auto-hiding Kompg Trax after demo auto-advance');
+          }
         }, 4000);
       }
     };
@@ -678,7 +694,7 @@ export default function Home() {
     return () => {
       audioElement.removeEventListener('ended', handleEnded);
     };
-  }, [audioElement, isDemoMode, isShuffleMode, currentTrack]); // Include all dependencies
+  }, [audioElement, isDemoMode, isShuffleMode, currentTrack, playlist]); // Include all dependencies
 
   // Watch for currentTrack changes and update audio source (only when not auto-advancing)
   useEffect(() => {
@@ -702,8 +718,10 @@ export default function Home() {
     // Only auto-hide when music is paused and widget is visible
     if (!isPlaying && isTraxVisible && !isTraxAutoHidden) {
       const newActivityTimeout = setTimeout(() => {
-        setIsTraxAutoHidden(true);
-        console.log('💤 Auto-hiding Trax after 15s inactivity (music paused)');
+        if (isMountedRef.current) {
+          setIsTraxAutoHidden(true);
+          console.log('💤 Auto-hiding Trax after 15s inactivity (music paused)');
+        }
       }, 15000);
 
       setActivityTimeout(newActivityTimeout);
@@ -734,9 +752,11 @@ export default function Home() {
 
       // Auto-minimize after 5 seconds - ALWAYS hide regardless of scroll position
       const newMusicTimeout = setTimeout(() => {
-        setShowBriefly(false);
-        setIsTraxAutoHidden(true);
-        console.log('⏰ Auto-minimizing Kompg Trax after 5 seconds');
+        if (isMountedRef.current) {
+          setShowBriefly(false);
+          setIsTraxAutoHidden(true);
+          console.log('⏰ Auto-minimizing Kompg Trax after 5 seconds');
+        }
       }, 5000);
 
       setMusicStartTimeout(newMusicTimeout);
@@ -761,7 +781,9 @@ export default function Home() {
 
       // Hide the brief show after 3 seconds
       const briefTimer = setTimeout(() => {
-        setShowBriefly(false);
+        if (isMountedRef.current) {
+          setShowBriefly(false);
+        }
       }, 3000);
 
       return () => clearTimeout(briefTimer);

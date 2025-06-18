@@ -440,10 +440,10 @@ export default function CS2Page() {
 
           <AnimatedSection animation="fadeInUp" delay={0.5} className="text-center mt-12">
             <Link
-              href="/komplexaci#hry"
+              href="/"
               className={`inline-block bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg ${styles.pulseGlow}`}
             >
-              Zpět na přehled her
+              Zpět na hlavní stránku
             </Link>
           </AnimatedSection>
         </div>
