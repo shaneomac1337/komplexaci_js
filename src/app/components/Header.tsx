@@ -160,6 +160,25 @@ const Header = () => {
     }
   };
 
+  const handleHomeNavigation = (sectionId: string = 'hero') => {
+    setIsMobileMenuOpen(false);
+    if (pathname === '/') {
+      // Already on homepage, just scroll to section
+      const element = document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({
+          behavior: 'smooth',
+          block: 'start'
+        });
+      }
+    } else {
+      // Navigate to homepage, then scroll to section after a brief delay
+      window.location.href = '/';
+      // Note: We use window.location.href instead of router.push to ensure clean navigation
+      // The scroll will happen when the homepage loads
+    }
+  };
+
   return (
     <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
       <div className="container">
@@ -187,65 +206,58 @@ const Header = () => {
               </button>
             </li>
             <li>
-              <a
-                href="/#hero"
+              <button
                 className={`nav-link ${isActive('hero') ? 'active' : ''}`}
                 onClick={(e) => {
-                  if (pathname === '/') {
-                    e.preventDefault();
-                    handleNavClick('hero');
-                  }
+                  e.preventDefault();
+                  handleHomeNavigation('hero');
                 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 Domů
-              </a>
+              </button>
             </li>
             <li>
-              <a
-                href="/#o-nas"
+              <button
                 className={`nav-link ${isActive('o-nas') ? 'active' : ''}`}
                 onClick={(e) => {
-                  if (pathname === '/') {
-                    e.preventDefault();
-                    handleNavClick('o-nas');
-                  }
+                  e.preventDefault();
+                  handleHomeNavigation('o-nas');
                 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 O nás
-              </a>
+              </button>
             </li>
             <li>
-              <a
-                href="/#clenove"
+              <button
                 className={`nav-link ${isActive('clenove') ? 'active' : ''}`}
                 onClick={(e) => {
-                  if (pathname === '/') {
-                    e.preventDefault();
-                    handleNavClick('clenove');
-                  }
+                  e.preventDefault();
+                  handleHomeNavigation('clenove');
                 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 Členové
-              </a>
+              </button>
             </li>
             <li className={`has-submenu ${isMobileSubmenuOpen ? 'mobile-submenu-open' : ''}`}>
-              <a
-                href="/#hry"
+              <button
                 className={`nav-link ${isActive('hry') ? 'active' : ''}`}
                 onClick={(e) => {
+                  e.preventDefault();
                   // On mobile, toggle submenu instead of navigating
                   if (window.innerWidth <= 768) {
-                    e.preventDefault();
                     toggleMobileSubmenu();
-                  } else if (pathname === '/') {
-                    e.preventDefault();
-                    handleNavClick('hry');
+                  } else {
+                    handleHomeNavigation('hry');
                   }
                 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 <span>Hry</span>
                 <i className={`fas fa-chevron-down submenu-arrow ${isMobileSubmenuOpen ? 'rotated' : ''}`}></i>
-              </a>
+              </button>
               <ul className="submenu">
                 <li><Link href="/league-of-legends" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>League of Legends</Link></li>
                 <li><Link href="/cs2" className="nav-link" onClick={() => setIsMobileMenuOpen(false)}>CS2</Link></li>
@@ -253,32 +265,28 @@ const Header = () => {
               </ul>
             </li>
             <li>
-              <a
-                href="/#discord"
+              <button
                 className={`nav-link ${isActive('discord') ? 'active' : ''}`}
                 onClick={(e) => {
-                  if (pathname === '/') {
-                    e.preventDefault();
-                    handleNavClick('discord');
-                  }
+                  e.preventDefault();
+                  handleHomeNavigation('discord');
                 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 Discord
-              </a>
+              </button>
             </li>
             <li>
-              <a
-                href="/#kontakt"
+              <button
                 className={`nav-link ${isActive('kontakt') ? 'active' : ''}`}
                 onClick={(e) => {
-                  if (pathname === '/') {
-                    e.preventDefault();
-                    handleNavClick('kontakt');
-                  }
+                  e.preventDefault();
+                  handleHomeNavigation('kontakt');
                 }}
+                style={{ background: 'none', border: 'none', cursor: 'pointer' }}
               >
                 Kontakt
-              </a>
+              </button>
             </li>
           </ul>
         </nav>

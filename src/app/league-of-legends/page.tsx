@@ -173,6 +173,9 @@ export default function LeagueOfLegendsNextJS() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshSuccess, setRefreshSuccess] = useState(false);
 
+  // Toggle state for Champions vs Summoner Search
+  const [showChampions, setShowChampions] = useState(true);
+
   // Background rotation functions
   const getRandomChampionSplash = () => {
     if (champions.length === 0) return null;
@@ -184,20 +187,24 @@ export default function LeagueOfLegendsNextJS() {
   // Initialize random champion splash on component mount
   useEffect(() => {
     if (champions.length > 0) {
-      setCurrentChampionSplash(getRandomChampionSplash());
+      const randomChampion = champions[Math.floor(Math.random() * champions.length)];
+      setCurrentChampionSplash(randomChampion.splash);
+      setCurrentChampionName(randomChampion.name);
     }
-  }, [champions]);
+  }, [champions.length]); // Only depend on length, not the entire array
 
   // Change champion splash every 8 seconds
   useEffect(() => {
     if (champions.length === 0) return;
 
     const interval = setInterval(() => {
-      setCurrentChampionSplash(getRandomChampionSplash());
+      const randomChampion = champions[Math.floor(Math.random() * champions.length)];
+      setCurrentChampionSplash(randomChampion.splash);
+      setCurrentChampionName(randomChampion.name);
     }, 8000); // Change every 8 seconds
 
     return () => clearInterval(interval);
-  }, [champions]);
+  }, [champions.length]); // Only depend on length, not the entire array
 
   // DataDragon API functions
   const getLatestVersion = async () => {
@@ -393,8 +400,14 @@ export default function LeagueOfLegendsNextJS() {
     }
   };
 
-  // Filter champions based on position, search, and advanced filters
-  const filterChampions = () => {
+
+
+  useEffect(() => {
+    fetchChampions();
+  }, []);
+
+  useEffect(() => {
+    // Filter champions based on position, search, and advanced filters
     let filtered = champions;
 
     // Filter by position
@@ -443,14 +456,6 @@ export default function LeagueOfLegendsNextJS() {
     }
 
     setFilteredChampions(filtered);
-  };
-
-  useEffect(() => {
-    fetchChampions();
-  }, []);
-
-  useEffect(() => {
-    filterChampions();
   }, [champions, activePosition, searchTerm, advancedFilters]);
 
   // Close modal on Escape key
@@ -756,14 +761,40 @@ export default function LeagueOfLegendsNextJS() {
           </div>
         </section>
 
-        {/* Summoner Search Section */}
-        <SummonerSearch />
-
         {/* Komplexáci Status Section */}
         <KomplexaciStatus />
 
-        {/* Champions Section */}
-        <section className={`${styles.section}`} style={{ background: 'rgba(0, 0, 0, 0.2)' }}>
+        {/* Toggle Switch Section */}
+        <section className={styles.toggleSection}>
+          <div className={styles.container}>
+            <div className={styles.toggleContainer}>
+              <h3 className={styles.toggleTitle}>Vyberte sekci</h3>
+              <div className={styles.toggleWrapper}>
+                <span className={`${styles.toggleLabel} ${!showChampions ? styles.active : ''}`}>
+                  🔍 Vyhledávání hráčů
+                </span>
+                <div className={styles.toggleSwitch} onClick={() => setShowChampions(!showChampions)}>
+                  <div className={`${styles.toggleSlider} ${showChampions ? styles.right : styles.left}`}>
+                    <div className={styles.toggleHandle}></div>
+                  </div>
+                </div>
+                <span className={`${styles.toggleLabel} ${showChampions ? styles.active : ''}`}>
+                  ⚔️ Championové
+                </span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Conditional Sections */}
+        {!showChampions && (
+          /* Summoner Search Section */
+          <SummonerSearch />
+        )}
+
+        {showChampions && (
+          /* Champions Section */
+          <section className={`${styles.section}`} style={{ background: 'rgba(0, 0, 0, 0.2)' }}>
           <div className={styles.container}>
             <h2 className={styles.sectionTitle}>Champions</h2>
             <p style={{ textAlign: 'center', fontSize: '1.2rem', color: '#f0e6d2', maxWidth: '800px', margin: '0 auto 50px' }}>
@@ -1227,6 +1258,7 @@ export default function LeagueOfLegendsNextJS() {
             )}
           </div>
         </section>
+        )}
 
         {/* Back Button */}
         <section className={styles.backSection}>
