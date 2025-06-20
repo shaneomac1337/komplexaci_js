@@ -24,6 +24,10 @@ interface MemberStatus {
   error?: string;
 }
 
+// Constants for game validation
+const MAX_REASONABLE_GAME_DURATION_MINUTES = 180; // 3 hours - maximum reasonable game duration
+const STALE_DATA_THRESHOLD_MINUTES = 120; // 2 hours - when to start suspecting stale data
+
 const KOMPLEXACI_MEMBERS: KomplexaciMember[] = [
   {
     name: 'shaneomac',
@@ -312,6 +316,20 @@ function GameDetailsModal({
   );
 }
 
+// Helper function to validate if game data is stale
+const isGameDataStale = (gameStartTime: number): boolean => {
+  const now = Date.now();
+  const durationMinutes = Math.floor((now - gameStartTime) / 1000 / 60);
+  return durationMinutes > MAX_REASONABLE_GAME_DURATION_MINUTES;
+};
+
+// Helper function to check if game duration is suspicious (but not necessarily stale)
+const isGameDurationSuspicious = (gameStartTime: number): boolean => {
+  const now = Date.now();
+  const durationMinutes = Math.floor((now - gameStartTime) / 1000 / 60);
+  return durationMinutes > STALE_DATA_THRESHOLD_MINUTES;
+};
+
 export default function KomplexaciStatus() {
   const [memberStatuses, setMemberStatuses] = useState<MemberStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -349,10 +367,8 @@ export default function KomplexaciStatus() {
     return () => clearInterval(interval);
   }, []);
 
-  const checkAllMembersStatus = async () => {
-    setIsLoading(true);
-
-    const statusPromises = KOMPLEXACI_MEMBERS.map(async (member) => {
+  // Function to check status for a single member
+  const checkMemberStatus = async (member: KomplexaciMember): Promise<MemberStatus> => {
       try {
         // Check if player exists and get basic info
         const summonerResponse = await fetch(
@@ -370,9 +386,16 @@ export default function KomplexaciStatus() {
 
         const summonerData = await summonerResponse.json();
         
-        // Check live game status
+        // Check live game status with cache busting for suspicious cases
+        const cacheBuster = Date.now();
         const liveGameResponse = await fetch(
-          `/api/lol/live-game?puuid=${summonerData.account.puuid}&region=${member.region}`
+          `/api/lol/live-game?puuid=${summonerData.account.puuid}&region=${member.region}&_cb=${cacheBuster}`,
+          {
+            headers: {
+              'Cache-Control': 'no-cache, no-store, must-revalidate',
+              'Pragma': 'no-cache'
+            }
+          }
         );
 
         let isInGame = false;
@@ -380,8 +403,67 @@ export default function KomplexaciStatus() {
 
         if (liveGameResponse.ok) {
           const liveGameData = await liveGameResponse.json();
-          isInGame = liveGameData.inGame;
-          currentGame = liveGameData.gameInfo;
+
+          // Check if the API says player is in game
+          if (liveGameData.inGame && liveGameData.gameInfo) {
+            // Validate game duration to detect stale data
+            const gameStartTime = liveGameData.gameInfo.gameStartTime;
+
+            if (isGameDataStale(gameStartTime)) {
+              // Game duration is unrealistic - treat as stale data
+              console.warn(`🚨 Stale game data detected for ${member.name}: Game duration exceeds ${MAX_REASONABLE_GAME_DURATION_MINUTES} minutes`);
+              isInGame = false;
+              currentGame = null;
+            } else if (isGameDurationSuspicious(gameStartTime)) {
+              // Game duration is suspicious - cross-reference with match history
+              const durationMinutes = Math.floor((Date.now() - gameStartTime) / 1000 / 60);
+              console.warn(`⚠️ Suspicious game duration for ${member.name}: ${durationMinutes} minutes. Verifying with match history...`);
+
+              try {
+                // Check if player has completed any games after the supposed current game start time
+                const matchHistoryResponse = await fetch(
+                  `/api/lol/matches?puuid=${summonerData.account.puuid}&region=${member.region}&count=3`
+                );
+
+                if (matchHistoryResponse.ok) {
+                  const matchData = await matchHistoryResponse.json();
+                  if (matchData.matches && matchData.matches.length > 0) {
+                    // Check if any recent match ended after the supposed current game started
+                    const hasRecentCompletedGame = matchData.matches.some((match: any) =>
+                      match.info.gameEndTimestamp > gameStartTime
+                    );
+
+                    if (hasRecentCompletedGame) {
+                      console.warn(`🚨 Confirmed stale data for ${member.name}: Found completed games after supposed current game start`);
+                      isInGame = false;
+                      currentGame = null;
+                    } else {
+                      // No recent completed games - might be a very long game, trust the API but mark as suspicious
+                      isInGame = true;
+                      currentGame = liveGameData.gameInfo;
+                    }
+                  } else {
+                    // No match history available - trust the API
+                    isInGame = true;
+                    currentGame = liveGameData.gameInfo;
+                  }
+                } else {
+                  // Match history API failed - trust the live game API
+                  isInGame = true;
+                  currentGame = liveGameData.gameInfo;
+                }
+              } catch (error) {
+                console.error(`Error verifying game data for ${member.name}:`, error);
+                // On error, trust the live game API
+                isInGame = true;
+                currentGame = liveGameData.gameInfo;
+              }
+            } else {
+              // Game duration is reasonable - trust the API
+              isInGame = true;
+              currentGame = liveGameData.gameInfo;
+            }
+          }
         }
 
         // If not in game, fetch last match info
@@ -437,11 +519,45 @@ export default function KomplexaciStatus() {
           lastSeen: new Date().toISOString()
         };
       }
-    });
+  };
 
+  const checkAllMembersStatus = async () => {
+    setIsLoading(true);
+
+    const statusPromises = KOMPLEXACI_MEMBERS.map(checkMemberStatus);
     const statuses = await Promise.all(statusPromises);
     setMemberStatuses(statuses);
     setIsLoading(false);
+  };
+
+  // Function to refresh a single member's status
+  const refreshMemberStatus = async (memberIndex: number) => {
+    const member = KOMPLEXACI_MEMBERS[memberIndex];
+
+    // Set loading state for this specific member
+    setMemberStatuses(prev => prev.map((status, index) =>
+      index === memberIndex ? { ...status, loading: true } : status
+    ));
+
+    try {
+      const newStatus = await checkMemberStatus(member);
+
+      // Update only this member's status
+      setMemberStatuses(prev => prev.map((status, index) =>
+        index === memberIndex ? newStatus : status
+      ));
+    } catch (error) {
+      console.error(`Error refreshing status for ${member.name}:`, error);
+
+      // Set error state for this member
+      setMemberStatuses(prev => prev.map((status, index) =>
+        index === memberIndex ? {
+          ...status,
+          loading: false,
+          error: 'Refresh failed'
+        } : status
+      ));
+    }
   };
 
   const formatGameMode = (gameMode: string) => {
@@ -460,6 +576,12 @@ export default function KomplexaciStatus() {
   const formatGameDuration = (gameStartTime: number) => {
     const now = Date.now();
     const duration = Math.floor((now - gameStartTime) / 1000 / 60);
+
+    // Add warning indicator for suspicious durations
+    if (isGameDurationSuspicious(gameStartTime)) {
+      return `${duration} min ⚠️`;
+    }
+
     return `${duration} min`;
   };
 
@@ -667,12 +789,25 @@ export default function KomplexaciStatus() {
                   <span className={styles.memberTag}>@{status.member.gameName}</span>
                 </button>
               </div>
-              <div className={`${styles.statusIndicator} ${
-                status.loading ? styles.loading :
-                status.isInGame ? styles.inGame : styles.offline
-              }`}>
-                {status.loading ? '⏳' :
-                 status.isInGame ? '🎮' : '💤'}
+              <div className={styles.statusControls}>
+                <div className={`${styles.statusIndicator} ${
+                  status.loading ? styles.loading :
+                  status.isInGame ? styles.inGame : styles.offline
+                }`}>
+                  {status.loading ? '⏳' :
+                   status.isInGame ? '🎮' : '💤'}
+                </div>
+                <button
+                  className={styles.refreshMemberButton}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    refreshMemberStatus(index);
+                  }}
+                  disabled={status.loading}
+                  title={`Obnovit status pro ${status.member.displayName}`}
+                >
+                  {status.loading ? '🔄' : '↻'}
+                </button>
               </div>
             </div>
 
@@ -733,7 +868,10 @@ export default function KomplexaciStatus() {
 
       <div className={styles.footer}>
         <p className={styles.footerText}>
-          🎮 = Hraje právě teď (klikněte pro detaily) • 💤 = Nehraje • 👤 Klikněte na jméno pro profil • Status se obnovuje každé 2 minuty
+          🎮 = Hraje právě teď (klikněte pro detaily) • 💤 = Nehraje • 👤 Klikněte na jméno pro profil • ↻ = Obnovit jednotlivě
+        </p>
+        <p className={styles.footerSubtext}>
+          Status se obnovuje každé 2 minuty • ⚠️ = Podezřelá délka hry • Automatická detekce zastaralých dat
         </p>
       </div>
 

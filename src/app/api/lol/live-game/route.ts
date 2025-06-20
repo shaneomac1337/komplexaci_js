@@ -34,11 +34,17 @@ export async function GET(request: NextRequest) {
       );
     }
 
+    // Check if cache busting is requested (indicates potential stale data issue)
+    const cacheBuster = searchParams.get('_cb');
+    const cacheControl = cacheBuster
+      ? 'no-cache, no-store, must-revalidate'
+      : 'public, s-maxage=30, stale-while-revalidate=60';
+
     return NextResponse.json(
       { inGame: true, gameInfo: currentGame },
       {
         headers: {
-          'Cache-Control': 'public, s-maxage=30, stale-while-revalidate=60',
+          'Cache-Control': cacheControl,
         },
       }
     );
