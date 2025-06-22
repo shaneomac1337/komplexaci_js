@@ -116,10 +116,20 @@ html {
     font-weight: bold;
     color: #fff;
     text-decoration: none;
-    background: linear-gradient(45deg, #ff6b6b, #4ecdc4);
+}
+
+.header .logo-text {
+    font-size: 1.5rem;
+    font-weight: bold;
+    color: #fff;
+    background: linear-gradient(135deg, #00FFFF, #0080FF, #FF00FF, #00FFFF);
+    background-size: 400% 400%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
+    animation: logo-glow 4s ease-in-out infinite, logo-push 15s ease-in-out infinite;
+    text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    transition: all 0.3s ease;
 }
 
 .nav-list {
@@ -177,6 +187,36 @@ html {
     100% {
         opacity: 1;
         transform: translateX(-50%) scale(1);
+    }
+}
+
+@keyframes logo-glow {
+    0%, 100% {
+        background-position: 0% 50%;
+        filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.7));
+    }
+    33% {
+        background-position: 50% 50%;
+        filter: drop-shadow(0 0 12px rgba(0, 128, 255, 0.8));
+    }
+    66% {
+        background-position: 100% 50%;
+        filter: drop-shadow(0 0 10px rgba(255, 0, 255, 0.7));
+    }
+}
+
+@keyframes logo-push {
+    0%, 90%, 100% {
+        transform: translateY(0) scale(1);
+        text-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+    }
+    95% {
+        transform: translateY(-3px) scale(1.05);
+        text-shadow:
+            0 0 20px rgba(0, 255, 255, 0.8),
+            0 0 30px rgba(0, 128, 255, 0.6),
+            0 0 40px rgba(255, 0, 255, 0.4);
+        filter: drop-shadow(0 0 15px rgba(0, 255, 255, 0.9));
     }
 }
 

@@ -1223,9 +1223,9 @@ export default function Home() {
                       ✕
                     </button>
 
-                    <h3 className="member-name-exact" style={{ marginBottom: '15px', fontSize: '1.3rem' }}>
+                    <div className="member-name-back" style={{ marginBottom: '15px', fontSize: '1.3rem', fontWeight: 'bold', color: 'var(--light-text)' }}>
                       {member.name}
-                    </h3>
+                    </div>
 
                     <p className="member-bio-text">
                       {member.bio}
