@@ -12,6 +12,12 @@ interface CachedMember {
   roles: string[];
   joinedAt: string | null;
   lastSeen: Date;
+  activityScore: number;
+  statusChanges: number;
+  onlineTime: number; // in minutes
+  dailyPoints: number;
+  lastDailyReset: Date;
+  sessionStartTime: Date | null;
 }
 
 interface ServerStats {
@@ -61,12 +67,13 @@ class DiscordGatewayService {
       this.isConnected = true;
       this.initializeCache();
 
-      // Set up periodic stats update to keep lastUpdated fresh
+      // Set up periodic stats update to keep lastUpdated fresh and award activity points
       this.updateInterval = setInterval(() => {
         if (this.isConnected && this.serverStats) {
+          this.awardPeriodicActivityPoints();
           this.updateServerStats();
         }
-      }, 30000); // Update every 30 seconds
+      }, 300000); // Update every 5 minutes (300 seconds)
     });
 
     this.client.on('guildMemberAdd', (member) => {
@@ -146,18 +153,85 @@ class DiscordGatewayService {
   }
 
   private updateMemberCache(member: GuildMember) {
+    const existingMember = this.memberCache.get(member.id);
+    const currentTime = new Date();
+    const currentStatus = member.presence?.status || 'offline';
+
+    // Calculate activity score and track changes
+    let activityScore = existingMember?.activityScore || 0;
+    let statusChanges = existingMember?.statusChanges || 0;
+    let onlineTime = existingMember?.onlineTime || 0;
+    let dailyPoints = existingMember?.dailyPoints || 0;
+    let lastDailyReset = existingMember?.lastDailyReset || currentTime;
+    let sessionStartTime = existingMember?.sessionStartTime || null;
+
+    // Check if we need to reset daily points (new day)
+    const today = new Date(currentTime);
+    today.setHours(0, 0, 0, 0);
+    const lastReset = new Date(lastDailyReset);
+    lastReset.setHours(0, 0, 0, 0);
+
+    if (today.getTime() > lastReset.getTime()) {
+      dailyPoints = 0;
+      lastDailyReset = currentTime;
+    }
+
+    // If member exists, update activity metrics
+    if (existingMember) {
+      // Track status changes (indicates activity)
+      if (existingMember.status !== currentStatus) {
+        statusChanges++;
+        activityScore += 5; // Bonus for status changes
+      }
+
+      // Track online time
+      if (existingMember.status !== 'offline' && currentStatus !== 'offline') {
+        const timeDiff = (currentTime.getTime() - existingMember.lastSeen.getTime()) / (1000 * 60); // minutes
+        onlineTime += Math.min(timeDiff, 60); // Cap at 60 minutes per update to prevent huge jumps
+      }
+
+      // Activity bonus for being online
+      if (currentStatus !== 'offline') {
+        activityScore += 1;
+      }
+
+      // Bonus for having activities (playing games, etc.)
+      if (member.presence?.activities && member.presence.activities.length > 0) {
+        activityScore += 2;
+      }
+    } else {
+      // New member - give initial points based on current status
+      if (currentStatus !== 'offline') {
+        activityScore = 20; // Starting bonus for being online
+        dailyPoints = 20;
+        sessionStartTime = currentTime;
+      }
+
+      // Initial bonus for having activities
+      if (member.presence?.activities && member.presence.activities.length > 0) {
+        activityScore += 10;
+        dailyPoints += 10;
+      }
+    }
+
     const cachedMember: CachedMember = {
       id: member.id,
       username: member.user.username,
       displayName: member.nickname || member.user.globalName || member.user.username,
-      avatar: member.user.avatar 
+      avatar: member.user.avatar
         ? `https://cdn.discordapp.com/avatars/${member.id}/${member.user.avatar}.png?size=64`
         : null,
-      status: member.presence?.status || 'offline',
+      status: currentStatus,
       activities: member.presence?.activities || [],
       roles: member.roles.cache.map(role => role.id),
       joinedAt: member.joinedAt?.toISOString() || null,
-      lastSeen: new Date()
+      lastSeen: currentTime,
+      activityScore,
+      statusChanges,
+      onlineTime,
+      dailyPoints,
+      lastDailyReset,
+      sessionStartTime
     };
 
     this.memberCache.set(member.id, cachedMember);
@@ -166,13 +240,119 @@ class DiscordGatewayService {
   private updatePresenceCache(presence: Presence) {
     const member = this.memberCache.get(presence.userId);
     if (member) {
-      member.status = presence.status;
+      const currentTime = new Date();
+      const oldStatus = member.status;
+      const newStatus = presence.status;
+
+      // Check daily reset
+      const today = new Date(currentTime);
+      today.setHours(0, 0, 0, 0);
+      const lastReset = new Date(member.lastDailyReset);
+      lastReset.setHours(0, 0, 0, 0);
+
+      if (today.getTime() > lastReset.getTime()) {
+        member.dailyPoints = 0;
+        member.lastDailyReset = currentTime;
+      }
+
+      // Track status changes (indicates activity) - immediate points
+      if (oldStatus !== newStatus) {
+        member.statusChanges++;
+        const points = 5;
+        member.activityScore += points;
+        member.dailyPoints += points;
+
+        // Track session start/end
+        if (newStatus !== 'offline' && oldStatus === 'offline') {
+          member.sessionStartTime = currentTime;
+        } else if (newStatus === 'offline') {
+          member.sessionStartTime = null;
+        }
+      }
+
+      // Update member data
+      member.status = newStatus;
       member.activities = presence.activities;
-      member.lastSeen = new Date();
+      member.lastSeen = currentTime;
       this.memberCache.set(presence.userId, member);
 
       // Update server stats to refresh lastUpdated timestamp
       this.updateServerStats();
+    }
+  }
+
+  private awardPeriodicActivityPoints() {
+    const currentTime = new Date();
+    let updatedCount = 0;
+
+    // Check if it's peak hours (18:00-23:00 weekdays, 13:00-01:00 weekends)
+    const hour = currentTime.getHours();
+    const dayOfWeek = currentTime.getDay(); // 0 = Sunday, 6 = Saturday
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+    const isPeakHours = isWeekend ?
+      (hour >= 13 || hour <= 1) :
+      (hour >= 18 && hour <= 23);
+    const peakMultiplier = isPeakHours ? 1.5 : 1.0;
+
+    for (const [userId, member] of this.memberCache) {
+      // Check daily reset
+      const today = new Date(currentTime);
+      today.setHours(0, 0, 0, 0);
+      const lastReset = new Date(member.lastDailyReset);
+      lastReset.setHours(0, 0, 0, 0);
+
+      if (today.getTime() > lastReset.getTime()) {
+        member.dailyPoints = 0;
+        member.lastDailyReset = currentTime;
+      }
+
+      let pointsAwarded = 0;
+
+      // Award points based on activity type
+      if (member.status !== 'offline') {
+        // Check for diminishing returns (after 2 hours online)
+        const sessionDuration = member.sessionStartTime ?
+          (currentTime.getTime() - member.sessionStartTime.getTime()) / (1000 * 60 * 60) : 0; // hours
+
+        const diminishingFactor = sessionDuration > 2 ? 0.5 : 1.0;
+
+        // Base points for being online
+        let basePoints = Math.floor(2 * peakMultiplier * diminishingFactor);
+
+        // Activity-specific bonuses
+        if (member.activities && member.activities.length > 0) {
+          const hasGaming = member.activities.some(a =>
+            a.type === 0 && // Playing activity
+            !a.name?.toLowerCase().includes('spotify') &&
+            !a.name?.toLowerCase().includes('custom status')
+          );
+          const hasMusic = member.activities.some(a =>
+            a.name?.toLowerCase().includes('spotify')
+          );
+          const hasCustomStatus = member.activities.some(a => a.type === 4);
+
+          if (hasGaming) {
+            basePoints += Math.floor(10 * peakMultiplier * diminishingFactor); // Gaming bonus
+          } else if (hasMusic) {
+            basePoints += Math.floor(3 * peakMultiplier * diminishingFactor); // Music bonus
+          } else if (hasCustomStatus) {
+            basePoints += Math.floor(1 * peakMultiplier * diminishingFactor); // Custom status bonus
+          }
+        }
+
+        pointsAwarded = basePoints;
+
+        if (pointsAwarded > 0) {
+          member.activityScore += pointsAwarded;
+          member.dailyPoints += pointsAwarded;
+
+          // Track online time (5 minutes per cycle)
+          member.onlineTime += 5;
+          member.lastSeen = currentTime;
+          this.memberCache.set(userId, member);
+          updatedCount++;
+        }
+      }
     }
   }
 
@@ -226,6 +406,23 @@ class DiscordGatewayService {
   getOnlineCount(): number {
     return Array.from(this.memberCache.values())
       .filter(member => member.status !== 'offline').length;
+  }
+
+  getMostActiveMembers(limit: number = 10): CachedMember[] {
+    return Array.from(this.memberCache.values())
+      .sort((a, b) => {
+        // Primary sort by activity score
+        if (b.activityScore !== a.activityScore) {
+          return b.activityScore - a.activityScore;
+        }
+        // Secondary sort by online time
+        if (b.onlineTime !== a.onlineTime) {
+          return b.onlineTime - a.onlineTime;
+        }
+        // Tertiary sort by status changes
+        return b.statusChanges - a.statusChanges;
+      })
+      .slice(0, limit);
   }
 }
 
