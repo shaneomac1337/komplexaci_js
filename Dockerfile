@@ -4,11 +4,17 @@ FROM node:24-alpine
 # Set working directory
 WORKDIR /app
 
+# Install build dependencies for native modules
+RUN apk add --no-cache \
+    python3 \
+    make \
+    g++ \
+    git \
+    git-lfs
+
 # Clone the repository with Git LFS support
-RUN apk add --no-cache git git-lfs && \
-    git clone https://github.com/shaneomac1337/komplexaci_js.git . && \
-    git lfs pull && \
-    apk del git git-lfs
+RUN git clone https://github.com/shaneomac1337/komplexaci_js.git . && \
+    git lfs pull
 
 # Copy .env file from local context
 COPY .env .env
@@ -19,8 +25,9 @@ RUN npm ci
 # Build the application
 RUN npm run build
 
-# Remove devDependencies after build to reduce image size
-RUN npm prune --production
+# Remove devDependencies and build tools after build to reduce image size
+RUN npm prune --production && \
+    apk del python3 make g++ git git-lfs
 
 # Expose port 3000
 EXPOSE 3000
