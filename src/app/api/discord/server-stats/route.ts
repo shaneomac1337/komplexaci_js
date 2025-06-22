@@ -1,8 +1,77 @@
 import { NextResponse } from 'next/server';
+import { getDiscordGateway } from '@/lib/discord-gateway';
+import { initializeDiscordGateway } from '@/lib/discord-startup';
 
 export async function GET() {
   try {
-    // Discord Server ID (you'll need to replace this with your actual server ID)
+    // Initialize Discord Gateway if not already done
+    await initializeDiscordGateway();
+
+    const gateway = getDiscordGateway();
+
+    // Try to get real-time data from Gateway first
+    if (gateway.isReady()) {
+      const stats = gateway.getServerStats();
+      if (stats) {
+        console.log(`Serving real-time Discord data: ${stats.onlineMembers.length} online members`);
+
+        // Get all members from Gateway (both online and offline)
+        const allMembers = gateway.getAllMembers();
+
+        // Format for frontend compatibility
+        const formattedStats = {
+          name: stats.name,
+          memberCount: stats.memberCount,
+          onlineCount: stats.onlineCount,
+          icon: stats.icon,
+          description: stats.description,
+          features: stats.features,
+          boostLevel: stats.boostLevel,
+          boostCount: stats.boostCount,
+          verificationLevel: stats.verificationLevel,
+          onlineMembers: allMembers.map(member => {
+            // Find custom status (type 4) first, then other activities
+            const customStatus = member.activities.find((activity: any) => activity.type === 4);
+            const otherActivity = member.activities.find((activity: any) => activity.type !== 4);
+
+            return {
+              id: member.id,
+              username: member.username,
+              displayName: member.displayName,
+              avatar: member.avatar,
+              status: member.status,
+              activity: otherActivity ? {
+                name: otherActivity.name,
+                type: otherActivity.type,
+                details: otherActivity.details,
+                state: otherActivity.state,
+              } : null,
+              customStatus: customStatus ? {
+                name: customStatus.name,
+                emoji: customStatus.emoji ? {
+                  name: customStatus.emoji.name,
+                  id: customStatus.emoji.id,
+                  animated: customStatus.emoji.animated
+                } : null,
+                state: customStatus.state
+              } : null,
+              roles: member.roles,
+              isRealOnline: member.status !== 'offline',
+              joinedAt: member.joinedAt
+            };
+          }),
+          hasRealPresenceData: true,
+          lastUpdated: stats.lastUpdated.toISOString(),
+          dataSource: 'GATEWAY', // Indicate this is real-time Gateway data
+        };
+
+        return NextResponse.json(formattedStats);
+      }
+    }
+
+    // Fallback to REST API if Gateway is not available
+    console.log('Discord Gateway not ready, falling back to REST API');
+
     const DISCORD_SERVER_ID = process.env.DISCORD_SERVER_ID || 'YOUR_SERVER_ID_HERE';
     const DISCORD_BOT_TOKEN = process.env.DISCORD_BOT_TOKEN;
 
@@ -173,6 +242,7 @@ export async function GET() {
       onlineMembers: allServerMembers,
       hasRealPresenceData: hasRealPresenceData,
       lastUpdated: new Date().toISOString(),
+      dataSource: 'REST_API', // Indicate this is fallback data
     };
 
     return NextResponse.json(stats);
@@ -198,7 +268,8 @@ export async function GET() {
           avatar: null,
           status: 'online',
           activity: { name: 'Coding the website', type: 0 },
-          roles: []
+          roles: [],
+          isRealOnline: false
         },
         {
           id: '2',
@@ -207,7 +278,8 @@ export async function GET() {
           avatar: null,
           status: 'dnd',
           activity: { name: 'CS2', type: 0 },
-          roles: []
+          roles: [],
+          isRealOnline: false
         },
         {
           id: '3',
@@ -216,10 +288,13 @@ export async function GET() {
           avatar: null,
           status: 'idle',
           activity: null,
-          roles: []
+          roles: [],
+          isRealOnline: false
         }
       ],
+      hasRealPresenceData: false,
       lastUpdated: new Date().toISOString(),
+      dataSource: 'FALLBACK',
       error: 'Unable to fetch live data - showing fallback stats'
     });
   }

@@ -9,6 +9,15 @@ interface OnlineMember {
   avatar: string | null;
   status: string;
   activity: any;
+  customStatus: {
+    name: string;
+    emoji: {
+      name: string;
+      id: string | null;
+      animated: boolean;
+    } | null;
+    state: string;
+  } | null;
   roles: string[];
   isRealOnline?: boolean;
   joinedAt?: string;
@@ -27,6 +36,7 @@ interface DiscordStats {
   onlineMembers: OnlineMember[];
   hasRealPresenceData?: boolean;
   lastUpdated: string;
+  dataSource?: 'GATEWAY' | 'REST_API' | 'FALLBACK';
   error?: string;
 }
 
@@ -71,10 +81,12 @@ export default function DiscordServerStats() {
     };
 
     fetchStats();
-    
-    // Refresh stats every 5 minutes
-    const interval = setInterval(fetchStats, 5 * 60 * 1000);
-    
+
+    // Refresh stats more frequently for real-time data
+    // Gateway data: every 30 seconds, REST API: every 5 minutes
+    const refreshInterval = 30 * 1000; // 30 seconds
+    const interval = setInterval(fetchStats, refreshInterval);
+
     return () => clearInterval(interval);
   }, []);
 
@@ -154,27 +166,62 @@ export default function DiscordServerStats() {
 
   const formatActivityName = (activity: any) => {
     if (!activity) return '';
-    
+
     // For Spotify, show artist - song format
     if (activity.name === 'Spotify' && activity.details && activity.state) {
       return `${activity.details} - ${activity.state}`;
     }
-    
+
     // For games with details (like rich presence)
     if (activity.details) {
       return `${activity.name}: ${activity.details}`;
     }
-    
+
     return activity.name;
   };
+
+  const formatCustomStatus = (customStatus: any) => {
+    if (!customStatus) return '';
+
+    let statusText = '';
+
+    // Add emoji if present
+    if (customStatus.emoji) {
+      if (customStatus.emoji.id) {
+        // Custom emoji - use Discord CDN
+        const extension = customStatus.emoji.animated ? 'gif' : 'png';
+        statusText += `<img src="https://cdn.discordapp.com/emojis/${customStatus.emoji.id}.${extension}" alt="${customStatus.emoji.name}" class="inline w-4 h-4" /> `;
+      } else if (customStatus.emoji.name) {
+        // Unicode emoji
+        statusText += `${customStatus.emoji.name} `;
+      }
+    }
+
+    // Add status text
+    if (customStatus.state) {
+      statusText += customStatus.state;
+    } else if (customStatus.name) {
+      statusText += customStatus.name;
+    }
+
+    return statusText;
+  };
+
+  // Separate online and offline members
+  const onlineMembers = stats.onlineMembers.filter(member =>
+    member.status && member.status !== 'offline' && member.status !== 'unknown'
+  );
+  const offlineMembers = stats.onlineMembers.filter(member =>
+    !member.status || member.status === 'offline' || member.status === 'unknown'
+  );
 
   return (
     <div className="bg-gray-700/30 rounded-xl p-4 border border-blue-500/20">
       <div className="flex items-center mb-3">
         <div className="flex items-center mr-3">
           {stats.icon ? (
-            <img 
-              src={stats.icon} 
+            <img
+              src={stats.icon}
               alt={`${stats.name} icon`}
               className="w-6 h-6 rounded-full"
             />
@@ -184,11 +231,33 @@ export default function DiscordServerStats() {
             </svg>
           )}
         </div>
-        <div>
+        <div className="flex-1">
           <h4 className="text-lg font-semibold text-white">{stats.name}</h4>
           {error && (
             <p className="text-xs text-yellow-400">⚠️ Zobrazují se záložní data</p>
           )}
+        </div>
+      </div>
+
+      {/* Server Statistics */}
+      <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+        <div>
+          <div className="text-gray-400">Členové</div>
+          <div className="text-white font-semibold">{stats.memberCount}</div>
+        </div>
+        <div>
+          <div className="text-gray-400">Online</div>
+          <div className="text-green-400 font-semibold">{onlineMembers.length}</div>
+        </div>
+        <div>
+          <div className="text-gray-400">Boost Level</div>
+          <div className="text-purple-400 font-semibold">
+            {stats.boostLevel > 0 ? `Level ${stats.boostLevel}` : 'Žádný'}
+          </div>
+        </div>
+        <div>
+          <div className="text-gray-400">Boosts</div>
+          <div className="text-purple-400 font-semibold">{stats.boostCount}</div>
         </div>
       </div>
       
@@ -196,31 +265,40 @@ export default function DiscordServerStats() {
       <div className="text-xs text-gray-500 mt-2 flex justify-between items-center">
         <span>Aktualizováno: {formatLastUpdated(stats.lastUpdated)}</span>
         <div className="flex items-center">
-          <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse mr-1"></div>
-          <span>Live</span>
+          <div className={`w-2 h-2 rounded-full mr-1 ${
+            stats.dataSource === 'GATEWAY' ? 'bg-green-400 animate-pulse' :
+            stats.dataSource === 'REST_API' ? 'bg-yellow-400' :
+            'bg-red-400'
+          }`}></div>
+          <span className={
+            stats.dataSource === 'GATEWAY' ? 'text-green-400 font-medium' :
+            stats.dataSource === 'REST_API' ? 'text-yellow-400' :
+            'text-red-400'
+          }>
+            {stats.dataSource === 'GATEWAY' ? '🚀 Real-time' :
+             stats.dataSource === 'REST_API' ? '📡 API' :
+             '❌ Offline'}
+          </span>
         </div>
       </div>
 
       {/* Online Members Section */}
-      {stats.onlineMembers && stats.onlineMembers.length > 0 && (
+      {onlineMembers.length > 0 && (
         <div className="mt-4 pt-3 border-t border-gray-600/30">
-          <h5 className="text-sm font-semibold text-blue-300 mb-2 flex items-center">
-            <div className="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
-            Členové serveru
+          <h5 className="text-sm font-semibold text-green-300 mb-2 flex items-center">
+            <div className="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+            Online členové ({onlineMembers.length})
           </h5>
-          <p className="text-xs text-gray-400 mb-3">
-            👥 Všichni členové Discord serveru
-          </p>
           <div
-            className="space-y-2 max-h-48 overflow-y-auto pr-2"
+            className="space-y-3 max-h-48 overflow-y-auto pr-2"
             style={{
               scrollbarWidth: 'thin',
               scrollbarColor: '#4B5563 #1F2937'
             }}
           >
-            {stats.onlineMembers.map((member) => (
-              <div key={member.id} className="flex items-center space-x-3 text-xs">
-                <div>
+            {onlineMembers.map((member) => (
+              <div key={member.id} className="flex items-start space-x-3 text-xs">
+                <div className="relative">
                   {member.avatar ? (
                     <img
                       src={member.avatar}
@@ -232,10 +310,71 @@ export default function DiscordServerStats() {
                       {member.displayName.charAt(0).toUpperCase()}
                     </div>
                   )}
+                  {/* Status indicator */}
+                  <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-gray-700 ${getStatusColor(member.status)}`}></div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <div className="text-white font-medium truncate">{member.displayName}</div>
+                  <div className="flex items-center space-x-2">
+                    <div className="text-white font-medium truncate">{member.displayName}</div>
+                    <div className="text-gray-500 text-xs">({getStatusText(member.status)})</div>
+                  </div>
                   <div className="text-gray-400 text-xs truncate">@{member.username}</div>
+                  {member.customStatus && (
+                    <div className="text-purple-300 text-xs mt-1 flex items-start">
+                      <span className="mr-1 mt-0.5 flex-shrink-0">💭</span>
+                      <span
+                        className="break-words leading-relaxed"
+                        dangerouslySetInnerHTML={{ __html: formatCustomStatus(member.customStatus) }}
+                      ></span>
+                    </div>
+                  )}
+                  {member.activity && (
+                    <div className="text-blue-300 text-xs mt-1 flex items-start">
+                      <span className="mr-1 mt-0.5 flex-shrink-0">{getActivityIcon(member.activity)}</span>
+                      <span className="break-words leading-relaxed">{formatActivityName(member.activity)}</span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Offline Members Section */}
+      {offlineMembers.length > 0 && (
+        <div className="mt-4 pt-3 border-t border-gray-600/30">
+          <h5 className="text-sm font-semibold text-gray-300 mb-2 flex items-center">
+            <div className="w-2 h-2 bg-gray-400 rounded-full mr-2"></div>
+            Offline členové ({offlineMembers.length})
+          </h5>
+          <div
+            className="space-y-2 max-h-40 overflow-y-auto pr-2"
+            style={{
+              scrollbarWidth: 'thin',
+              scrollbarColor: '#4B5563 #1F2937'
+            }}
+          >
+            {offlineMembers.map((member) => (
+              <div key={member.id} className="flex items-center space-x-3 text-xs opacity-60">
+                <div className="relative">
+                  {member.avatar ? (
+                    <img
+                      src={member.avatar}
+                      alt={member.displayName}
+                      className="w-6 h-6 rounded-full"
+                    />
+                  ) : (
+                    <div className="w-6 h-6 rounded-full bg-gray-600 flex items-center justify-center text-xs font-semibold">
+                      {member.displayName.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  {/* Offline indicator */}
+                  <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-gray-700 bg-gray-500"></div>
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="text-gray-300 font-medium truncate">{member.displayName}</div>
+                  <div className="text-gray-500 text-xs truncate">@{member.username}</div>
                 </div>
               </div>
             ))}
