@@ -23,6 +23,23 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  // Exclude Discord.js and its native dependencies from client-side bundling
+  serverExternalPackages: [
+    'discord.js',
+    'zlib-sync',
+    'bufferutil',
+    'utf-8-validate',
+    '@discordjs/ws',
+    '@discordjs/rest',
+    '@discordjs/voice',
+    'sodium-native',
+    'libsodium-wrappers',
+    'erlpack',
+    'node-opus',
+    'opusscript',
+    'tweetnacl',
+    'ws'
+  ],
 };
 
 export default nextConfig;
