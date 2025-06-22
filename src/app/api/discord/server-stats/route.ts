@@ -18,6 +18,9 @@ export async function GET() {
         // Get all members from Gateway (both online and offline)
         const allMembers = gateway.getAllMembers();
 
+        // Get most active members
+        const mostActiveMembers = gateway.getMostActiveMembers(10);
+
         // Format for frontend compatibility
         const formattedStats = {
           name: stats.name,
@@ -63,6 +66,17 @@ export async function GET() {
           hasRealPresenceData: true,
           lastUpdated: stats.lastUpdated.toISOString(),
           dataSource: 'GATEWAY', // Indicate this is real-time Gateway data
+          mostActiveMembers: mostActiveMembers.map(member => ({
+            id: member.id,
+            username: member.username,
+            displayName: member.displayName,
+            avatar: member.avatar,
+            status: member.status,
+            activityScore: member.activityScore,
+            onlineTime: Math.round(member.onlineTime),
+            statusChanges: member.statusChanges,
+            isOnline: member.status !== 'offline'
+          })),
         };
 
         return NextResponse.json(formattedStats);
@@ -243,6 +257,7 @@ export async function GET() {
       hasRealPresenceData: hasRealPresenceData,
       lastUpdated: new Date().toISOString(),
       dataSource: 'REST_API', // Indicate this is fallback data
+      mostActiveMembers: [], // No activity tracking for REST API
     };
 
     return NextResponse.json(stats);
@@ -295,7 +310,8 @@ export async function GET() {
       hasRealPresenceData: false,
       lastUpdated: new Date().toISOString(),
       dataSource: 'FALLBACK',
-      error: 'Unable to fetch live data - showing fallback stats'
+      error: 'Unable to fetch live data - showing fallback stats',
+      mostActiveMembers: [], // No activity tracking for fallback
     });
   }
 }

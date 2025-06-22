@@ -6,6 +6,7 @@ import './komplexaci.css';
 import Header from './components/Header';
 import ServerStatus from './components/ServerStatus';
 import DiscordServerStats from './components/DiscordServerStats';
+import MostActiveMembers from './components/MostActiveMembers';
 import PerformanceStatus from '../components/PerformanceStatus';
 
 
@@ -208,6 +209,9 @@ export default function Home() {
   // Dynamic playlist
   const { tracks: playlist } = usePlaylist();
   const [lastScrollY, setLastScrollY] = useState(0);
+
+  // Discord stats for Most Active Members
+  const [discordStats, setDiscordStats] = useState<any>(null);
 
   const [scrollDownTimeout, setScrollDownTimeout] = useState<NodeJS.Timeout | null>(null);
   const [activityTimeout, setActivityTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -707,6 +711,28 @@ export default function Home() {
       }
     }
   }, [currentTrack, audioElement, isDemoMode, playlist]);
+
+  // Fetch Discord stats for Most Active Members
+  useEffect(() => {
+    const fetchDiscordStats = async () => {
+      try {
+        const response = await fetch('/api/discord/server-stats');
+        if (response.ok) {
+          const data = await response.json();
+          setDiscordStats(data);
+        }
+      } catch (error) {
+        console.error('Failed to fetch Discord stats:', error);
+      }
+    };
+
+    fetchDiscordStats();
+
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchDiscordStats, 30000);
+
+    return () => clearInterval(interval);
+  }, []);
 
   // Inactivity-based auto-hide (only when music is paused)
   useEffect(() => {
@@ -1635,13 +1661,18 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Community Guidelines */}
+            {/* Community Guidelines & Most Active Members */}
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/20">
               <h3 className="text-2xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
                 📋 Community Guidelines
               </h3>
-              
+
               <div className="space-y-6">
+                {/* Most Active Members */}
+                <MostActiveMembers
+                  members={discordStats?.mostActiveMembers || []}
+                  dataSource={discordStats?.dataSource}
+                />
                 {/* Basic Rules */}
                 <div className="bg-gray-700/30 rounded-xl p-4 border border-purple-500/20">
                   <h4 className="text-lg font-semibold text-white mb-3 flex items-center">
