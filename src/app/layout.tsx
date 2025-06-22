@@ -19,7 +19,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Komplexáci - Komplexaci Gaming Klan | KompG Dobřany",
-  description: "Oficiální webové stránky klanu Komplexáci (Komplexaci) - Gaming komunita z Dobřan specializující se na League of Legends, CS2, WWE hry a další. KompG gaming klan.",
+  description: "Gaming komunita Komplexáci z Dobřan - League of Legends, CS2, WWE hry. KompG gaming klan.",
   keywords: [
     "Komplexáci", "Komplexaci", "KompG", "Komplex gaming", "komplexaci cz",
     "gaming klan", "gaming komunita", "Dobřany", "Dobřany gaming",
