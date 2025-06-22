@@ -23,6 +23,18 @@ interface OnlineMember {
   joinedAt?: string;
 }
 
+interface ActiveMember {
+  id: string;
+  username: string;
+  displayName: string;
+  avatar: string | null;
+  status: string;
+  activityScore: number;
+  onlineTime: number;
+  statusChanges: number;
+  isOnline: boolean;
+}
+
 interface DiscordStats {
   name: string;
   memberCount: number;
@@ -34,6 +46,7 @@ interface DiscordStats {
   boostCount: number;
   verificationLevel: number;
   onlineMembers: OnlineMember[];
+  mostActiveMembers: ActiveMember[];
   hasRealPresenceData?: boolean;
   lastUpdated: string;
   dataSource?: 'GATEWAY' | 'REST_API' | 'FALLBACK';
@@ -46,15 +59,18 @@ export default function DiscordServerStats() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchStats = async () => {
+    const fetchStats = async (isInitialLoad = false) => {
       try {
-        setLoading(true);
+        if (isInitialLoad) {
+          setLoading(true);
+        }
+
         const response = await fetch('/api/discord/server-stats');
-        
+
         if (!response.ok) {
           throw new Error('Failed to fetch Discord stats');
         }
-        
+
         const data = await response.json();
         setStats(data);
         setError(data.error || null);
@@ -72,20 +88,23 @@ export default function DiscordServerStats() {
           boostCount: 0,
           verificationLevel: 1,
           onlineMembers: [],
+          mostActiveMembers: [],
           hasRealPresenceData: false,
           lastUpdated: new Date().toISOString(),
         });
       } finally {
-        setLoading(false);
+        if (isInitialLoad) {
+          setLoading(false);
+        }
       }
     };
 
-    fetchStats();
+    // Initial load with loading state
+    fetchStats(true);
 
-    // Refresh stats more frequently for real-time data
-    // Gateway data: every 30 seconds, REST API: every 5 minutes
+    // Subsequent updates without loading state to prevent flicker
     const refreshInterval = 30 * 1000; // 30 seconds
-    const interval = setInterval(fetchStats, refreshInterval);
+    const interval = setInterval(() => fetchStats(false), refreshInterval);
 
     return () => clearInterval(interval);
   }, []);
@@ -216,7 +235,7 @@ export default function DiscordServerStats() {
   );
 
   return (
-    <div className="bg-gray-700/30 rounded-xl p-4 border border-blue-500/20">
+    <div className="bg-gray-700/30 rounded-xl p-4 border border-blue-500/20 transition-all duration-300 ease-in-out">
       <div className="flex items-center mb-3">
         <div className="flex items-center mr-3">
           {stats.icon ? (
@@ -240,7 +259,7 @@ export default function DiscordServerStats() {
       </div>
 
       {/* Server Statistics */}
-      <div className="grid grid-cols-2 gap-4 text-sm mb-4">
+      <div className="grid grid-cols-2 gap-4 text-sm mb-4 transition-all duration-300 ease-in-out">
         <div>
           <div className="text-gray-400">Členové</div>
           <div className="text-white font-semibold">{stats.memberCount}</div>
