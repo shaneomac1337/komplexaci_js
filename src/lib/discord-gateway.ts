@@ -34,6 +34,7 @@ class DiscordGatewayService {
   private memberCache = new Map<string, CachedMember>();
   private serverStats: ServerStats | null = null;
   private serverId: string;
+  private updateInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     this.serverId = process.env.DISCORD_SERVER_ID || '';
@@ -59,6 +60,13 @@ class DiscordGatewayService {
       console.log(`Discord Gateway connected as ${this.client.user?.tag}`);
       this.isConnected = true;
       this.initializeCache();
+
+      // Set up periodic stats update to keep lastUpdated fresh
+      this.updateInterval = setInterval(() => {
+        if (this.isConnected && this.serverStats) {
+          this.updateServerStats();
+        }
+      }, 30000); // Update every 30 seconds
     });
 
     this.client.on('guildMemberAdd', (member) => {
@@ -88,6 +96,12 @@ class DiscordGatewayService {
     this.client.on('disconnect', () => {
       console.log('Discord Gateway disconnected');
       this.isConnected = false;
+
+      // Clear the update interval
+      if (this.updateInterval) {
+        clearInterval(this.updateInterval);
+        this.updateInterval = null;
+      }
     });
   }
 
@@ -156,6 +170,9 @@ class DiscordGatewayService {
       member.activities = presence.activities;
       member.lastSeen = new Date();
       this.memberCache.set(presence.userId, member);
+
+      // Update server stats to refresh lastUpdated timestamp
+      this.updateServerStats();
     }
   }
 
