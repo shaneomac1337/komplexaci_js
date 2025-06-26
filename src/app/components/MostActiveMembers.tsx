@@ -8,9 +8,7 @@ interface ActiveMember {
   displayName: string;
   avatar: string | null;
   status: string;
-  activityScore: number;
-  onlineTime: number;
-  statusChanges: number;
+  dailyOnlineTime: number; // in minutes - only for current day
   isOnline: boolean;
 }
 
@@ -47,11 +45,12 @@ export default function MostActiveMembers({ members, dataSource }: MostActiveMem
     }
   };
 
-  const getActivityLevel = (score: number) => {
-    if (score >= 100) return { text: 'Velmi aktivní', color: 'text-green-400' };
-    if (score >= 50) return { text: 'Aktivní', color: 'text-blue-400' };
-    if (score >= 20) return { text: 'Mírně aktivní', color: 'text-yellow-400' };
-    return { text: 'Nízká aktivita', color: 'text-gray-400' };
+  const getActivityLevel = (dailyMinutes: number) => {
+    if (dailyMinutes >= 240) return { text: 'Velmi aktivní', color: 'text-green-400' }; // 4+ hours
+    if (dailyMinutes >= 120) return { text: 'Aktivní', color: 'text-blue-400' }; // 2+ hours
+    if (dailyMinutes >= 60) return { text: 'Mírně aktivní', color: 'text-yellow-400' }; // 1+ hour
+    if (dailyMinutes > 0) return { text: 'Krátce online', color: 'text-orange-400' }; // Some time
+    return { text: 'Neaktivní', color: 'text-gray-400' }; // No time today
   };
 
   if (!members || members.length === 0) {
@@ -94,8 +93,8 @@ export default function MostActiveMembers({ members, dataSource }: MostActiveMem
         scrollbarColor: '#4B5563 #1F2937'
       }}>
         {members.map((member, index) => {
-          const activityLevel = getActivityLevel(member.activityScore);
-          
+          const activityLevel = getActivityLevel(member.dailyOnlineTime);
+
           return (
             <div key={member.id} className="flex items-center space-x-3 p-2 rounded-lg bg-gray-800/30 hover:bg-gray-800/50 transition-colors">
               {/* Rank */}
@@ -130,13 +129,14 @@ export default function MostActiveMembers({ members, dataSource }: MostActiveMem
                 <div className="flex items-center space-x-2 text-xs">
                   <span className={activityLevel.color}>{activityLevel.text}</span>
                   <span className="text-gray-500">•</span>
-                  <span className="text-gray-400">{member.activityScore} bodů</span>
+                  <span className="text-gray-400">Dnes: {formatOnlineTime(member.dailyOnlineTime)}</span>
                 </div>
               </div>
 
-              {/* Stats */}
+              {/* Daily Time */}
               <div className="flex-shrink-0 text-right">
-                <div className="text-xs text-gray-300">{formatOnlineTime(member.onlineTime)}</div>
+                <div className="text-xs text-green-300 font-semibold">{formatOnlineTime(member.dailyOnlineTime)}</div>
+                <div className="text-xs text-gray-500">dnes</div>
               </div>
             </div>
           );
@@ -146,19 +146,19 @@ export default function MostActiveMembers({ members, dataSource }: MostActiveMem
       {/* Footer info */}
       <div className="text-xs text-gray-500 mt-3 pt-2 border-t border-gray-600/30">
         <div className="flex justify-between items-center">
-          <span>Aktivita za posledních 24h</span>
+          <span>Čas strávený online dnes (reset 00:00)</span>
           <div className="flex items-center">
             <div className={`w-2 h-2 rounded-full mr-1 ${
-              dataSource === 'GATEWAY' ? 'bg-purple-400 animate-pulse' :
+              dataSource === 'GATEWAY' ? 'bg-green-400 animate-pulse' :
               dataSource === 'REST_API' ? 'bg-yellow-400' :
               'bg-red-400'
             }`}></div>
             <span className={
-              dataSource === 'GATEWAY' ? 'text-purple-400' :
+              dataSource === 'GATEWAY' ? 'text-green-400' :
               dataSource === 'REST_API' ? 'text-yellow-400' :
               'text-red-400'
             }>
-              {dataSource === 'GATEWAY' ? 'Real-time tracking' :
+              {dataSource === 'GATEWAY' ? 'Live tracking' :
                dataSource === 'REST_API' ? 'Limited data' :
                'No tracking'}
             </span>
