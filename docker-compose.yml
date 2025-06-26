@@ -16,6 +16,7 @@ services:
     environment:
       - NODE_ENV=production
       - PORT=3000
+      - ANALYTICS_DATA_DIR=/app/data
     volumes:
       - /etc/localtime:/etc/localtime:ro
       - analytics-data:/app/data  # Persist analytics database
