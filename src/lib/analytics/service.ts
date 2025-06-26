@@ -431,6 +431,16 @@ class AnalyticsService {
     }
   }
 
+  // Get daily snapshot for a specific user and date
+  public getDailySnapshot(userId: string, date: string) {
+    try {
+      return this.db.getDailySnapshot(userId, date);
+    } catch (error) {
+      console.error(`❌ Error getting daily snapshot for ${userId} on ${date}:`, error);
+      return null;
+    }
+  }
+
   // Force end all active sessions for a user (useful for cleanup)
   public forceEndAllActiveSessions(userId: string) {
     const user = this.activeUsers.get(userId);
