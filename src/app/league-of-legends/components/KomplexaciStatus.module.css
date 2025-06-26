@@ -826,3 +826,85 @@
     font-size: 1.2rem;
   }
 }
+
+/* Game Tracking Information Styles */
+.trackingInfo {
+  margin-top: 1rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.trackingDetails {
+  background: rgba(110, 79, 246, 0.05);
+  border: 1px solid rgba(110, 79, 246, 0.2);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.trackingSummary {
+  padding: 0.75rem 1rem;
+  background: rgba(110, 79, 246, 0.1);
+  cursor: pointer;
+  font-weight: 500;
+  color: #e5e7eb;
+  border: none;
+  outline: none;
+  user-select: none;
+  transition: background-color 0.2s ease;
+}
+
+.trackingSummary:hover {
+  background: rgba(110, 79, 246, 0.15);
+}
+
+.trackingContent {
+  padding: 1rem;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.trackingSection {
+  margin-bottom: 1rem;
+}
+
+.trackingSection:last-of-type {
+  margin-bottom: 0;
+}
+
+.trackingTitle {
+  margin: 0 0 0.5rem 0;
+  color: #e5e7eb;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.trackingList {
+  margin: 0;
+  padding-left: 1.25rem;
+  color: #d1d5db;
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+.trackingList li {
+  margin-bottom: 0.25rem;
+}
+
+.trackingList li:last-child {
+  margin-bottom: 0;
+}
+
+.trackingNote {
+  margin-top: 1rem;
+  padding: 0.75rem;
+  background: rgba(59, 130, 246, 0.1);
+  border: 1px solid rgba(59, 130, 246, 0.3);
+  border-radius: 6px;
+}
+
+.trackingNote p {
+  margin: 0;
+  color: #bfdbfe;
+  font-size: 0.8rem;
+  line-height: 1.4;
+}

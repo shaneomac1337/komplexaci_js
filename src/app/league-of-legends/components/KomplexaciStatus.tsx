@@ -24,9 +24,10 @@ interface MemberStatus {
   error?: string;
 }
 
-// Constants for game validation
-const MAX_REASONABLE_GAME_DURATION_MINUTES = 180; // 3 hours - maximum reasonable game duration
-const STALE_DATA_THRESHOLD_MINUTES = 120; // 2 hours - when to start suspecting stale data
+// Constants for game validation - reduced for better real-time detection
+const MAX_REASONABLE_GAME_DURATION_MINUTES = 90; // 1.5 hours - maximum reasonable game duration
+const STALE_DATA_THRESHOLD_MINUTES = 60; // 1 hour - when to start suspecting stale data
+const FORCE_REFRESH_THRESHOLD_MINUTES = 45; // 45 minutes - force API refresh for long games
 
 const KOMPLEXACI_MEMBERS: KomplexaciMember[] = [
   {
@@ -330,6 +331,13 @@ const isGameDurationSuspicious = (gameStartTime: number): boolean => {
   return durationMinutes > STALE_DATA_THRESHOLD_MINUTES;
 };
 
+// Helper function to check if we should force refresh for long games
+const shouldForceRefresh = (gameStartTime: number): boolean => {
+  const now = Date.now();
+  const durationMinutes = Math.floor((now - gameStartTime) / 1000 / 60);
+  return durationMinutes > FORCE_REFRESH_THRESHOLD_MINUTES;
+};
+
 export default function KomplexaciStatus() {
   const [memberStatuses, setMemberStatuses] = useState<MemberStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -364,8 +372,8 @@ export default function KomplexaciStatus() {
     loadChampionData();
     checkAllMembersStatusOptimized();
 
-    // Set up periodic refresh every 1 minute (optimized with caching and rate limiting)
-    const interval = setInterval(checkAllMembersStatusOptimized, 1 * 60 * 1000);
+    // Set up periodic refresh every 30 seconds for better real-time game end detection
+    const interval = setInterval(checkAllMembersStatusOptimized, 30 * 1000);
 
     return () => clearInterval(interval);
   }, []);
@@ -650,11 +658,17 @@ export default function KomplexaciStatus() {
 
       // Step 2: Check live game status (PRIORITY - this is what we care about most)
       console.log(`🎮 Checking live game for ${member.name}...`);
+
+      // Check if we should force refresh based on previous game data
+      const cachedStatus = memberStatuses.find(s => s.member.name === member.name);
+      const shouldBypassCache = cachedStatus?.currentGame?.gameStartTime &&
+                               shouldForceRefresh(cachedStatus.currentGame.gameStartTime);
+
       const liveGameResponse = await fetch(
         `/api/lol/live-game-optimized?puuid=${puuid}&region=${member.region}&memberName=${encodeURIComponent(member.name)}`,
         {
           headers: {
-            'Cache-Control': 'public, max-age=30' // Allow short caching
+            'Cache-Control': shouldBypassCache ? 'no-cache' : 'public, max-age=10' // Shorter cache for better real-time detection
           }
         }
       );
@@ -783,7 +797,82 @@ export default function KomplexaciStatus() {
     }
   };
 
-  const formatGameMode = (gameMode: string) => {
+  // Force immediate refresh for a member (bypasses all caching for real-time game end detection)
+  const forceRefreshMemberStatus = async (memberIndex: number) => {
+    const member = KOMPLEXACI_MEMBERS[memberIndex];
+    console.log(`🔴 Force refreshing ${member.name} (immediate check)...`);
+
+    // Set loading state
+    setMemberStatuses(prev => prev.map((status, index) =>
+      index === memberIndex ? { ...status, loading: true } : status
+    ));
+
+    try {
+      // Get PUUID first
+      const cacheKey = `${member.riotId}-${member.region}`;
+      let puuid = puuidCache.get(cacheKey);
+
+      if (!puuid) {
+        const puuidResponse = await fetch(
+          `/api/lol/puuid-only?riotId=${encodeURIComponent(member.riotId)}&region=${member.region}`
+        );
+        if (puuidResponse.ok) {
+          const puuidData = await puuidResponse.json();
+          puuid = puuidData.puuid;
+          setPuuidCache(prev => new Map(prev).set(cacheKey, puuid!));
+        }
+      }
+
+      if (puuid) {
+        // Use immediate endpoint for real-time check
+        const immediateResponse = await fetch(
+          `/api/lol/live-game-immediate?puuid=${puuid}&region=${member.region}&memberName=${encodeURIComponent(member.name)}`
+        );
+
+        if (immediateResponse.ok) {
+          const immediateData = await immediateResponse.json();
+
+          const updatedStatus: MemberStatus = {
+            member,
+            isInGame: immediateData.inGame,
+            currentGame: immediateData.gameInfo ? {
+              ...immediateData.gameInfo,
+              playerPuuid: puuid
+            } : null,
+            loading: false,
+            lastSeen: new Date().toISOString()
+          };
+
+          setMemberStatuses(prev => prev.map((status, index) =>
+            index === memberIndex ? updatedStatus : status
+          ));
+
+          console.log(`🔴 Force refresh complete for ${member.name}: ${immediateData.inGame ? 'IN GAME' : 'NOT IN GAME'}`);
+        } else {
+          throw new Error('Failed to fetch immediate status');
+        }
+      } else {
+        throw new Error('Failed to get PUUID');
+      }
+    } catch (error) {
+      console.error(`Error force refreshing ${member.name}:`, error);
+      setMemberStatuses(prev => prev.map((status, index) =>
+        index === memberIndex ? {
+          ...status,
+          loading: false,
+          error: 'Force refresh failed'
+        } : status
+      ));
+    }
+  };
+
+  const formatGameMode = (gameMode: string, gameInfo?: any) => {
+    // Use queue type name if available (from our new validation)
+    if (gameInfo?.queueTypeName) {
+      return gameInfo.queueTypeName;
+    }
+
+    // Fallback to game mode mapping
     const modes: { [key: string]: string } = {
       'CLASSIC': 'Summoner\'s Rift',
       'ARAM': 'ARAM',
@@ -1032,6 +1121,18 @@ export default function KomplexaciStatus() {
                 >
                   {status.loading ? '🔄' : '↻'}
                 </button>
+                {/* Force refresh button for immediate game end detection */}
+                <button
+                  className={`${styles.refreshMemberButton} ${styles.forceRefreshButton}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    forceRefreshMemberStatus(index);
+                  }}
+                  disabled={status.loading}
+                  title={`Okamžitá kontrola pro ${status.member.displayName} (obchází cache)`}
+                >
+                  🔴
+                </button>
               </div>
             </div>
 
@@ -1044,7 +1145,7 @@ export default function KomplexaciStatus() {
                 <div className={styles.gameInfo}>
                   <div className={styles.gameStatus}>
                     <span className={styles.gameMode}>
-                      🎯 {formatGameMode(status.currentGame.gameMode)}
+                      🎯 {formatGameMode(status.currentGame.gameMode, status.currentGame)}
                     </span>
                     <span className={styles.gameDuration}>
                       ⏱️ {formatGameDuration(status.currentGame.gameStartTime)}
@@ -1095,8 +1196,50 @@ export default function KomplexaciStatus() {
           🎮 = Hraje právě teď (klikněte pro detaily) • 💤 = Nehraje • 👤 Klikněte na jméno pro profil • ↻ = Obnovit jednotlivě
         </p>
         <p className={styles.footerSubtext}>
-          Status se obnovuje každou minutu • ⚠️ = Podezřelá délka hry • Automatická detekce zastaralých dat • Optimalizováno pro rychlost
+          Status se obnovuje každých 30 sekund • ⚠️ = Podezřelá délka hry • Rychlá detekce konce hry • Optimalizováno pro real-time
         </p>
+
+        {/* Game Tracking Information */}
+        <div className={styles.trackingInfo}>
+          <details className={styles.trackingDetails}>
+            <summary className={styles.trackingSummary}>
+              ℹ️ Jaké hry jsou sledovány?
+            </summary>
+            <div className={styles.trackingContent}>
+              <div className={styles.trackingSection}>
+                <h4 className={styles.trackingTitle}>✅ Sledované herní módy:</h4>
+                <ul className={styles.trackingList}>
+                  <li><strong>🏆 Ranked Solo/Duo</strong> - Žebříčkové hry</li>
+                  <li><strong>🏆 Ranked Flex</strong> - Flexibilní žebříček</li>
+                  <li><strong>🎯 ARAM</strong> - All Random All Mid</li>
+                  <li><strong>⚔️ Normal Draft</strong> - Normální draft</li>
+                  <li><strong>⚔️ Normal Blind</strong> - Normální blind pick</li>
+                  <li><strong>⚔️ Normal Quickplay</strong> - Rychlá hra</li>
+                  <li><strong>🏅 Clash</strong> - Turnajové hry</li>
+                  <li><strong>🎪 URF</strong> - Ultra Rapid Fire</li>
+                  <li><strong>🎪 Arena</strong> - 2v2v2v2 Arena</li>
+                  <li><strong>🎪 One for All</strong> - Všichni stejný champion</li>
+                  <li><strong>🎪 Nexus Blitz</strong> - Rychlý herní mód</li>
+                  <li><strong>🎪 Ultimate Spellbook</strong> - Ultimátní kouzla</li>
+                  <li><strong>🤖 Co-op vs AI</strong> - Hry proti botům</li>
+                  <li><strong>🎮 Všechny ostatní módy</strong> - Včetně rotujících módů</li>
+                </ul>
+              </div>
+
+              <div className={styles.trackingSection}>
+                <h4 className={styles.trackingTitle}>❌ Nesledované módy:</h4>
+                <ul className={styles.trackingList}>
+                  <li><strong>🔧 Practice Tool</strong> - Tréninková místnost</li>
+                  <li><strong>🎮 Custom Games</strong> - Vlastní lobby hry</li>
+                </ul>
+              </div>
+
+              <div className={styles.trackingNote}>
+                <p><strong>💡 Proč?</strong> Sledujeme všechny oficiální herní módy včetně rotujících módů. Pouze Practice Tool a custom lobby hry jsou vyloučeny, protože často způsobují nepřesné údaje o stavu hráče (zůstávají "aktivní" i po opuštění).</p>
+              </div>
+            </div>
+          </details>
+        </div>
       </div>
 
       {/* Game Details Modal */}
