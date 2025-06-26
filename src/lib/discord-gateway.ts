@@ -147,10 +147,16 @@ class DiscordGatewayService {
       // Fetch all members
       await guild.members.fetch();
       
-      // Cache all members and initialize analytics
+      // Cache all members and restore daily online time from database
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+
       guild.members.cache.forEach(member => {
         if (!member.user.bot) {
+          // First update member cache (this sets dailyOnlineTime to 0)
           this.updateMemberCache(member);
+
+          // Then restore daily online time from database
+          this.restoreDailyOnlineTime(member.id, today);
 
           // Initialize analytics for existing members
           const presence = member.presence;
@@ -372,6 +378,30 @@ class DiscordGatewayService {
 
     // Save daily stats to database every minute for real-time persistence
     this.saveDailyStatsToDatabase();
+  }
+
+  private restoreDailyOnlineTime(userId: string, date: string) {
+    try {
+      // Get today's daily snapshot from database
+      const snapshot = this.analyticsService.getDailySnapshot(userId, date);
+
+      if (snapshot && snapshot.online_minutes > 0) {
+        const member = this.memberCache.get(userId);
+        if (member) {
+          member.dailyOnlineTime = snapshot.online_minutes;
+
+          // If user is currently online, set session start time to now
+          if (member.status !== 'offline') {
+            member.sessionStartTime = new Date();
+          }
+
+          this.memberCache.set(userId, member);
+          console.log(`🔄 Restored daily online time: ${member.displayName} - ${snapshot.online_minutes}m`);
+        }
+      }
+    } catch (error) {
+      console.error(`❌ Error restoring daily online time for ${userId}:`, error);
+    }
   }
 
   private saveDailyStatsToDatabase() {

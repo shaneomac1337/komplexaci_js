@@ -223,6 +223,11 @@ class AnalyticsDatabase {
                    snapshot.voice_minutes, snapshot.games_played, snapshot.spotify_minutes);
   }
 
+  public getDailySnapshot(userId: string, date: string): DailySnapshot | null {
+    const stmt = this.db.prepare('SELECT * FROM daily_snapshots WHERE user_id = ? AND date = ?');
+    return stmt.get(userId, date) as DailySnapshot | null;
+  }
+
   public getDailySnapshots(userId?: string, startDate?: string, endDate?: string) {
     let query = 'SELECT * FROM daily_snapshots WHERE 1=1';
     const params: any[] = [];
