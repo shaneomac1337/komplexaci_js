@@ -1482,6 +1482,36 @@
         padding: 0 10px;
         max-width: 400px;
     }
+
+    /* Ensure member cards are visible on mobile */
+    .member-card-exact:not(.animate-in) {
+        opacity: 0 !important;
+        transform: translateY(40px) scale(0.8) rotate(-3deg) !important; /* Less dramatic initial state for mobile */
+    }
+
+    /* Faster animation for mobile */
+    .member-card-exact.animate-in {
+        animation: bounceInUpMobile 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+    }
+}
+
+/* Mobile-optimized bounce animation */
+@keyframes bounceInUpMobile {
+    0% {
+        opacity: 0;
+        transform: translateY(60px) scale(0.5) rotate(-10deg);
+        filter: blur(2px);
+    }
+    50% {
+        opacity: 0.8;
+        transform: translateY(-10px) scale(1.05) rotate(2deg);
+        filter: blur(0px);
+    }
+    100% {
+        opacity: 1;
+        transform: translateY(0) scale(1) rotate(0deg);
+        filter: blur(0px);
+    }
 }
 
 /* 1080p optimization for member grid */
