@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDiscordGateway } from '@/lib/discord-gateway';
+import { getAnalyticsDatabase } from '@/lib/analytics/database';
 import { initializeDiscordGateway } from '@/lib/discord-startup';
 
 export async function GET() {
@@ -8,6 +9,14 @@ export async function GET() {
     await initializeDiscordGateway();
 
     const gateway = getDiscordGateway();
+
+    // Wait up to 3 seconds for Gateway to be ready on first load
+    const maxWaitTime = 3000; // 3 seconds
+    const startTime = Date.now();
+
+    while (!gateway.isReady() && (Date.now() - startTime) < maxWaitTime) {
+      await new Promise(resolve => setTimeout(resolve, 100)); // Wait 100ms
+    }
 
     // Try to get real-time data from Gateway first
     if (gateway.isReady()) {
@@ -18,8 +27,28 @@ export async function GET() {
         // Get all members from Gateway (both online and offline)
         const allMembers = gateway.getAllMembers();
 
-        // Get most active members
-        const mostActiveMembers = gateway.getMostActiveMembers(10);
+        // Get most active members from database (today's data)
+        const db = getAnalyticsDatabase();
+        const today = new Date().toISOString().split('T')[0];
+
+        const mostActiveFromDB = db.getDatabase().prepare(`
+          SELECT
+            user_id,
+            online_minutes
+          FROM daily_snapshots
+          WHERE date = ?
+          ORDER BY online_minutes DESC
+          LIMIT 10
+        `).all(today);
+
+        // Merge with member data from Gateway
+        const mostActiveMembers = mostActiveFromDB.map(dbMember => {
+          const member = allMembers.find(m => m.id === dbMember.user_id);
+          return member ? {
+            ...member,
+            dailyOnlineTime: dbMember.online_minutes
+          } : null;
+        }).filter(Boolean);
 
         // Format for frontend compatibility
         const formattedStats = {
@@ -37,17 +66,32 @@ export async function GET() {
             const customStatus = member.activities.find((activity: any) => activity.type === 4);
             const otherActivity = member.activities.find((activity: any) => activity.type !== 4);
 
+            // Check if user is streaming (voice state)
+            const voiceState = member.voice;
+            const isStreaming = voiceState?.streaming || false;
+
+            // Create streaming activity if user is streaming but no other activity
+            let displayActivity = otherActivity;
+            if (isStreaming && !otherActivity) {
+              displayActivity = {
+                name: 'Screen Share',
+                type: 1, // Streaming type
+                details: voiceState?.channel?.name ? `in ${voiceState.channel.name}` : 'in voice channel',
+                state: 'Streaming'
+              };
+            }
+
             return {
               id: member.id,
               username: member.username,
               displayName: member.displayName,
               avatar: member.avatar,
               status: member.status,
-              activity: otherActivity ? {
-                name: otherActivity.name,
-                type: otherActivity.type,
-                details: otherActivity.details,
-                state: otherActivity.state,
+              activity: displayActivity ? {
+                name: displayActivity.name,
+                type: displayActivity.type,
+                details: displayActivity.details,
+                state: displayActivity.state,
               } : null,
               customStatus: customStatus ? {
                 name: customStatus.name,
@@ -72,7 +116,7 @@ export async function GET() {
             displayName: member.displayName,
             avatar: member.avatar,
             status: member.status,
-            dailyOnlineTime: Math.round(member.dailyOnlineTime),
+            dailyOnlineTime: member.dailyOnlineTime || 0,
             isOnline: member.status !== 'offline'
           })),
         };
