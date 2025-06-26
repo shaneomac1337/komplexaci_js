@@ -14,8 +14,6 @@ export async function POST(request: NextRequest) {
       gameSessions: database.prepare('SELECT COUNT(*) as count FROM game_sessions').get() as any,
       voiceSessions: database.prepare('SELECT COUNT(*) as count FROM voice_sessions').get() as any,
       spotifySessions: database.prepare('SELECT COUNT(*) as count FROM spotify_sessions').get() as any,
-      monthlySummaries: database.prepare('SELECT COUNT(*) as count FROM monthly_summaries').get() as any,
-      achievements: database.prepare('SELECT COUNT(*) as count FROM achievements').get() as any,
     };
     
     // Delete all data from all tables
@@ -24,14 +22,12 @@ export async function POST(request: NextRequest) {
       DELETE FROM game_sessions;
       DELETE FROM voice_sessions;
       DELETE FROM spotify_sessions;
-      DELETE FROM monthly_summaries;
-      DELETE FROM achievements;
     `);
     
     // Reset auto-increment counters
     database.exec(`
       DELETE FROM sqlite_sequence WHERE name IN (
-        'game_sessions', 'voice_sessions', 'spotify_sessions', 'achievements'
+        'game_sessions', 'voice_sessions', 'spotify_sessions'
       );
     `);
     
@@ -44,8 +40,6 @@ export async function POST(request: NextRequest) {
       gameSessions: database.prepare('SELECT COUNT(*) as count FROM game_sessions').get() as any,
       voiceSessions: database.prepare('SELECT COUNT(*) as count FROM voice_sessions').get() as any,
       spotifySessions: database.prepare('SELECT COUNT(*) as count FROM spotify_sessions').get() as any,
-      monthlySummaries: database.prepare('SELECT COUNT(*) as count FROM monthly_summaries').get() as any,
-      achievements: database.prepare('SELECT COUNT(*) as count FROM achievements').get() as any,
     };
     
     console.log('✅ Database reset completed');
@@ -58,16 +52,12 @@ export async function POST(request: NextRequest) {
         gameSessions: beforeCounts.gameSessions?.count || 0,
         voiceSessions: beforeCounts.voiceSessions?.count || 0,
         spotifySessions: beforeCounts.spotifySessions?.count || 0,
-        monthlySummaries: beforeCounts.monthlySummaries?.count || 0,
-        achievements: beforeCounts.achievements?.count || 0,
       },
       after: {
         dailySnapshots: afterCounts.dailySnapshots?.count || 0,
         gameSessions: afterCounts.gameSessions?.count || 0,
         voiceSessions: afterCounts.voiceSessions?.count || 0,
         spotifySessions: afterCounts.spotifySessions?.count || 0,
-        monthlySummaries: afterCounts.monthlySummaries?.count || 0,
-        achievements: afterCounts.achievements?.count || 0,
       },
       timestamp: new Date().toISOString()
     });
