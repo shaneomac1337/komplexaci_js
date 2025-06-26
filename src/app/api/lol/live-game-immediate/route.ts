@@ -1,14 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { RiotAPIService } from '../services/RiotAPIService';
 
-// In-memory cache for live game data
-const liveGameCache = new Map<string, { data: any; timestamp: number; ttl: number }>();
-const CACHE_TTL_SECONDS = 30; // 30 seconds cache for live games (reduced for better real-time detection)
-const RATE_LIMIT_CACHE_TTL_SECONDS = 300; // 5 minutes cache when rate limited
-
-// Special handling for game end detection
-const GAME_END_DETECTION_TTL = 10; // 10 seconds cache when player was previously in game
-
 // Excluded queue types (blacklist approach - only exclude what causes problems)
 // Custom games (0) are the main source of stale data issues
 const EXCLUDED_QUEUE_IDS = new Set([
@@ -70,16 +62,21 @@ const getQueueTypeName = (queueId: number): string => {
   return queueNames[queueId] || `Game Mode ${queueId}`;
 };
 
-// Rate limiting tracking
-let lastRequestTime = 0;
-const MIN_REQUEST_INTERVAL = 100; // Minimum 100ms between requests
+/**
+ * Immediate live game check endpoint - bypasses all caching for real-time game end detection
+ * Use this when you need to immediately check if a game has ended
+ * Updated with match history cross-reference validation
+ */
 
 export async function GET(request: NextRequest) {
+  console.log(`🔴 IMMEDIATE ENDPOINT CALLED for ${request.url}`);
   try {
     const { searchParams } = new URL(request.url);
     const puuid = searchParams.get('puuid');
     const region = searchParams.get('region') || 'euw1';
     const memberName = searchParams.get('memberName') || 'Unknown';
+
+    console.log(`🔴 IMMEDIATE PARAMS: puuid=${puuid?.slice(-8)}..., region=${region}, memberName=${memberName}`);
 
     // Validate required parameters
     if (!puuid) {
@@ -88,39 +85,6 @@ export async function GET(request: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Create cache key
-    const cacheKey = `${puuid}-${region}`;
-    const now = Date.now();
-
-    // Check cache first - but use shorter cache for players who were recently in game
-    const cached = liveGameCache.get(cacheKey);
-    if (cached && (now - cached.timestamp) < cached.ttl * 1000) {
-      // If player was in game, use shorter cache to detect game end faster
-      const wasInGame = cached.data.inGame;
-      const cacheAge = (now - cached.timestamp) / 1000;
-
-      if (wasInGame && cacheAge > GAME_END_DETECTION_TTL) {
-        console.log(`🔄 Player ${memberName} was in game, checking for game end (cache age: ${cacheAge}s)`);
-        // Don't use cache, check API directly for game end detection
-      } else {
-        console.log(`📋 Cache hit for ${memberName} live game status (${wasInGame ? 'IN GAME' : 'NOT IN GAME'})`);
-        return NextResponse.json(cached.data, {
-          headers: {
-            'Cache-Control': `public, max-age=${wasInGame ? GAME_END_DETECTION_TTL : 30}, stale-while-revalidate=60`,
-            'X-Cache': 'HIT'
-          },
-        });
-      }
-    }
-
-    // Rate limiting protection
-    const timeSinceLastRequest = now - lastRequestTime;
-    if (timeSinceLastRequest < MIN_REQUEST_INTERVAL) {
-      const waitTime = MIN_REQUEST_INTERVAL - timeSinceLastRequest;
-      await new Promise(resolve => setTimeout(resolve, waitTime));
-    }
-    lastRequestTime = Date.now();
 
     // Validate region
     const riotService = new RiotAPIService();
@@ -131,10 +95,10 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.log(`🎮 Fetching live game for ${memberName} (${puuid.slice(-8)}...)`);
+    console.log(`🔴 IMMEDIATE live game check for ${memberName} (${puuid.slice(-8)}...)`);
 
     try {
-      // Get current game info
+      // Get current game info - NO CACHING, direct API call
       const currentGame = await riotService.getCurrentGame(puuid, region);
 
       let isActuallyInGame = false;
@@ -144,18 +108,18 @@ export async function GET(request: NextRequest) {
         const queueId = currentGame.gameQueueConfigId;
         const queueName = getQueueTypeName(queueId);
 
-        console.log(`🎮 Game detected for ${memberName}: ${queueName} (Queue ID: ${queueId})`);
+        console.log(`🔴 IMMEDIATE: Game detected for ${memberName}: ${queueName} (Queue ID: ${queueId})`);
 
         // Filter out non-trackable queues (custom games, practice tool, etc.)
         if (!isTrackableQueue(queueId)) {
-          console.log(`🚫 Ignoring non-trackable queue for ${memberName}: ${queueName} (Queue ID: ${queueId})`);
+          console.log(`🚫 IMMEDIATE: Ignoring non-trackable queue for ${memberName}: ${queueName} (Queue ID: ${queueId})`);
           isActuallyInGame = false;
           validatedGameInfo = null;
         } else {
           // Cross-reference with match history to validate if game is actually still active
           // If the game appears in completed matches, it's over (spectator data is stale)
           try {
-            console.log(`🔍 Cross-referencing trackable game for ${memberName} (${queueName})...`);
+            console.log(`🔴 IMMEDIATE: Cross-referencing trackable game for ${memberName} (${queueName})...`);
 
             // Get recent match IDs (last 5)
             const recentMatchIds = await riotService.getMatchIds(puuid, region, 0, 5);
@@ -164,17 +128,17 @@ export async function GET(request: NextRequest) {
             const platformCode = region.toUpperCase();
             const expectedMatchId = `${platformCode}_${currentGame.gameId}`;
 
-            console.log(`🔍 Looking for ${expectedMatchId} in recent matches:`, recentMatchIds);
+            console.log(`🔴 IMMEDIATE: Looking for ${expectedMatchId} in recent matches:`, recentMatchIds);
 
             // Check if this game appears in completed matches
             const gameFoundInHistory = recentMatchIds.includes(expectedMatchId);
 
             if (gameFoundInHistory) {
-              console.log(`❌ Game ${expectedMatchId} found in match history - game is COMPLETED (spectator data is stale)`);
+              console.log(`❌ IMMEDIATE: Game ${expectedMatchId} found in match history - game is COMPLETED (spectator data is stale)`);
               isActuallyInGame = false;
               validatedGameInfo = null;
             } else {
-              console.log(`✅ Game ${expectedMatchId} NOT in match history - ${queueName} is ACTIVE`);
+              console.log(`✅ IMMEDIATE: Game ${expectedMatchId} NOT in match history - ${queueName} is ACTIVE`);
               isActuallyInGame = true;
               validatedGameInfo = {
                 ...currentGame,
@@ -183,9 +147,9 @@ export async function GET(request: NextRequest) {
             }
 
           } catch (matchHistoryError) {
-            console.error(`⚠️ Could not validate with match history for ${memberName}:`, matchHistoryError);
+            console.error(`⚠️ IMMEDIATE: Could not validate with match history for ${memberName}:`, matchHistoryError);
             // Fallback: assume game is active if we can't check match history
-            console.log(`⚠️ Fallback: assuming ${queueName} is active for ${memberName}`);
+            console.log(`⚠️ IMMEDIATE: Fallback: assuming ${queueName} is active for ${memberName}`);
             isActuallyInGame = true;
             validatedGameInfo = {
               ...currentGame,
@@ -193,6 +157,8 @@ export async function GET(request: NextRequest) {
             };
           }
         }
+      } else {
+        console.log(`✅ IMMEDIATE: No spectator data for ${memberName} - not in game`);
       }
 
       const result = {
@@ -200,56 +166,40 @@ export async function GET(request: NextRequest) {
         gameInfo: validatedGameInfo,
         timestamp: Date.now(),
         memberName,
-        validated: true
+        immediate: true, // Flag to indicate this was an immediate check
+        validated: true // Flag to indicate this data was validated
       };
 
-      // Use different cache TTL based on game status
-      const cacheTTL = result.inGame ? GAME_END_DETECTION_TTL : CACHE_TTL_SECONDS;
-      const maxAge = result.inGame ? GAME_END_DETECTION_TTL : 30;
-
-      // Cache the result
-      liveGameCache.set(cacheKey, {
-        data: result,
-        timestamp: now,
-        ttl: cacheTTL
-      });
-
-      console.log(`✅ Live game check for ${memberName}: ${result.inGame ? 'IN GAME' : 'NOT IN GAME'} (validated, cache TTL: ${cacheTTL}s)`);
+      console.log(`🔴 IMMEDIATE check for ${memberName}: ${result.inGame ? 'IN GAME' : 'NOT IN GAME'} (validated)`);
 
       return NextResponse.json(result, {
         headers: {
-          'Cache-Control': `public, max-age=${maxAge}, stale-while-revalidate=60`,
-          'X-Cache': 'MISS'
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0',
+          'X-Immediate-Check': 'true'
         },
       });
 
     } catch (error) {
-      console.error(`Live Game API Error for ${memberName}:`, error);
+      console.error(`Immediate Live Game API Error for ${memberName}:`, error);
 
       // Handle rate limiting specifically
       if (error instanceof Error && error.message.includes('429')) {
-        console.log(`⚠️ Rate limited for ${memberName}, caching empty result`);
+        console.log(`⚠️ Rate limited for immediate check of ${memberName}`);
         
-        const rateLimitResult = {
+        return NextResponse.json({
           inGame: false,
           gameInfo: null,
           timestamp: Date.now(),
           memberName,
-          rateLimited: true
-        };
-
-        // Cache rate limit response for longer
-        liveGameCache.set(cacheKey, {
-          data: rateLimitResult,
-          timestamp: now,
-          ttl: RATE_LIMIT_CACHE_TTL_SECONDS
-        });
-
-        return NextResponse.json(rateLimitResult, {
-          status: 200, // Return 200 instead of 429 to avoid client-side errors
+          rateLimited: true,
+          immediate: true
+        }, {
+          status: 200,
           headers: {
-            'Cache-Control': 'public, max-age=300, stale-while-revalidate=600',
-            'X-Rate-Limited': 'true'
+            'X-Rate-Limited': 'true',
+            'Cache-Control': 'no-cache'
           },
         });
       }
@@ -262,9 +212,15 @@ export async function GET(request: NextRequest) {
               inGame: false, 
               gameInfo: null, 
               error: 'Player not in game',
-              memberName 
+              memberName,
+              immediate: true
             },
-            { status: 200 }
+            { 
+              status: 200,
+              headers: {
+                'Cache-Control': 'no-cache'
+              }
+            }
           );
         }
         
@@ -281,9 +237,15 @@ export async function GET(request: NextRequest) {
               inGame: false, 
               gameInfo: null, 
               error: 'Riot API temporarily unavailable',
-              memberName 
+              memberName,
+              immediate: true
             },
-            { status: 200 }
+            { 
+              status: 200,
+              headers: {
+                'Cache-Control': 'no-cache'
+              }
+            }
           );
         }
       }
@@ -293,27 +255,23 @@ export async function GET(request: NextRequest) {
           inGame: false, 
           gameInfo: null, 
           error: 'Unknown error occurred',
-          memberName 
+          memberName,
+          immediate: true
         },
-        { status: 200 }
+        { 
+          status: 200,
+          headers: {
+            'Cache-Control': 'no-cache'
+          }
+        }
       );
     }
 
   } catch (error) {
-    console.error('Live Game Optimized API Error:', error);
+    console.error('Immediate Live Game API Error:', error);
     return NextResponse.json(
       { error: 'Internal server error' },
       { status: 500 }
     );
   }
 }
-
-// Cleanup old cache entries periodically
-setInterval(() => {
-  const now = Date.now();
-  for (const [key, value] of liveGameCache.entries()) {
-    if (now - value.timestamp > value.ttl * 1000) {
-      liveGameCache.delete(key);
-    }
-  }
-}, 60000); // Clean up every minute
