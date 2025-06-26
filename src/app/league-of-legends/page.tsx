@@ -97,7 +97,7 @@ const maps = [
     name: 'Bridge of Progress',
     description: 'Nová mapa s unikátním designem a strategickými možnostmi. Moderní prostředí pro kompetitivní hru.',
     image: '/komplexaci/img/lol-bridge-of-progress.jpg',
-    gameMode: 'Arena'
+    gameMode: 'ARAM'
   },
   {
     id: 'teamfight-tactics',
