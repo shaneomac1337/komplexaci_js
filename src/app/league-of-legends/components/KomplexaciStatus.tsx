@@ -334,6 +334,9 @@ export default function KomplexaciStatus() {
   const [memberStatuses, setMemberStatuses] = useState<MemberStatus[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [championData, setChampionData] = useState<Map<number, any>>(new Map());
+
+  // Local PUUID cache to avoid repeated lookups
+  const [puuidCache, setPuuidCache] = useState<Map<string, string>>(new Map());
   const [selectedGame, setSelectedGame] = useState<any>(null);
   const [showGameModal, setShowGameModal] = useState(false);
 
@@ -357,12 +360,12 @@ export default function KomplexaciStatus() {
       }))
     );
 
-    // Load champion data and check status for each member
+    // Load champion data and check status for each member (optimized)
     loadChampionData();
-    checkAllMembersStatus();
+    checkAllMembersStatusOptimized();
 
-    // Set up periodic refresh every 2 minutes
-    const interval = setInterval(checkAllMembersStatus, 2 * 60 * 1000);
+    // Set up periodic refresh every 1 minute (optimized with caching and rate limiting)
+    const interval = setInterval(checkAllMembersStatusOptimized, 1 * 60 * 1000);
 
     return () => clearInterval(interval);
   }, []);
@@ -528,6 +531,226 @@ export default function KomplexaciStatus() {
     const statuses = await Promise.all(statusPromises);
     setMemberStatuses(statuses);
     setIsLoading(false);
+  };
+
+  // Optimized version with rate limiting protection and prioritized live game checks
+  const checkAllMembersStatusOptimized = async () => {
+    setIsLoading(true);
+    console.log('🎮 Starting optimized Komplexáci status check...');
+
+    const statuses: MemberStatus[] = [];
+
+    // Process members in batches of 3 to avoid rate limiting
+    const BATCH_SIZE = 3;
+    const DELAY_BETWEEN_BATCHES = 1000; // 1 second delay between batches
+    const DELAY_BETWEEN_CALLS = 200; // 200ms delay between individual calls
+
+    for (let i = 0; i < KOMPLEXACI_MEMBERS.length; i += BATCH_SIZE) {
+      const batch = KOMPLEXACI_MEMBERS.slice(i, i + BATCH_SIZE);
+      console.log(`📦 Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(KOMPLEXACI_MEMBERS.length / BATCH_SIZE)}`);
+
+      // Process batch members sequentially with delays
+      for (const member of batch) {
+        try {
+          const status = await checkMemberStatusOptimized(member);
+          statuses.push(status);
+
+          // Update UI immediately for each member (progressive loading)
+          setMemberStatuses(prev => {
+            const newStatuses = [...prev];
+            const existingIndex = newStatuses.findIndex(s => s.member.name === member.name);
+            if (existingIndex >= 0) {
+              newStatuses[existingIndex] = status;
+            } else {
+              newStatuses.push(status);
+            }
+            return newStatuses;
+          });
+
+          // Small delay between individual calls
+          if (batch.indexOf(member) < batch.length - 1) {
+            await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_CALLS));
+          }
+        } catch (error) {
+          console.error(`Error checking ${member.name}:`, error);
+          statuses.push({
+            member,
+            isInGame: false,
+            loading: false,
+            error: 'Rate limit or connection error'
+          });
+        }
+      }
+
+      // Delay between batches (except for the last batch)
+      if (i + BATCH_SIZE < KOMPLEXACI_MEMBERS.length) {
+        console.log(`⏳ Waiting ${DELAY_BETWEEN_BATCHES}ms before next batch...`);
+        await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+      }
+    }
+
+    setIsLoading(false);
+    console.log('✅ Optimized status check completed');
+  };
+
+  // Optimized member status check - prioritizes live game status with minimal API calls
+  const checkMemberStatusOptimized = async (member: KomplexaciMember): Promise<MemberStatus> => {
+    try {
+      console.log(`🔍 Checking ${member.name}...`);
+
+      // Step 1: Try to get cached PUUID first (if we have it from previous calls)
+      let puuid: string | null = null;
+
+      // Check local PUUID cache first
+      const cacheKey = `${member.riotId}-${member.region}`;
+      if (puuidCache.has(cacheKey)) {
+        puuid = puuidCache.get(cacheKey)!;
+        console.log(`📋 Using locally cached PUUID for ${member.name}`);
+      } else {
+        // Check if we can get PUUID from previous status
+        const cachedStatus = memberStatuses.find(s => s.member.name === member.name);
+        if (cachedStatus?.currentGame?.playerPuuid) {
+          puuid = cachedStatus.currentGame.playerPuuid;
+          // Store in local cache for future use
+          setPuuidCache(prev => new Map(prev).set(cacheKey, puuid!));
+          console.log(`📋 Using status cached PUUID for ${member.name}`);
+        }
+      }
+
+      // If no cached PUUID, get it with minimal API call
+      if (!puuid) {
+        console.log(`🔍 Fetching PUUID for ${member.name}...`);
+        const puuidResponse = await fetch(
+          `/api/lol/puuid-only?riotId=${encodeURIComponent(member.riotId)}&region=${member.region}`,
+          {
+            headers: {
+              'Cache-Control': 'public, max-age=86400' // 24 hours cache for PUUID
+            }
+          }
+        );
+
+        if (!puuidResponse.ok) {
+          if (puuidResponse.status === 429) {
+            throw new Error('Rate limit exceeded');
+          }
+          return {
+            member,
+            isInGame: false,
+            loading: false,
+            error: 'Player not found'
+          };
+        }
+
+        const puuidData = await puuidResponse.json();
+        puuid = puuidData.puuid;
+
+        // Store in local cache for future use
+        setPuuidCache(prev => new Map(prev).set(cacheKey, puuid!));
+      }
+
+      // Step 2: Check live game status (PRIORITY - this is what we care about most)
+      console.log(`🎮 Checking live game for ${member.name}...`);
+      const liveGameResponse = await fetch(
+        `/api/lol/live-game-optimized?puuid=${puuid}&region=${member.region}&memberName=${encodeURIComponent(member.name)}`,
+        {
+          headers: {
+            'Cache-Control': 'public, max-age=30' // Allow short caching
+          }
+        }
+      );
+
+      let isInGame = false;
+      let currentGame = null;
+
+      if (liveGameResponse.ok) {
+        const liveGameData = await liveGameResponse.json();
+
+        if (liveGameData.inGame && liveGameData.gameInfo) {
+          const gameStartTime = liveGameData.gameInfo.gameStartTime;
+
+          // Quick validation - only reject obviously stale data
+          if (!isGameDataStale(gameStartTime)) {
+            isInGame = true;
+            currentGame = {
+              ...liveGameData.gameInfo,
+              playerPuuid: puuid
+            };
+            console.log(`🎯 ${member.name} is IN GAME!`);
+          } else {
+            console.log(`⚠️ Stale game data detected for ${member.name}`);
+          }
+        }
+      } else if (liveGameResponse.status === 429) {
+        throw new Error('Rate limit exceeded');
+      }
+
+      // Step 3: Only fetch additional data if NOT in game and we have time/quota
+      let lastGameTime = undefined;
+      let lastGameResult = undefined;
+
+      if (!isInGame) {
+        console.log(`📊 ${member.name} not in game, checking last match...`);
+        try {
+          const matchHistoryResponse = await fetch(
+            `/api/lol/matches?puuid=${puuid}&region=${member.region}&count=1`,
+            {
+              headers: {
+                'Cache-Control': 'public, max-age=600' // 10 minutes cache for match history
+              }
+            }
+          );
+
+          if (matchHistoryResponse.ok) {
+            const matchData = await matchHistoryResponse.json();
+            if (matchData.matches && matchData.matches.length > 0) {
+              const lastMatch = matchData.matches[0];
+              lastGameTime = lastMatch.info.gameEndTimestamp;
+
+              const playerParticipant = lastMatch.info.participants.find(
+                (p: any) => p.puuid === puuid
+              );
+              if (playerParticipant) {
+                lastGameResult = playerParticipant.win ? 'win' as const : 'loss' as const;
+              }
+            }
+          } else if (matchHistoryResponse.status === 429) {
+            console.log(`⚠️ Rate limit hit for match history of ${member.name}, skipping...`);
+          }
+        } catch (error) {
+          console.log(`⚠️ Skipping match history for ${member.name} due to error:`, error);
+        }
+      }
+
+      return {
+        member,
+        isInGame,
+        currentGame,
+        loading: false,
+        lastSeen: new Date().toISOString(),
+        lastGameTime,
+        lastGameResult
+      };
+
+    } catch (error) {
+      console.error(`❌ Error checking ${member.name}:`, error);
+
+      if (error instanceof Error && error.message.includes('Rate limit')) {
+        return {
+          member,
+          isInGame: false,
+          loading: false,
+          error: 'Rate limited - will retry later'
+        };
+      }
+
+      return {
+        member,
+        isInGame: false,
+        loading: false,
+        error: 'Connection error',
+        lastSeen: new Date().toISOString()
+      };
+    }
   };
 
   // Function to refresh a single member's status
@@ -735,10 +958,11 @@ export default function KomplexaciStatus() {
           <span className={styles.icon}>👥</span>
           Paří teď Komplexáci?
         </h2>
-        <button 
-          onClick={checkAllMembersStatus}
+        <button
+          onClick={checkAllMembersStatusOptimized}
           disabled={isLoading}
           className={styles.refreshButton}
+          title="Obnovit status všech členů (optimalizováno pro rychlost)"
         >
           {isLoading ? '🔄' : '↻'} Obnovit
         </button>
@@ -871,7 +1095,7 @@ export default function KomplexaciStatus() {
           🎮 = Hraje právě teď (klikněte pro detaily) • 💤 = Nehraje • 👤 Klikněte na jméno pro profil • ↻ = Obnovit jednotlivě
         </p>
         <p className={styles.footerSubtext}>
-          Status se obnovuje každé 2 minuty • ⚠️ = Podezřelá délka hry • Automatická detekce zastaralých dat
+          Status se obnovuje každou minutu • ⚠️ = Podezřelá délka hry • Automatická detekce zastaralých dat • Optimalizováno pro rychlost
         </p>
       </div>
 
