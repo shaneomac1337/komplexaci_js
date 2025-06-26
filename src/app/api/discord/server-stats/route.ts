@@ -72,9 +72,7 @@ export async function GET() {
             displayName: member.displayName,
             avatar: member.avatar,
             status: member.status,
-            activityScore: member.activityScore,
-            onlineTime: Math.round(member.onlineTime),
-            statusChanges: member.statusChanges,
+            dailyOnlineTime: Math.round(member.dailyOnlineTime),
             isOnline: member.status !== 'offline'
           })),
         };

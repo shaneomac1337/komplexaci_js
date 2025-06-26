@@ -12,10 +12,7 @@ interface CachedMember {
   roles: string[];
   joinedAt: string | null;
   lastSeen: Date;
-  activityScore: number;
-  statusChanges: number;
-  onlineTime: number; // in minutes
-  dailyPoints: number;
+  dailyOnlineTime: number; // in minutes - only for current day
   lastDailyReset: Date;
   sessionStartTime: Date | null;
 }
@@ -67,13 +64,13 @@ class DiscordGatewayService {
       this.isConnected = true;
       this.initializeCache();
 
-      // Set up periodic stats update to keep lastUpdated fresh and award activity points
+      // Set up periodic stats update to track online time and handle daily resets
       this.updateInterval = setInterval(() => {
         if (this.isConnected && this.serverStats) {
-          this.awardPeriodicActivityPoints();
+          this.updateDailyOnlineTime();
           this.updateServerStats();
         }
-      }, 300000); // Update every 5 minutes (300 seconds)
+      }, 60000); // Update every 1 minute for more accurate time tracking
     });
 
     this.client.on('guildMemberAdd', (member) => {
@@ -157,60 +154,48 @@ class DiscordGatewayService {
     const currentTime = new Date();
     const currentStatus = member.presence?.status || 'offline';
 
-    // Calculate activity score and track changes
-    let activityScore = existingMember?.activityScore || 0;
-    let statusChanges = existingMember?.statusChanges || 0;
-    let onlineTime = existingMember?.onlineTime || 0;
-    let dailyPoints = existingMember?.dailyPoints || 0;
+    // Initialize daily tracking variables
+    let dailyOnlineTime = existingMember?.dailyOnlineTime || 0;
     let lastDailyReset = existingMember?.lastDailyReset || currentTime;
     let sessionStartTime = existingMember?.sessionStartTime || null;
 
-    // Check if we need to reset daily points (new day)
-    const today = new Date(currentTime);
+    // Check for daily reset at midnight Czech time
+    const czechTime = new Date(currentTime.toLocaleString("en-US", {timeZone: "Europe/Prague"}));
+    const today = new Date(czechTime);
     today.setHours(0, 0, 0, 0);
-    const lastReset = new Date(lastDailyReset);
+    const lastReset = new Date(lastDailyReset.toLocaleString("en-US", {timeZone: "Europe/Prague"}));
     lastReset.setHours(0, 0, 0, 0);
 
     if (today.getTime() > lastReset.getTime()) {
-      dailyPoints = 0;
+      // Reset daily counters at midnight
+      dailyOnlineTime = 0;
       lastDailyReset = currentTime;
+      sessionStartTime = null; // Reset session on new day
+      console.log(`🌅 Daily reset for ${member.displayName || member.user.username}`);
     }
 
-    // If member exists, update activity metrics
-    if (existingMember) {
-      // Track status changes (indicates activity)
-      if (existingMember.status !== currentStatus) {
-        statusChanges++;
-        activityScore += 5; // Bonus for status changes
-      }
-
-      // Track online time
-      if (existingMember.status !== 'offline' && currentStatus !== 'offline') {
-        const timeDiff = (currentTime.getTime() - existingMember.lastSeen.getTime()) / (1000 * 60); // minutes
-        onlineTime += Math.min(timeDiff, 60); // Cap at 60 minutes per update to prevent huge jumps
-      }
-
-      // Activity bonus for being online
+    // Handle session tracking for new members
+    if (!existingMember) {
       if (currentStatus !== 'offline') {
-        activityScore += 1;
-      }
-
-      // Bonus for having activities (playing games, etc.)
-      if (member.presence?.activities && member.presence.activities.length > 0) {
-        activityScore += 2;
+        sessionStartTime = currentTime;
+        console.log(`👋 New member ${member.displayName || member.user.username} came online`);
       }
     } else {
-      // New member - give initial points based on current status
-      if (currentStatus !== 'offline') {
-        activityScore = 20; // Starting bonus for being online
-        dailyPoints = 20;
-        sessionStartTime = currentTime;
-      }
-
-      // Initial bonus for having activities
-      if (member.presence?.activities && member.presence.activities.length > 0) {
-        activityScore += 10;
-        dailyPoints += 10;
+      // Handle status changes for existing members
+      if (existingMember.status !== currentStatus) {
+        if (currentStatus !== 'offline' && existingMember.status === 'offline') {
+          // Member came online - start new session
+          sessionStartTime = currentTime;
+          console.log(`🟢 ${member.displayName || member.user.username} came online`);
+        } else if (currentStatus === 'offline' && existingMember.status !== 'offline') {
+          // Member went offline - end session and add time
+          if (existingMember.sessionStartTime) {
+            const sessionDuration = (currentTime.getTime() - existingMember.sessionStartTime.getTime()) / (1000 * 60); // minutes
+            dailyOnlineTime += Math.max(0, sessionDuration); // Ensure positive time
+            console.log(`🔴 ${member.displayName || member.user.username} went offline after ${sessionDuration.toFixed(1)} minutes`);
+          }
+          sessionStartTime = null;
+        }
       }
     }
 
@@ -226,10 +211,7 @@ class DiscordGatewayService {
       roles: member.roles.cache.map(role => role.id),
       joinedAt: member.joinedAt?.toISOString() || null,
       lastSeen: currentTime,
-      activityScore,
-      statusChanges,
-      onlineTime,
-      dailyPoints,
+      dailyOnlineTime,
       lastDailyReset,
       sessionStartTime
     };
@@ -244,28 +226,33 @@ class DiscordGatewayService {
       const oldStatus = member.status;
       const newStatus = presence.status;
 
-      // Check daily reset
-      const today = new Date(currentTime);
+      // Check for daily reset at midnight Czech time
+      const czechTime = new Date(currentTime.toLocaleString("en-US", {timeZone: "Europe/Prague"}));
+      const today = new Date(czechTime);
       today.setHours(0, 0, 0, 0);
-      const lastReset = new Date(member.lastDailyReset);
+      const lastReset = new Date(member.lastDailyReset.toLocaleString("en-US", {timeZone: "Europe/Prague"}));
       lastReset.setHours(0, 0, 0, 0);
 
       if (today.getTime() > lastReset.getTime()) {
-        member.dailyPoints = 0;
+        member.dailyOnlineTime = 0;
         member.lastDailyReset = currentTime;
+        member.sessionStartTime = null; // Reset session on new day
+        console.log(`🌅 Daily reset for ${member.displayName}`);
       }
 
-      // Track status changes (indicates activity) - immediate points
+      // Handle status changes for session tracking
       if (oldStatus !== newStatus) {
-        member.statusChanges++;
-        const points = 5;
-        member.activityScore += points;
-        member.dailyPoints += points;
-
-        // Track session start/end
         if (newStatus !== 'offline' && oldStatus === 'offline') {
+          // Member came online - start new session
           member.sessionStartTime = currentTime;
-        } else if (newStatus === 'offline') {
+          console.log(`🟢 ${member.displayName} came online`);
+        } else if (newStatus === 'offline' && oldStatus !== 'offline') {
+          // Member went offline - end session and add time
+          if (member.sessionStartTime) {
+            const sessionDuration = (currentTime.getTime() - member.sessionStartTime.getTime()) / (1000 * 60); // minutes
+            member.dailyOnlineTime += Math.max(0, sessionDuration);
+            console.log(`🔴 ${member.displayName} went offline after ${sessionDuration.toFixed(1)} minutes`);
+          }
           member.sessionStartTime = null;
         }
       }
@@ -281,78 +268,37 @@ class DiscordGatewayService {
     }
   }
 
-  private awardPeriodicActivityPoints() {
+  private updateDailyOnlineTime() {
     const currentTime = new Date();
     let updatedCount = 0;
 
-    // Check if it's peak hours (18:00-23:00 weekdays, 13:00-01:00 weekends)
-    const hour = currentTime.getHours();
-    const dayOfWeek = currentTime.getDay(); // 0 = Sunday, 6 = Saturday
-    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-    const isPeakHours = isWeekend ?
-      (hour >= 13 || hour <= 1) :
-      (hour >= 18 && hour <= 23);
-    const peakMultiplier = isPeakHours ? 1.5 : 1.0;
-
     for (const [userId, member] of this.memberCache) {
-      // Check daily reset
-      const today = new Date(currentTime);
+      // Check for daily reset at midnight Czech time
+      const czechTime = new Date(currentTime.toLocaleString("en-US", {timeZone: "Europe/Prague"}));
+      const today = new Date(czechTime);
       today.setHours(0, 0, 0, 0);
-      const lastReset = new Date(member.lastDailyReset);
+      const lastReset = new Date(member.lastDailyReset.toLocaleString("en-US", {timeZone: "Europe/Prague"}));
       lastReset.setHours(0, 0, 0, 0);
 
       if (today.getTime() > lastReset.getTime()) {
-        member.dailyPoints = 0;
+        member.dailyOnlineTime = 0;
         member.lastDailyReset = currentTime;
+        member.sessionStartTime = null; // Reset session on new day
+        console.log(`🌅 Daily reset for ${member.displayName}`);
       }
 
-      let pointsAwarded = 0;
-
-      // Award points based on activity type
-      if (member.status !== 'offline') {
-        // Check for diminishing returns (after 2 hours online)
-        const sessionDuration = member.sessionStartTime ?
-          (currentTime.getTime() - member.sessionStartTime.getTime()) / (1000 * 60 * 60) : 0; // hours
-
-        const diminishingFactor = sessionDuration > 2 ? 0.5 : 1.0;
-
-        // Base points for being online
-        let basePoints = Math.floor(2 * peakMultiplier * diminishingFactor);
-
-        // Activity-specific bonuses
-        if (member.activities && member.activities.length > 0) {
-          const hasGaming = member.activities.some(a =>
-            a.type === 0 && // Playing activity
-            !a.name?.toLowerCase().includes('spotify') &&
-            !a.name?.toLowerCase().includes('custom status')
-          );
-          const hasMusic = member.activities.some(a =>
-            a.name?.toLowerCase().includes('spotify')
-          );
-          const hasCustomStatus = member.activities.some(a => a.type === 4);
-
-          if (hasGaming) {
-            basePoints += Math.floor(10 * peakMultiplier * diminishingFactor); // Gaming bonus
-          } else if (hasMusic) {
-            basePoints += Math.floor(3 * peakMultiplier * diminishingFactor); // Music bonus
-          } else if (hasCustomStatus) {
-            basePoints += Math.floor(1 * peakMultiplier * diminishingFactor); // Custom status bonus
-          }
-        }
-
-        pointsAwarded = basePoints;
-
-        if (pointsAwarded > 0) {
-          member.activityScore += pointsAwarded;
-          member.dailyPoints += pointsAwarded;
-
-          // Track online time (5 minutes per cycle)
-          member.onlineTime += 5;
-          member.lastSeen = currentTime;
-          this.memberCache.set(userId, member);
-          updatedCount++;
-        }
+      // Add time for currently online members with active sessions
+      if (member.status !== 'offline' && member.sessionStartTime) {
+        // Add 1 minute to daily online time (since we run every minute)
+        member.dailyOnlineTime += 1;
+        member.lastSeen = currentTime;
+        this.memberCache.set(userId, member);
+        updatedCount++;
       }
+    }
+
+    if (updatedCount > 0) {
+      console.log(`⏱️ Updated daily online time for ${updatedCount} members`);
     }
   }
 
@@ -411,16 +357,12 @@ class DiscordGatewayService {
   getMostActiveMembers(limit: number = 10): CachedMember[] {
     return Array.from(this.memberCache.values())
       .sort((a, b) => {
-        // Primary sort by activity score
-        if (b.activityScore !== a.activityScore) {
-          return b.activityScore - a.activityScore;
+        // Sort by daily online time (descending)
+        if (b.dailyOnlineTime !== a.dailyOnlineTime) {
+          return b.dailyOnlineTime - a.dailyOnlineTime;
         }
-        // Secondary sort by online time
-        if (b.onlineTime !== a.onlineTime) {
-          return b.onlineTime - a.onlineTime;
-        }
-        // Tertiary sort by status changes
-        return b.statusChanges - a.statusChanges;
+        // Secondary sort by last seen (more recent first)
+        return b.lastSeen.getTime() - a.lastSeen.getTime();
       })
       .slice(0, limit);
   }
