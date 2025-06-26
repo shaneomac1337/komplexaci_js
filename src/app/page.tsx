@@ -275,17 +275,22 @@ export default function Home() {
 
   // Intersection Observer for members section
   useEffect(() => {
+    // Detect if user is on mobile device
+    const isMobile = window.innerWidth <= 768;
+
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
+          console.log('👀 Members section intersection:', entry.isIntersecting, 'ratio:', entry.intersectionRatio, 'mobile:', isMobile);
           if (entry.isIntersecting && !membersVisible) {
+            console.log('✅ Members section visible, triggering animations');
             setMembersVisible(true);
           }
         });
       },
       {
-        threshold: 0.2, // Trigger when 20% of the section is visible
-        rootMargin: '-50px 0px -50px 0px' // Add some margin to delay trigger
+        threshold: isMobile ? 0.05 : 0.1, // Even lower threshold for mobile (5% vs 10%)
+        rootMargin: isMobile ? '50px 0px 0px 0px' : '0px 0px -20px 0px' // Positive margin for mobile to trigger earlier
       }
     );
 
@@ -293,10 +298,21 @@ export default function Home() {
       observer.observe(membersRef.current);
     }
 
+    // Fallback: Show members after timeout if intersection observer fails
+    // Shorter timeout for mobile devices
+    const fallbackDelay = isMobile ? 2000 : 3000;
+    const fallbackTimer = setTimeout(() => {
+      if (!membersVisible) {
+        console.log('🔄 Fallback: Showing members after timeout (mobile:', isMobile, ')');
+        setMembersVisible(true);
+      }
+    }, fallbackDelay);
+
     return () => {
       if (membersRef.current) {
         observer.unobserve(membersRef.current);
       }
+      clearTimeout(fallbackTimer);
     };
   }, [membersVisible]);
 
