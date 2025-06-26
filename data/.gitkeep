@@ -1,0 +1,3 @@
+# This file ensures the data directory is preserved in git
+# Database files are ignored but the directory structure is maintained
+# Analytics database files will be created here automatically

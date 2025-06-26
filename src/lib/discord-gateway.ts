@@ -1,6 +1,8 @@
 // Note: Using discord.js without native compression modules
 // This avoids the need for Visual Studio build tools
 import { Client, GatewayIntentBits, Presence, GuildMember, Activity } from 'discord.js';
+import { getAnalyticsService } from './analytics/service';
+import { initializeAnalytics } from './analytics';
 
 interface CachedMember {
   id: string;
@@ -38,22 +40,27 @@ class DiscordGatewayService {
   private serverStats: ServerStats | null = null;
   private serverId: string;
   private updateInterval: NodeJS.Timeout | null = null;
+  private analyticsService = getAnalyticsService();
 
   constructor() {
     this.serverId = process.env.DISCORD_SERVER_ID || '';
-    
+
     this.client = new Client({
       intents: [
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildPresences,
         GatewayIntentBits.GuildVoiceStates
-      ],
-      // Disable compression to avoid zlib-sync dependency
-      ws: {
-        compress: false
-      }
+      ]
     });
+
+    // Initialize analytics system
+    try {
+      initializeAnalytics();
+      console.log('✅ Analytics system initialized with Discord Gateway');
+    } catch (error) {
+      console.error('❌ Failed to initialize analytics system:', error);
+    }
 
     this.setupEventHandlers();
   }
@@ -91,6 +98,13 @@ class DiscordGatewayService {
 
     this.client.on('guildMemberUpdate', (oldMember, newMember) => {
       this.updateMemberCache(newMember);
+    });
+
+    // Add voice state tracking for analytics
+    this.client.on('voiceStateUpdate', (oldState, newState) => {
+      if (newState.guild?.id === this.serverId) {
+        this.handleVoiceStateUpdate(oldState, newState);
+      }
     });
 
     this.client.on('error', (error) => {
@@ -133,17 +147,28 @@ class DiscordGatewayService {
       // Fetch all members
       await guild.members.fetch();
       
-      // Cache all members
+      // Cache all members and initialize analytics
       guild.members.cache.forEach(member => {
         if (!member.user.bot) {
           this.updateMemberCache(member);
+
+          // Initialize analytics for existing members
+          const presence = member.presence;
+          if (presence) {
+            this.analyticsService.updateUserPresence(
+              member.id,
+              member.nickname || member.user.globalName || member.user.username,
+              presence.status as 'online' | 'idle' | 'dnd' | 'offline',
+              presence.activities
+            );
+          }
         }
       });
 
       // Update server stats
       this.updateServerStats();
-      
-      console.log(`Initialized cache with ${this.memberCache.size} members`);
+
+      console.log(`Initialized cache with ${this.memberCache.size} members and analytics tracking`);
     } catch (error) {
       console.error('Failed to initialize member cache:', error);
     }
@@ -263,9 +288,53 @@ class DiscordGatewayService {
       member.lastSeen = currentTime;
       this.memberCache.set(presence.userId, member);
 
+      // Update analytics service with presence change
+      this.analyticsService.updateUserPresence(
+        presence.userId,
+        member.displayName,
+        newStatus as 'online' | 'idle' | 'dnd' | 'offline',
+        presence.activities
+      );
+
       // Update server stats to refresh lastUpdated timestamp
       this.updateServerStats();
     }
+  }
+
+  private handleVoiceStateUpdate(oldState: any, newState: any) {
+    const userId = newState.member?.id;
+    if (!userId) return;
+
+    const member = this.memberCache.get(userId);
+    if (!member) return;
+
+    // Determine voice channel info
+    const channelId = newState.channelId;
+    const channelName = newState.channel?.name;
+
+    // Check if user is streaming (streaming = screen share, selfVideo = camera)
+    const isStreaming = newState.streaming || false;
+
+    // Debug streaming detection
+    if (userId === '396360380038774784') { // shaneomac's ID for debugging
+      console.log(`📺 Streaming debug for ${member.displayName}:`, {
+        streaming: newState.streaming, // ← This is screen sharing/streaming
+        selfVideo: newState.selfVideo, // ← This is camera
+        selfDeaf: newState.selfDeaf,
+        selfMute: newState.selfMute,
+        isStreaming
+      });
+    }
+
+    // Update analytics service with voice state change
+    this.analyticsService.updateUserVoiceState(
+      userId,
+      channelId,
+      channelName,
+      isStreaming
+    );
+
+    console.log(`🎤 Voice state update: ${member.displayName} ${channelId ? 'joined' : 'left'} voice channel${channelName ? ` (${channelName})` : ''}`);
   }
 
   private updateDailyOnlineTime() {
@@ -299,6 +368,67 @@ class DiscordGatewayService {
 
     if (updatedCount > 0) {
       console.log(`⏱️ Updated daily online time for ${updatedCount} members`);
+    }
+
+    // Save daily stats to database every hour
+    this.saveDailyStatsToDatabase();
+  }
+
+  private saveDailyStatsToDatabase() {
+    try {
+      const now = new Date();
+      const currentMinute = now.getMinutes();
+
+      // Save every 5 minutes to get data faster (at minutes 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55)
+      if (currentMinute % 5 !== 0) return;
+
+      const today = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+      let savedCount = 0;
+
+      this.memberCache.forEach((member, userId) => {
+        if (member.dailyOnlineTime > 0) {
+          // Save current daily online time to analytics database
+          this.analyticsService.saveDailyOnlineTime(
+            userId,
+            member.displayName,
+            today,
+            Math.round(member.dailyOnlineTime)
+          );
+          savedCount++;
+        }
+      });
+
+      if (savedCount > 0) {
+        console.log(`💾 Saved daily stats to database for ${savedCount} users`);
+      }
+    } catch (error) {
+      console.error('❌ Error saving daily stats to database:', error);
+    }
+  }
+
+  // Public method to manually trigger saving stats (for testing/immediate population)
+  public forceSaveDailyStats() {
+    try {
+      const today = new Date().toISOString().split('T')[0];
+      let savedCount = 0;
+
+      this.memberCache.forEach((member, userId) => {
+        if (member.dailyOnlineTime > 0) {
+          this.analyticsService.saveDailyOnlineTime(
+            userId,
+            member.displayName,
+            today,
+            Math.round(member.dailyOnlineTime)
+          );
+          savedCount++;
+        }
+      });
+
+      console.log(`🔧 Force saved daily stats for ${savedCount} users`);
+      return savedCount;
+    } catch (error) {
+      console.error('❌ Error force saving daily stats:', error);
+      return 0;
     }
   }
 

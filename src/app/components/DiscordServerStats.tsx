@@ -59,12 +59,11 @@ export default function DiscordServerStats() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchStats = async (isInitialLoad = false) => {
-      try {
-        if (isInitialLoad) {
-          setLoading(true);
-        }
+    console.log('DiscordServerStats useEffect running');
 
+    const fetchStats = async () => {
+      try {
+        console.log('Fetching Discord stats...');
         const response = await fetch('/api/discord/server-stats');
 
         if (!response.ok) {
@@ -72,40 +71,22 @@ export default function DiscordServerStats() {
         }
 
         const data = await response.json();
+        console.log('Discord stats received:', data);
+
         setStats(data);
         setError(data.error || null);
+        setLoading(false);
       } catch (err) {
+        console.error('Error fetching Discord stats:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
-        // Set fallback data
-        setStats({
-          name: 'Komplexáci',
-          memberCount: 15,
-          onlineCount: 3,
-          icon: null,
-          description: 'Herní komunita v důchodu',
-          features: [],
-          boostLevel: 0,
-          boostCount: 0,
-          verificationLevel: 1,
-          onlineMembers: [],
-          mostActiveMembers: [],
-          hasRealPresenceData: false,
-          lastUpdated: new Date().toISOString(),
-        });
-      } finally {
-        if (isInitialLoad) {
-          setLoading(false);
-        }
+        setLoading(false);
       }
     };
 
-    // Initial load with loading state
-    fetchStats(true);
+    fetchStats();
 
-    // Subsequent updates without loading state to prevent flicker
-    const refreshInterval = 30 * 1000; // 30 seconds
-    const interval = setInterval(() => fetchStats(false), refreshInterval);
-
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchStats, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -115,6 +96,9 @@ export default function DiscordServerStats() {
         <div className="flex items-center mb-3">
           <div className="w-6 h-6 mr-3 bg-blue-400 rounded animate-pulse"></div>
           <div className="h-5 bg-gray-600 rounded w-32 animate-pulse"></div>
+        </div>
+        <div className="text-center py-2 mb-3">
+          <p className="text-sm text-gray-400">🔄 Načítání Discord serveru...</p>
         </div>
         <div className="grid grid-cols-2 gap-4 text-sm">
           {[...Array(4)].map((_, i) => (

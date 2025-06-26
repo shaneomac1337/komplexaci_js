@@ -123,6 +123,32 @@ const members = [
       { label: 'Specialita', value: 'Chodil do třídy s Azarinem' },
       { label: 'Vybavení', value: 'Na Hollywoodech měl dlažební kostku' }
     ]
+  },
+  {
+    id: 'zdravicko',
+    name: 'Zdravíčko',
+    realName: 'Václav Průcha',
+    role: 'Žolík',
+    image: '/komplexaci/img/zdravicko.gif',
+    bio: 'Zdravíčko je takové eso v rukávu Komplexácké komunity, do akce bývá povolán zpravidla v případě největší potřeby. Nejnovější přírůstek v KompG klanu. Milovník zlevněného zboží.',
+    stats: [
+      { label: 'Oblíbená činnost', value: 'Scrollovat 9gag' },
+      { label: 'Zaměstnání', value: 'Šťouchač brambor' },
+      { label: 'Motto', value: 'Život dává a bere' }
+    ]
+  },
+  {
+    id: 'roseck',
+    name: 'Roseck',
+    realName: 'Vladimír Rathouský',
+    role: 'Stratég',
+    image: '/komplexaci/img/roseck.gif',
+    bio: 'Někdejší stratég komplexácké skupiny, Roseck měl vždy plné kapsy plánů od A až do Z a dokázal predikovat, jakým směrem se hra bude ubírat, na kontě má několik strategický zářezů včetně legendárního divu na topu v Night Cupu.',
+    stats: [
+      { label: 'Label', value: 'TNKDLBL' },
+      { label: 'Umístění', value: 'Ostrava pyčo' },
+      { label: 'Hobby', value: 'Poslech kvalitního zvuku' }
+    ]
   }
 ];
 
@@ -185,9 +211,22 @@ const ScrollingText = ({ text, className, maxWidth = 150 }: { text: string; clas
   );
 };
 
+// Function to shuffle array using Fisher-Yates algorithm
+function shuffleArray<T>(array: T[]): T[] {
+  const shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+}
+
 export default function Home() {
   const [flippedCards, setFlippedCards] = useState<Set<string>>(new Set());
   const [isLoaded, setIsLoaded] = useState(false);
+  const [membersVisible, setMembersVisible] = useState(false);
+  const [shuffledMembers, setShuffledMembers] = useState<typeof members>([]);
+  const membersRef = useRef<HTMLElement>(null);
 
   // Music player state
   const [isPlaying, setIsPlaying] = useState(false);
@@ -228,6 +267,38 @@ export default function Home() {
       isMountedRef.current = false;
     };
   }, []);
+
+  // Shuffle members on component mount
+  useEffect(() => {
+    setShuffledMembers(shuffleArray(members));
+  }, []);
+
+  // Intersection Observer for members section
+  useEffect(() => {
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && !membersVisible) {
+            setMembersVisible(true);
+          }
+        });
+      },
+      {
+        threshold: 0.2, // Trigger when 20% of the section is visible
+        rootMargin: '-50px 0px -50px 0px' // Add some margin to delay trigger
+      }
+    );
+
+    if (membersRef.current) {
+      observer.observe(membersRef.current);
+    }
+
+    return () => {
+      if (membersRef.current) {
+        observer.unobserve(membersRef.current);
+      }
+    };
+  }, [membersVisible]);
 
   // Cross-page and cross-tab music control
   useEffect(() => {
@@ -1200,7 +1271,7 @@ export default function Home() {
       </section>
 
       {/* Members Section - EXACT Recreation */}
-      <section id="clenove" className="relative z-10 py-20" style={{ backgroundColor: 'var(--dark-bg)' }}>
+      <section ref={membersRef} id="clenove" className="relative z-10 py-20" style={{ backgroundColor: 'var(--dark-bg)' }}>
         <div className="container mx-auto px-6">
           <h2 className="text-4xl font-bold text-center mb-12" style={{
             fontFamily: "'Exo 2', sans-serif",
@@ -1210,13 +1281,13 @@ export default function Home() {
             Naši členové
           </h2>
           <div className="members-grid-exact">
-            {members.map((member, index) => (
+            {shuffledMembers.map((member, index) => (
               <div
                 key={member.id}
                 className={`member-card-exact member-${member.id}-exact ${
-                  isLoaded ? 'animate-in' : ''
+                  membersVisible ? 'animate-in' : ''
                 } ${flippedCards.has(member.id) ? 'flipped' : ''}`}
-                style={{ animationDelay: `${index * 200}ms` }}
+                style={{ animationDelay: `${index * 150}ms` }}
                 onClick={() => handleCardFlip(member.id)}
               >
                 <div className="member-card-inner">
