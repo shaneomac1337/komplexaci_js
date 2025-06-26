@@ -19,7 +19,7 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - analytics-data:/app/data  # Persist analytics database
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health-check"]
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
