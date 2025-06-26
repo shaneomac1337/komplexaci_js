@@ -213,11 +213,11 @@ class DiscordGatewayService {
           sessionStartTime = currentTime;
           console.log(`🟢 ${member.displayName || member.user.username} came online`);
         } else if (currentStatus === 'offline' && existingMember.status !== 'offline') {
-          // Member went offline - end session and add time
+          // Member went offline - just end session (time already tracked minute by minute)
           if (existingMember.sessionStartTime) {
             const sessionDuration = (currentTime.getTime() - existingMember.sessionStartTime.getTime()) / (1000 * 60); // minutes
-            dailyOnlineTime += Math.max(0, sessionDuration); // Ensure positive time
             console.log(`🔴 ${member.displayName || member.user.username} went offline after ${sessionDuration.toFixed(1)} minutes`);
+            // Note: Don't add sessionDuration to dailyOnlineTime as it's already tracked minute by minute
           }
           sessionStartTime = null;
         }
@@ -272,11 +272,11 @@ class DiscordGatewayService {
           member.sessionStartTime = currentTime;
           console.log(`🟢 ${member.displayName} came online`);
         } else if (newStatus === 'offline' && oldStatus !== 'offline') {
-          // Member went offline - end session and add time
+          // Member went offline - just end session (time already tracked minute by minute)
           if (member.sessionStartTime) {
             const sessionDuration = (currentTime.getTime() - member.sessionStartTime.getTime()) / (1000 * 60); // minutes
-            member.dailyOnlineTime += Math.max(0, sessionDuration);
             console.log(`🔴 ${member.displayName} went offline after ${sessionDuration.toFixed(1)} minutes`);
+            // Note: Don't add sessionDuration to dailyOnlineTime as it's already tracked minute by minute
           }
           member.sessionStartTime = null;
         }
