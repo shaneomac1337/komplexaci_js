@@ -52,10 +52,12 @@ class AnalyticsDatabase {
   private isInitialized = false;
 
   constructor() {
-    // Ensure data directory exists
-    const dataDir = path.join(process.cwd(), 'data');
+    // Use environment variable for data directory, fallback to ./data
+    const dataDir = process.env.ANALYTICS_DATA_DIR || path.join(process.cwd(), 'data');
+
     if (!fs.existsSync(dataDir)) {
       fs.mkdirSync(dataDir, { recursive: true });
+      console.log(`📁 Created analytics data directory: ${dataDir}`);
     }
 
     // Initialize database
@@ -164,7 +166,6 @@ class AnalyticsDatabase {
       'CREATE INDEX IF NOT EXISTS idx_voice_sessions_start_time ON voice_sessions(start_time)',
       'CREATE INDEX IF NOT EXISTS idx_spotify_sessions_user ON spotify_sessions(user_id)',
       'CREATE INDEX IF NOT EXISTS idx_spotify_sessions_artist ON spotify_sessions(artist)',
-      'CREATE INDEX IF NOT EXISTS idx_achievements_user_month ON achievements(user_id, month_year)',
     ];
 
     indexes.forEach(indexSql => {
