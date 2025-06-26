@@ -370,18 +370,13 @@ class DiscordGatewayService {
       console.log(`⏱️ Updated daily online time for ${updatedCount} members`);
     }
 
-    // Save daily stats to database every hour
+    // Save daily stats to database every minute for real-time persistence
     this.saveDailyStatsToDatabase();
   }
 
   private saveDailyStatsToDatabase() {
     try {
       const now = new Date();
-      const currentMinute = now.getMinutes();
-
-      // Save every 5 minutes to get data faster (at minutes 0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55)
-      if (currentMinute % 5 !== 0) return;
-
       const today = now.toISOString().split('T')[0]; // YYYY-MM-DD format
       let savedCount = 0;
 
@@ -399,7 +394,7 @@ class DiscordGatewayService {
       });
 
       if (savedCount > 0) {
-        console.log(`💾 Saved daily stats to database for ${savedCount} users`);
+        console.log(`💾 Saved daily stats for ${savedCount} users`);
       }
     } catch (error) {
       console.error('❌ Error saving daily stats to database:', error);
