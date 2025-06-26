@@ -10,6 +10,18 @@ import {
 } from '../types/summoner';
 import { enrichMatchWithChampionData, enrichMasteryWithChampionData } from '../utils/championUtils';
 
+/**
+ * RiotAPIService - Updated for new Riot API endpoints (2025)
+ *
+ * IMPORTANT: This service has been updated to use the new PUUID-based endpoints:
+ * - /lol/league/v4/entries/by-summoner/{encryptedSummonerId} → /lol/league/v4/entries/by-puuid/{encryptedPUUID}
+ * - /lol/summoner/v4/summoners/by-account/{encryptedAccountId} → /lol/summoner/v4/summoners/by-puuid/{encryptedPUUID}
+ * - /tft/league/v1/entries/by-summoner/{summonerId} → /tft/league/v1/entries/by-puuid/{puuid}
+ * - /tft/summoner/v1/summoners/by-account/{encryptedAccountId} → /tft/summoner/v1/summoners/by-puuid/{encryptedPUUID}
+ * - /tft/summoner/v1/summoners/{encryptedSummonerId} → /tft/summoner/v1/summoners/by-puuid/{encryptedPUUID}
+ * - /lol/summoner/v4/summoners/{encryptedSummonerId} → /lol/summoner/v4/summoners/by-puuid/{encryptedPUUID}
+ */
+
 export class RiotAPIService {
   private apiKey: string;
   private baseUrls = {
@@ -142,10 +154,10 @@ export class RiotAPIService {
     return this.makeRequest<Summoner>(url);
   }
 
-  // Get ranked stats by summoner ID
-  async getRankedStats(summonerId: string, region: string = 'euw1'): Promise<LeagueEntry[]> {
+  // Get ranked stats by PUUID (updated to new API endpoint)
+  async getRankedStats(puuid: string, region: string = 'euw1'): Promise<LeagueEntry[]> {
     const platformUrl = this.getPlatformUrl(region);
-    const url = `${platformUrl}/lol/league/v4/entries/by-summoner/${summonerId}`;
+    const url = `${platformUrl}/lol/league/v4/entries/by-puuid/${puuid}`;
     return this.makeRequest<LeagueEntry[]>(url);
   }
 
@@ -181,6 +193,7 @@ export class RiotAPIService {
   async getCurrentGame(puuid: string, region: string = 'euw1'): Promise<CurrentGameInfo | null> {
     try {
       const platformUrl = this.getPlatformUrl(region);
+      // Spectator API v5 uses PUUID directly (this endpoint is correct)
       const url = `${platformUrl}/lol/spectator/v5/active-games/by-summoner/${puuid}`;
       const gameInfo = await this.makeRequest<CurrentGameInfo>(url);
 
@@ -226,16 +239,16 @@ export class RiotAPIService {
     try {
       // Step 1: Get account by Riot ID
       const account = await this.getAccountByRiotId(gameName, tagLine, region);
-      
+
       // Step 2: Get summoner details
       const summoner = await this.getSummonerByPuuid(account.puuid, region);
-      
-      // Step 3: Get ranked stats
-      const rankedStats = await this.getRankedStats(summoner.id, region);
-      
+
+      // Step 3: Get ranked stats (updated to use PUUID)
+      const rankedStats = await this.getRankedStats(account.puuid, region);
+
       // Step 4: Get champion mastery
       const championMastery = await this.getChampionMastery(account.puuid, region, 5);
-      
+
       // Step 5: Check if in game
       const currentGame = await this.getCurrentGame(account.puuid, region);
       
@@ -283,6 +296,22 @@ export class RiotAPIService {
   isValidRegion(region: string): boolean {
     const validRegions = ['euw1', 'eun1', 'na1', 'kr', 'jp1', 'br1', 'la1', 'la2', 'oc1', 'tr1', 'ru'];
     return validRegions.includes(region);
+  }
+
+  // TFT (Teamfight Tactics) Methods - Updated to new PUUID-based endpoints
+
+  // Get TFT summoner by PUUID (updated endpoint)
+  async getTFTSummonerByPuuid(puuid: string, region: string = 'euw1'): Promise<any> {
+    const platformUrl = this.getPlatformUrl(region);
+    const url = `${platformUrl}/tft/summoner/v1/summoners/by-puuid/${puuid}`;
+    return this.makeRequest<any>(url);
+  }
+
+  // Get TFT league entries by PUUID (updated endpoint)
+  async getTFTLeagueEntries(puuid: string, region: string = 'euw1'): Promise<any[]> {
+    const platformUrl = this.getPlatformUrl(region);
+    const url = `${platformUrl}/tft/league/v1/entries/by-puuid/${puuid}`;
+    return this.makeRequest<any[]>(url);
   }
 
   // Parse Riot ID from string (gameName#tagLine)
