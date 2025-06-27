@@ -1,79 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAnalyticsDatabase } from '@/lib/analytics/database';
 
+/**
+ * DEPRECATED: This endpoint was used for destructive database resets
+ * which caused data loss issues. Daily resets now happen automatically
+ * at midnight Czech time via the Discord Gateway service.
+ *
+ * For data management, use:
+ * - /api/analytics/cleanup - Remove old data beyond retention period
+ * - /api/analytics/export - Backup data before any operations
+ * - /api/analytics/admin/reset-database - Emergency full reset (admin only)
+ */
 export async function POST(request: NextRequest) {
-  try {
-    const db = getAnalyticsDatabase();
-    const database = db.getDatabase();
-    
-    console.log('🧹 Starting database reset...');
-    
-    // Get counts before deletion
-    const beforeCounts = {
-      dailySnapshots: database.prepare('SELECT COUNT(*) as count FROM daily_snapshots').get() as any,
-      gameSessions: database.prepare('SELECT COUNT(*) as count FROM game_sessions').get() as any,
-      voiceSessions: database.prepare('SELECT COUNT(*) as count FROM voice_sessions').get() as any,
-      spotifySessions: database.prepare('SELECT COUNT(*) as count FROM spotify_sessions').get() as any,
-    };
-    
-    // Delete all data from all tables
-    database.exec(`
-      DELETE FROM daily_snapshots;
-      DELETE FROM game_sessions;
-      DELETE FROM voice_sessions;
-      DELETE FROM spotify_sessions;
-    `);
-    
-    // Reset auto-increment counters
-    database.exec(`
-      DELETE FROM sqlite_sequence WHERE name IN (
-        'game_sessions', 'voice_sessions', 'spotify_sessions'
-      );
-    `);
-    
-    // Vacuum to reclaim space
-    database.exec('VACUUM');
-    
-    // Get counts after deletion (should all be 0)
-    const afterCounts = {
-      dailySnapshots: database.prepare('SELECT COUNT(*) as count FROM daily_snapshots').get() as any,
-      gameSessions: database.prepare('SELECT COUNT(*) as count FROM game_sessions').get() as any,
-      voiceSessions: database.prepare('SELECT COUNT(*) as count FROM voice_sessions').get() as any,
-      spotifySessions: database.prepare('SELECT COUNT(*) as count FROM spotify_sessions').get() as any,
-    };
-    
-    console.log('✅ Database reset completed');
-    
-    return NextResponse.json({
-      success: true,
-      message: 'Database reset completed',
-      before: {
-        dailySnapshots: beforeCounts.dailySnapshots?.count || 0,
-        gameSessions: beforeCounts.gameSessions?.count || 0,
-        voiceSessions: beforeCounts.voiceSessions?.count || 0,
-        spotifySessions: beforeCounts.spotifySessions?.count || 0,
-      },
-      after: {
-        dailySnapshots: afterCounts.dailySnapshots?.count || 0,
-        gameSessions: afterCounts.gameSessions?.count || 0,
-        voiceSessions: afterCounts.voiceSessions?.count || 0,
-        spotifySessions: afterCounts.spotifySessions?.count || 0,
-      },
-      timestamp: new Date().toISOString()
-    });
-    
-  } catch (error) {
-    console.error('❌ Database reset failed:', error);
-    
-    return NextResponse.json({
-      success: false,
-      error: 'Database reset failed',
-      message: error instanceof Error ? error.message : 'Unknown error'
-    }, { status: 500 });
-  }
+  return NextResponse.json({
+    success: false,
+    error: 'Endpoint deprecated',
+    message: 'This destructive reset endpoint has been deprecated to prevent data loss. Daily resets happen automatically at midnight Czech time.',
+    alternatives: {
+      'Daily reset': 'Happens automatically at midnight - no action needed',
+      'Data cleanup': 'Use /api/analytics/cleanup to remove old data',
+      'Export data': 'Use /api/analytics/export to backup before operations',
+      'Emergency reset': 'Contact admin for /api/analytics/admin/reset-database'
+    }
+  }, { status: 410 }); // 410 Gone - resource no longer available
 }
 
-// Also allow GET for easy testing
 export async function GET(request: NextRequest) {
   return POST(request);
 }
