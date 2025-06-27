@@ -336,6 +336,92 @@ class AnalyticsDatabase {
     return this.db.prepare(query).all(...params) as SpotifySession[];
   }
 
+  // === DATA RETENTION METHODS ===
+
+  public getDataRetentionInfo(retentionDays: number = 365) {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+    const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+
+    const oldDataCounts = {
+      dailySnapshots: this.db.prepare('SELECT COUNT(*) as count FROM daily_snapshots WHERE date < ?').get(cutoffDateStr) as any,
+      gameSessions: this.db.prepare('SELECT COUNT(*) as count FROM game_sessions WHERE DATE(start_time) < ?').get(cutoffDateStr) as any,
+      voiceSessions: this.db.prepare('SELECT COUNT(*) as count FROM voice_sessions WHERE DATE(start_time) < ?').get(cutoffDateStr) as any,
+      spotifySessions: this.db.prepare('SELECT COUNT(*) as count FROM spotify_sessions WHERE DATE(start_time) < ?').get(cutoffDateStr) as any,
+    };
+
+    const recentDataCounts = {
+      dailySnapshots: this.db.prepare('SELECT COUNT(*) as count FROM daily_snapshots WHERE date >= ?').get(cutoffDateStr) as any,
+      gameSessions: this.db.prepare('SELECT COUNT(*) as count FROM game_sessions WHERE DATE(start_time) >= ?').get(cutoffDateStr) as any,
+      voiceSessions: this.db.prepare('SELECT COUNT(*) as count FROM voice_sessions WHERE DATE(start_time) >= ?').get(cutoffDateStr) as any,
+      spotifySessions: this.db.prepare('SELECT COUNT(*) as count FROM spotify_sessions WHERE DATE(start_time) >= ?').get(cutoffDateStr) as any,
+    };
+
+    return {
+      retentionDays,
+      cutoffDate: cutoffDateStr,
+      oldData: {
+        dailySnapshots: oldDataCounts.dailySnapshots?.count || 0,
+        gameSessions: oldDataCounts.gameSessions?.count || 0,
+        voiceSessions: oldDataCounts.voiceSessions?.count || 0,
+        spotifySessions: oldDataCounts.spotifySessions?.count || 0,
+      },
+      recentData: {
+        dailySnapshots: recentDataCounts.dailySnapshots?.count || 0,
+        gameSessions: recentDataCounts.gameSessions?.count || 0,
+        voiceSessions: recentDataCounts.voiceSessions?.count || 0,
+        spotifySessions: recentDataCounts.spotifySessions?.count || 0,
+      }
+    };
+  }
+
+  public cleanupOldData(retentionDays: number) {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - retentionDays);
+    const cutoffDateStr = cutoffDate.toISOString().split('T')[0];
+
+    const transaction = this.db.transaction(() => {
+      const results = {
+        dailySnapshots: this.db.prepare('DELETE FROM daily_snapshots WHERE date < ?').run(cutoffDateStr),
+        gameSessions: this.db.prepare('DELETE FROM game_sessions WHERE DATE(start_time) < ?').run(cutoffDateStr),
+        voiceSessions: this.db.prepare('DELETE FROM voice_sessions WHERE DATE(start_time) < ?').run(cutoffDateStr),
+        spotifySessions: this.db.prepare('DELETE FROM spotify_sessions WHERE DATE(start_time) < ?').run(cutoffDateStr),
+      };
+      
+      return results;
+    });
+
+    const results = transaction();
+    
+    // Vacuum to reclaim space
+    this.db.exec('VACUUM');
+
+    return {
+      cutoffDate: cutoffDateStr,
+      deletedRecords: {
+        dailySnapshots: results.dailySnapshots.changes,
+        gameSessions: results.gameSessions.changes,
+        voiceSessions: results.voiceSessions.changes,
+        spotifySessions: results.spotifySessions.changes,
+      }
+    };
+  }
+
+  // === DAILY RESET MANAGEMENT ===
+
+  public getCurrentDayData(date?: string) {
+    const targetDate = date || new Date().toISOString().split('T')[0];
+    
+    return {
+      dailySnapshots: this.db.prepare('SELECT * FROM daily_snapshots WHERE date = ? ORDER BY user_id').all(targetDate),
+      todaysSessions: {
+        games: this.db.prepare('SELECT * FROM game_sessions WHERE DATE(start_time) = ? ORDER BY start_time DESC').all(targetDate),
+        voice: this.db.prepare('SELECT * FROM voice_sessions WHERE DATE(start_time) = ? ORDER BY start_time DESC').all(targetDate),
+        spotify: this.db.prepare('SELECT * FROM spotify_sessions WHERE DATE(start_time) = ? ORDER BY start_time DESC').all(targetDate),
+      }
+    };
+  }
+
   // Close database connection
   public close() {
     try {
