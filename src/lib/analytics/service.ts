@@ -229,11 +229,11 @@ class AnalyticsService {
           user.streamingStartTime = currentTime;
           console.log(`📺 ${user.displayName} started streaming in ${user.voiceChannelName}`);
         } else if (!isStreaming && user.streamingStartTime) {
-          // Stopped streaming - calculate and add streaming time
+          // Stopped streaming - calculate and add to total (but don't save to DB yet)
           const streamingMinutes = Math.round((currentTime.getTime() - user.streamingStartTime.getTime()) / (1000 * 60));
-          this.addStreamingTimeToSession(user.voiceSessionId, streamingMinutes);
+          user.totalStreamingMinutes = (user.totalStreamingMinutes || 0) + Math.max(0, streamingMinutes);
           user.streamingStartTime = undefined;
-          console.log(`📺 ${user.displayName} stopped streaming (${streamingMinutes}m total)`);
+          console.log(`📺 ${user.displayName} stopped streaming (${streamingMinutes}m added, total: ${user.totalStreamingMinutes}m)`);
         }
       }
     }
@@ -463,13 +463,15 @@ class AnalyticsService {
         const startTime = new Date(session.start_time);
         const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
 
-        // Finalize streaming time if user was streaming when session ended
+        // Calculate final streaming time if user was still streaming when session ended
+        let finalStreamingTime = 0;
         if (user.isStreaming && user.streamingStartTime) {
-          const finalStreamingDuration = Math.round((endTime.getTime() - user.streamingStartTime.getTime()) / (1000 * 60));
-          user.totalStreamingMinutes = (user.totalStreamingMinutes || 0) + Math.max(0, finalStreamingDuration);
+          finalStreamingTime = Math.round((endTime.getTime() - user.streamingStartTime.getTime()) / (1000 * 60));
+          console.log(`📺 User was streaming when session ended: ${finalStreamingTime}m current session`);
         }
 
-        const screenShareMinutes = user.totalStreamingMinutes || 0;
+        // Total screen share time = completed streaming sessions + current streaming session
+        const screenShareMinutes = (user.totalStreamingMinutes || 0) + finalStreamingTime;
 
         this.db.updateVoiceSession(user.voiceSessionId, endTime.toISOString(), Math.max(0, durationMinutes), screenShareMinutes);
         console.log(`🎤 Ended voice session: ${user.displayName} was in voice for ${durationMinutes} minutes${screenShareMinutes > 0 ? ` (${screenShareMinutes}m screen sharing)` : ''}`);
@@ -777,18 +779,19 @@ class AnalyticsService {
             const startTime = this.parseUTCTime(session.start_time);
             const durationMinutes = Math.round((currentTime.getTime() - startTime.getTime()) / (1000 * 60));
 
-            // Update streaming time if user is currently streaming
+            // Calculate current streaming time (but don't add to total yet - only when streaming stops)
+            let currentStreamingTime = 0;
             if (user.isStreaming && user.streamingStartTime) {
-              const streamingDuration = Math.round((currentTime.getTime() - user.streamingStartTime.getTime()) / (1000 * 60));
-              user.totalStreamingMinutes = (user.totalStreamingMinutes || 0) + Math.max(0, streamingDuration - (user.totalStreamingMinutes || 0));
+              currentStreamingTime = Math.round((currentTime.getTime() - user.streamingStartTime.getTime()) / (1000 * 60));
             }
 
-            const screenShareMinutes = user.totalStreamingMinutes || 0;
+            // Total screen share time = completed streaming + current streaming session
+            const totalScreenShareMinutes = (user.totalStreamingMinutes || 0) + currentStreamingTime;
 
-            this.db.updateVoiceSessionProgress(user.voiceSessionId, Math.max(0, durationMinutes), screenShareMinutes);
+            this.db.updateVoiceSessionProgress(user.voiceSessionId, Math.max(0, durationMinutes), totalScreenShareMinutes);
             updatedSessions++;
 
-            console.log(`📊 Updated voice session: ${user.displayName} - ${durationMinutes}m total (${screenShareMinutes}m streaming)`);
+            console.log(`📊 Updated voice session: ${user.displayName} - ${durationMinutes}m total (${totalScreenShareMinutes}m streaming)`);
           } else {
             console.warn(`⚠️ Voice session not found for ${user.displayName} (ID: ${user.voiceSessionId})`);
           }
