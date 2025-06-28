@@ -7,6 +7,8 @@ import Header from './components/Header';
 import ServerStatus from './components/ServerStatus';
 import DiscordServerStats from './components/DiscordServerStats';
 import MostActiveMembers from './components/MostActiveMembers';
+import DailyAwards from './components/DailyAwards';
+import AwardsRankingModal from './components/AwardsRankingModal';
 import PerformanceStatus from '../components/PerformanceStatus';
 
 
@@ -251,6 +253,11 @@ export default function Home() {
 
   // Discord stats for Most Active Members
   const [discordStats, setDiscordStats] = useState<any>(null);
+
+  // Awards modal state
+  const [isAwardsModalOpen, setIsAwardsModalOpen] = useState(false);
+  const [selectedAwardCategory, setSelectedAwardCategory] = useState<string>('');
+  const [selectedAward, setSelectedAward] = useState<any>(null);
 
   const [scrollDownTimeout, setScrollDownTimeout] = useState<NodeJS.Timeout | null>(null);
   const [activityTimeout, setActivityTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -821,6 +828,13 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
+  // Handle award click to open ranking modal
+  const handleAwardClick = (category: string, award: any) => {
+    setSelectedAwardCategory(category);
+    setSelectedAward(award);
+    setIsAwardsModalOpen(true);
+  };
+
   // Inactivity-based auto-hide (only when music is paused)
   useEffect(() => {
     // Clear existing timeout
@@ -1201,16 +1215,7 @@ export default function Home() {
 
   return (
     <>
-      <Head>
-        <link rel="preconnect" href="https://fonts.googleapis.com" />
-        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
-        <link href="https://fonts.googleapis.com/css2?family=Exo+2:wght@400;600;700;800&family=Roboto:wght@300;400;500&display=swap" rel="stylesheet" />
-        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" />
-      </Head>
-      <div
-        className="min-h-screen bg-gray-900 text-white relative overflow-hidden"
-        onClick={handleFirstInteraction}
-      >
+      <div className="min-h-screen bg-gray-900 text-white relative overflow-hidden" onClick={handleFirstInteraction}>
         {/* Animated Background */}
       <div className="fixed inset-0 z-0">
         <div className="particles-bg"></div>
@@ -1650,7 +1655,108 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Contact Section - EXACT Recreation */}
+      {/* Server Information & Community Guidelines */}
+      <section className="relative z-10 py-20" style={{ backgroundColor: 'var(--darker-bg)' }}>
+        <div className="container mx-auto px-6">
+          {/* Server Information & Community Guidelines */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
+            {/* Server Information */}
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/20">
+              <h3 className="text-2xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
+                🖥️ Server Information
+              </h3>
+              
+              <div className="space-y-6">
+                {/* Discord Server - Live Members */}
+                <DiscordServerStats />
+
+                {/* Activity Times */}
+                <div className="bg-gray-700/30 rounded-xl p-4 border border-green-500/20">
+                  <div className="flex items-center mb-3">
+                    <svg className="w-6 h-6 mr-3 text-green-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    <h4 className="text-lg font-semibold text-white">Nejaktivnější časy</h4>
+                  </div>
+                  <div className="text-sm space-y-1">
+                    <div className="text-gray-300">🕕 18:00 - 23:00 (všední dny)</div>
+                    <div className="text-gray-300">🕐 13:00 - 01:00 (víkendy)</div>
+                    <div className="text-gray-400 text-xs mt-2">* Časy v CET/CEST timezone</div>
+                  </div>
+                </div>
+
+                {/* Daily Awards */}
+                <DailyAwards onAwardClick={handleAwardClick} />
+
+              </div>
+            </div>
+
+            {/* Community Guidelines & Most Active Members */}
+            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/20">
+              <h3 className="text-2xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
+                📋 Community Guidelines
+              </h3>
+
+              <div className="space-y-6">
+                {/* Most Active Members */}
+                <MostActiveMembers
+                  members={discordStats?.mostActiveMembers || []}
+                  dataSource={discordStats?.dataSource}
+                />
+
+                {/* Basic Rules */}
+                <div className="bg-gray-700/30 rounded-xl p-4 border border-purple-500/20">
+                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                    Základní pravidla
+                  </h4>
+                  <ul className="space-y-2 text-sm text-gray-300">
+                    <li className="flex items-start">
+                      <span className="text-green-400 mr-2">✓</span>
+                      Respektuj ostatní členy
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-400 mr-2">✓</span>
+                      Žádný spam nebo toxicita
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-400 mr-2">✓</span>
+                      Používej správné kanály
+                    </li>
+                    <li className="flex items-start">
+                      <span className="text-green-400 mr-2">✓</span>
+                      Bavte se a užívejte si to!
+                    </li>
+                  </ul>
+                </div>
+
+
+                {/* Server Status - Website Health */}
+                <ServerStatus />
+
+                {/* Current Status */}
+                <div className="bg-gray-700/30 rounded-xl p-4 border border-yellow-500/20">
+                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center">
+                    <svg className="w-5 h-5 mr-2 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
+                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    Aktuální stav
+                  </h4>
+                  <div className="text-sm text-gray-300">
+                    <p className="mb-2">🏖️ <strong>Status:</strong> Klan v důchodu</p>
+                    <p className="mb-2">💬 <strong>Discord:</strong> Stále aktivní pro povídání</p>
+                    <p>🎵 <strong>Music Bot:</strong> Hraje nostalgické pecky</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Contact Section */}
       <section id="kontakt" className="relative z-10 py-20" style={{ backgroundColor: 'var(--darker-bg)' }}>
         <div className="container mx-auto px-6">
           <h2 className="text-4xl font-bold text-center mb-12" style={{
@@ -1717,100 +1823,8 @@ export default function Home() {
               </div>
             </div>
           </div>
-
-          {/* Server Information & Community Guidelines */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-            {/* Server Information */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/20">
-              <h3 className="text-2xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                🖥️ Server Information
-              </h3>
-              
-              <div className="space-y-6">
-                {/* Discord Server - Live Members */}
-                <DiscordServerStats />
-
-                {/* Activity Times */}
-                <div className="bg-gray-700/30 rounded-xl p-4 border border-green-500/20">
-                  <div className="flex items-center mb-3">
-                    <svg className="w-6 h-6 mr-3 text-green-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
-                    <h4 className="text-lg font-semibold text-white">Nejaktivnější časy</h4>
-                  </div>
-                  <div className="text-sm space-y-1">
-                    <div className="text-gray-300">🕕 18:00 - 23:00 (všední dny)</div>
-                    <div className="text-gray-300">🕐 13:00 - 01:00 (víkendy)</div>
-                    <div className="text-gray-400 text-xs mt-2">* Časy v CET/CEST timezone</div>
-                  </div>
-                </div>
-
-              </div>
-            </div>
-
-            {/* Community Guidelines & Most Active Members */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/20">
-              <h3 className="text-2xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                📋 Community Guidelines
-              </h3>
-
-              <div className="space-y-6">
-                {/* Most Active Members */}
-                <MostActiveMembers
-                  members={discordStats?.mostActiveMembers || []}
-                  dataSource={discordStats?.dataSource}
-                />
-                {/* Basic Rules */}
-                <div className="bg-gray-700/30 rounded-xl p-4 border border-purple-500/20">
-                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                    Základní pravidla
-                  </h4>
-                  <ul className="space-y-2 text-sm text-gray-300">
-                    <li className="flex items-start">
-                      <span className="text-green-400 mr-2">✓</span>
-                      Respektuj ostatní členy
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-green-400 mr-2">✓</span>
-                      Žádný spam nebo toxicita
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-green-400 mr-2">✓</span>
-                      Používej správné kanály
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-green-400 mr-2">✓</span>
-                      Bavte se a užívejte si to!
-                    </li>
-                  </ul>
-                </div>
-
-
-                {/* Server Status - Website Health */}
-                <ServerStatus />
-
-                {/* Current Status */}
-                <div className="bg-gray-700/30 rounded-xl p-4 border border-yellow-500/20">
-                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
-                    Aktuální stav
-                  </h4>
-                  <div className="text-sm text-gray-300">
-                    <p className="mb-2">🏖️ <strong>Status:</strong> Klan v důchodu</p>
-                    <p className="mb-2">💬 <strong>Discord:</strong> Stále aktivní pro povídání</p>
-                    <p>🎵 <strong>Music Bot:</strong> Hraje nostalgické pecky</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
         </div>
-      </div>
+        </div>
       </section>
 
       {/* Footer */}
@@ -1993,7 +2007,15 @@ export default function Home() {
           </div>
         )}
       </div>
-    </div>
+
+      {/* Awards Ranking Modal */}
+      <AwardsRankingModal
+        isOpen={isAwardsModalOpen}
+        onClose={() => setIsAwardsModalOpen(false)}
+        category={selectedAwardCategory}
+        award={selectedAward}
+      />
+      </div>
     </>
   );
 }
