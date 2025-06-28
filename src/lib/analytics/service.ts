@@ -15,6 +15,7 @@ export interface UserActivity {
   voiceSessionId?: number;
   spotifySessionId?: number;
   streamingStartTime?: Date; // Track when streaming started
+  totalStreamingMinutes?: number; // Track accumulated streaming time for current session
 }
 
 export interface AnalyticsStats {
@@ -30,6 +31,145 @@ export interface AnalyticsStats {
 class AnalyticsService {
   private db = getAnalyticsDatabase();
   private activeUsers = new Map<string, UserActivity>();
+
+  // Utility function to ensure consistent UTC time parsing
+  private parseUTCTime(timeString: string): Date {
+    // Handle different timestamp formats from SQLite
+    if (!timeString) {
+      return new Date();
+    }
+
+    // If it's already in ISO format with timezone, use as-is
+    if (timeString.endsWith('Z') || timeString.includes('+') || timeString.includes('-')) {
+      return new Date(timeString);
+    }
+
+    // If it's in SQLite CURRENT_TIMESTAMP format (YYYY-MM-DD HH:MM:SS), treat as UTC
+    if (timeString.match(/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/)) {
+      return new Date(timeString + ' UTC');
+    }
+
+    // If it's missing timezone info, assume UTC
+    if (!timeString.endsWith('Z')) {
+      timeString += 'Z';
+    }
+
+    return new Date(timeString);
+  }
+
+  // === SESSION RECOVERY ===
+
+  // Detect and create sessions based on Discord's real-time state when server starts
+  public recoverExistingSessions(discordGuild: any) {
+    console.log('🔄 Checking Discord real-time state for existing sessions...');
+    let recoveredSessions = 0;
+    const startTime = new Date();
+
+    try {
+      if (!discordGuild) {
+        console.log('❌ No Discord guild provided for session recovery');
+        return;
+      }
+
+      // Get real-time member data from Discord
+      discordGuild.members.cache.forEach((member: any) => {
+        if (member.user.bot) return; // Skip bots
+
+        const userId = member.id;
+        const displayName = member.displayName || member.user.username;
+
+        // Skip if user is offline
+        if (!member.presence || member.presence.status === 'offline') return;
+
+        console.log(`🔍 Checking real-time activity for ${displayName}...`);
+
+        // Check for game sessions from Discord presence
+        if (member.presence.activities) {
+          for (const activity of member.presence.activities) {
+            if (activity.type === 0) { // Playing a game
+              console.log(`🎮 Found active game: ${displayName} playing ${activity.name}`);
+
+              // Create user activity if not exists
+              let user = this.activeUsers.get(userId);
+              if (!user) {
+                user = {
+                  userId,
+                  displayName,
+                  currentStatus: member.presence.status,
+                  isInVoice: false,
+                  isStreaming: false
+                };
+                this.activeUsers.set(userId, user);
+              }
+
+              // Start fresh game session
+              this.startGameSession(user, activity.name, startTime);
+              recoveredSessions++;
+              break; // Only one game at a time
+            } else if (activity.type === 2 && activity.name === 'Spotify') { // Spotify
+              console.log(`🎵 Found active Spotify: ${displayName} listening to ${activity.details} by ${activity.state}`);
+
+              let user = this.activeUsers.get(userId);
+              if (!user) {
+                user = {
+                  userId,
+                  displayName,
+                  currentStatus: member.presence.status,
+                  isInVoice: false,
+                  isStreaming: false
+                };
+                this.activeUsers.set(userId, user);
+              }
+
+              // Start fresh Spotify session
+              this.startSpotifySession(user, activity.details || 'Unknown Track', activity.state || 'Unknown Artist', startTime);
+              recoveredSessions++;
+            }
+          }
+        }
+
+        // Check for voice sessions from Discord voice state
+        if (member.voice && member.voice.channel) {
+          console.log(`🎤 Found active voice: ${displayName} in ${member.voice.channel.name}`);
+
+          let user = this.activeUsers.get(userId);
+          if (!user) {
+            user = {
+              userId,
+              displayName,
+              currentStatus: member.presence?.status || 'online',
+              isInVoice: false,
+              isStreaming: false
+            };
+            this.activeUsers.set(userId, user);
+          }
+
+          // Start fresh voice session
+          user.isInVoice = true;
+          user.voiceChannelId = member.voice.channel.id;
+          user.voiceChannelName = member.voice.channel.name;
+          user.isStreaming = member.voice.streaming || false;
+
+          this.startVoiceSession(user, member.voice.channel.id, member.voice.channel.name, startTime);
+
+          if (user.isStreaming) {
+            user.streamingStartTime = startTime;
+            console.log(`📺 User ${displayName} is currently streaming`);
+          }
+
+          recoveredSessions++;
+        }
+      });
+
+      if (recoveredSessions > 0) {
+        console.log(`✅ Created ${recoveredSessions} fresh sessions based on Discord real-time state (${this.activeUsers.size} active users)`);
+      } else {
+        console.log(`✅ No active sessions found in Discord real-time state`);
+      }
+    } catch (error) {
+      console.error('❌ Error checking Discord real-time state:', error);
+    }
+  }
 
   // === USER ACTIVITY TRACKING ===
 
@@ -231,7 +371,9 @@ class AnalyticsService {
         game_name: gameName,
         start_time: startTime.toISOString(),
         end_time: null,
-        duration_minutes: 0
+        duration_minutes: 0,
+        last_updated: startTime.toISOString(),
+        status: 'active'
       });
 
       user.currentGame = gameName;
@@ -278,18 +420,32 @@ class AnalyticsService {
 
   private startVoiceSession(user: UserActivity, channelId: string, channelName: string, startTime: Date) {
     try {
+      // Force UTC time to avoid timezone issues
+      const utcStartTime = new Date(startTime.getTime());
+      const startTimeISO = utcStartTime.toISOString();
+      const currentTimeISO = new Date().toISOString();
+
+      console.log(`🔍 Debug voice session start: ${user.displayName}`);
+      console.log(`  Start time: ${startTimeISO}`);
+      console.log(`  Current time: ${currentTimeISO}`);
+      console.log(`  Time diff: ${Math.round((new Date().getTime() - utcStartTime.getTime()) / 1000)}s`);
+      console.log(`  Timezone: ${Intl.DateTimeFormat().resolvedOptions().timeZone}`);
+
       const result = this.db.insertVoiceSession({
         user_id: user.userId,
         channel_id: channelId,
         channel_name: channelName,
-        start_time: startTime.toISOString(),
+        start_time: startTimeISO,
         end_time: null,
         duration_minutes: 0,
-        screen_share_minutes: 0
+        screen_share_minutes: 0,
+        last_updated: startTimeISO,
+        status: 'active'
       });
-      
+
       user.voiceSessionId = result.lastInsertRowid as number;
-      console.log(`🎤 Started voice session: ${user.displayName} joined ${channelName}`);
+      user.totalStreamingMinutes = 0; // Reset streaming time for new session
+      console.log(`🎤 Started voice session: ${user.displayName} joined ${channelName} (Session ID: ${user.voiceSessionId})`);
     } catch (error) {
       console.error('❌ Error starting voice session:', error);
     }
@@ -307,9 +463,13 @@ class AnalyticsService {
         const startTime = new Date(session.start_time);
         const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
 
-        // Calculate screen share time (this is a simplified approach)
-        // In a real implementation, you'd track screen share start/stop times
-        const screenShareMinutes = user.isScreenSharing ? Math.round(durationMinutes * 0.7) : 0; // Assume 70% if screen sharing
+        // Finalize streaming time if user was streaming when session ended
+        if (user.isStreaming && user.streamingStartTime) {
+          const finalStreamingDuration = Math.round((endTime.getTime() - user.streamingStartTime.getTime()) / (1000 * 60));
+          user.totalStreamingMinutes = (user.totalStreamingMinutes || 0) + Math.max(0, finalStreamingDuration);
+        }
+
+        const screenShareMinutes = user.totalStreamingMinutes || 0;
 
         this.db.updateVoiceSession(user.voiceSessionId, endTime.toISOString(), Math.max(0, durationMinutes), screenShareMinutes);
         console.log(`🎤 Ended voice session: ${user.displayName} was in voice for ${durationMinutes} minutes${screenShareMinutes > 0 ? ` (${screenShareMinutes}m screen sharing)` : ''}`);
@@ -319,6 +479,7 @@ class AnalyticsService {
       user.isInVoice = false;
       user.isStreaming = false;
       user.streamingStartTime = undefined;
+      user.totalStreamingMinutes = undefined;
     } catch (error) {
       console.error('❌ Error ending voice session:', error);
     }
@@ -328,8 +489,23 @@ class AnalyticsService {
   public updateStreamingStatus(userId: string, isStreaming: boolean) {
     const user = this.activeUsers.get(userId);
     if (user && user.isInVoice && user.voiceSessionId) {
-      user.isStreaming = isStreaming;
-      console.log(`📺 ${user.displayName} ${isStreaming ? 'started' : 'stopped'} streaming`);
+      const currentTime = new Date();
+
+      if (isStreaming && !user.isStreaming) {
+        // Started streaming
+        user.streamingStartTime = currentTime;
+        user.isStreaming = true;
+        console.log(`📺 ${user.displayName} started streaming`);
+      } else if (!isStreaming && user.isStreaming) {
+        // Stopped streaming - add elapsed time to total
+        if (user.streamingStartTime) {
+          const streamingDuration = Math.round((currentTime.getTime() - user.streamingStartTime.getTime()) / (1000 * 60));
+          user.totalStreamingMinutes = (user.totalStreamingMinutes || 0) + Math.max(0, streamingDuration);
+          console.log(`📺 ${user.displayName} stopped streaming (added ${streamingDuration}m, total: ${user.totalStreamingMinutes}m)`);
+        }
+        user.isStreaming = false;
+        user.streamingStartTime = undefined;
+      }
     }
   }
 
@@ -363,9 +539,11 @@ class AnalyticsService {
         artist: artist,
         start_time: startTime.toISOString(),
         end_time: null,
-        duration_minutes: 0
+        duration_minutes: 0,
+        last_updated: startTime.toISOString(),
+        status: 'active'
       });
-      
+
       user.currentSpotify = { track, artist };
       user.spotifySessionId = result.lastInsertRowid as number;
       console.log(`🎵 Started Spotify session: ${user.displayName} listening to ${track} by ${artist}`);
@@ -561,6 +739,166 @@ class AnalyticsService {
 
   public getUserActivity(userId: string): UserActivity | undefined {
     return this.activeUsers.get(userId);
+  }
+
+  // === PERIODIC SESSION MANAGEMENT ===
+
+  // Update all active sessions with current progress (called every minute)
+  public updateActiveSessionsProgress() {
+    const currentTime = new Date();
+    let updatedSessions = 0;
+
+    try {
+      // Update game sessions
+      for (const [userId, user] of this.activeUsers) {
+        if (user.gameSessionId && user.currentGame) {
+          const sessions = this.db.getActiveGameSessions(userId);
+          const session = sessions.find(s => s.id === user.gameSessionId);
+
+          if (session) {
+            const startTime = this.parseUTCTime(session.start_time);
+            const durationMinutes = Math.round((currentTime.getTime() - startTime.getTime()) / (1000 * 60));
+
+            this.db.updateGameSessionProgress(user.gameSessionId, Math.max(0, durationMinutes));
+            updatedSessions++;
+
+            console.log(`📊 Updated game session: ${user.displayName} playing ${user.currentGame} - ${durationMinutes}m`);
+          } else {
+            console.warn(`⚠️ Game session not found for ${user.displayName} (ID: ${user.gameSessionId})`);
+          }
+        }
+
+        // Update voice sessions with accurate streaming tracking
+        if (user.voiceSessionId && user.isInVoice) {
+          const sessions = this.db.getActiveVoiceSessions(userId);
+          const session = sessions.find(s => s.id === user.voiceSessionId);
+
+          if (session) {
+            const startTime = this.parseUTCTime(session.start_time);
+            const durationMinutes = Math.round((currentTime.getTime() - startTime.getTime()) / (1000 * 60));
+
+            // Update streaming time if user is currently streaming
+            if (user.isStreaming && user.streamingStartTime) {
+              const streamingDuration = Math.round((currentTime.getTime() - user.streamingStartTime.getTime()) / (1000 * 60));
+              user.totalStreamingMinutes = (user.totalStreamingMinutes || 0) + Math.max(0, streamingDuration - (user.totalStreamingMinutes || 0));
+            }
+
+            const screenShareMinutes = user.totalStreamingMinutes || 0;
+
+            this.db.updateVoiceSessionProgress(user.voiceSessionId, Math.max(0, durationMinutes), screenShareMinutes);
+            updatedSessions++;
+
+            console.log(`📊 Updated voice session: ${user.displayName} - ${durationMinutes}m total (${screenShareMinutes}m streaming)`);
+          } else {
+            console.warn(`⚠️ Voice session not found for ${user.displayName} (ID: ${user.voiceSessionId})`);
+          }
+        }
+
+        // Update Spotify sessions
+        if (user.spotifySessionId && user.currentSpotify) {
+          const sessions = this.db.getActiveSpotifySessions(userId);
+          const session = sessions.find(s => s.id === user.spotifySessionId);
+
+          if (session) {
+            const startTime = this.parseUTCTime(session.start_time);
+            const durationMinutes = Math.round((currentTime.getTime() - startTime.getTime()) / (1000 * 60));
+
+            this.db.updateSpotifySessionProgress(user.spotifySessionId, Math.max(0, durationMinutes));
+            updatedSessions++;
+          }
+        }
+      }
+
+      if (updatedSessions > 0) {
+        console.log(`📊 Updated progress for ${updatedSessions} active sessions`);
+      } else {
+        console.log(`📊 No active sessions to update (${this.activeUsers.size} active users)`);
+      }
+    } catch (error) {
+      console.error('❌ Error updating active sessions progress:', error);
+    }
+  }
+
+
+
+  // Fix existing sessions with inconsistent timestamp formats (one-time fix)
+  public fixInconsistentTimestamps() {
+    try {
+      console.log('🔧 Fixing inconsistent timestamp formats...');
+
+      // Get all active sessions and mark old ones as stale
+      const currentTime = new Date();
+      const oneHourAgo = new Date(currentTime.getTime() - (60 * 60 * 1000));
+
+      // Clean up old voice sessions
+      const activeVoiceSessions = this.db.getActiveVoiceSessions();
+      for (const session of activeVoiceSessions) {
+        const startTime = this.parseUTCTime(session.start_time);
+        if (startTime < oneHourAgo) {
+          this.db.markVoiceSessionAsStale(session.id!, currentTime.toISOString(), 0, 0);
+          console.log(`🧹 Marked old voice session as stale: ${session.user_id}`);
+        }
+      }
+
+      // Clean up old game sessions
+      const activeGameSessions = this.db.getActiveGameSessions();
+      for (const session of activeGameSessions) {
+        const startTime = this.parseUTCTime(session.start_time);
+        if (startTime < oneHourAgo) {
+          this.db.markGameSessionAsStale(session.id!, currentTime.toISOString(), 0);
+          console.log(`🧹 Marked old game session as stale: ${session.user_id}`);
+        }
+      }
+
+      // Clean up old Spotify sessions
+      const activeSpotifySessions = this.db.getActiveSpotifySessions();
+      for (const session of activeSpotifySessions) {
+        const startTime = this.parseUTCTime(session.start_time);
+        if (startTime < oneHourAgo) {
+          this.db.markSpotifySessionAsStale(session.id!, currentTime.toISOString(), 0);
+          console.log(`🧹 Marked old Spotify session as stale: ${session.user_id}`);
+        }
+      }
+
+      console.log('✅ Fixed inconsistent timestamps in existing sessions');
+    } catch (error) {
+      console.error('❌ Error fixing inconsistent timestamps:', error);
+    }
+  }
+
+  // Legacy method - kept for API compatibility but no longer used
+  // Real-time validation via validateSessionsWithPresence() handles cleanup now
+  public cleanupStaleSessions(staleMinutes: number = 5) {
+    // This method is now mostly redundant since we use real-time Discord validation
+    // Keeping it for API compatibility but it does nothing
+    console.log('ℹ️ Stale session cleanup skipped - using real-time validation instead');
+  }
+
+  // Cross-reference active sessions with current Discord presence
+  public validateActiveSessionsWithPresence() {
+    try {
+      for (const [, user] of this.activeUsers) {
+        // Validate game sessions
+        if (user.gameSessionId && !user.currentGame) {
+          console.log(`⚠️ User ${user.displayName} has active game session but no current game - ending session`);
+          this.endGameSession(user, new Date());
+        }
+
+        // Validate voice sessions
+        if (user.voiceSessionId && !user.isInVoice) {
+          console.log(`⚠️ User ${user.displayName} has active voice session but not in voice - ending session`);
+          this.endVoiceSession(user, new Date());
+        }
+
+        // Validate Spotify sessions
+        if (user.spotifySessionId && !user.currentSpotify) {
+          console.log(`⚠️ User ${user.displayName} has active Spotify session but no current track - ending session`);
+          this.endSpotifySession(user, new Date());
+        }
+      }
+    } catch (error) {
+      console.error('❌ Error validating active sessions:', error);
+    }
   }
 
   // Health check

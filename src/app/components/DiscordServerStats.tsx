@@ -18,6 +18,14 @@ interface OnlineMember {
     } | null;
     state: string;
   } | null;
+  streaming: {
+    isStreaming: boolean;
+    channelName: string;
+    channelId: string;
+    streamingTo?: string;
+    streamType?: string;
+    inVoice?: boolean;
+  } | null;
   roles: string[];
   isRealOnline?: boolean;
   joinedAt?: string;
@@ -47,6 +55,16 @@ interface DiscordStats {
   verificationLevel: number;
   onlineMembers: OnlineMember[];
   mostActiveMembers: ActiveMember[];
+  streamingStats?: {
+    totalStreaming: number;
+    totalInVoice: number;
+    streamingUsers: Array<{
+      id: string;
+      displayName: string;
+      channelName: string;
+      streamType: string;
+    }>;
+  };
   hasRealPresenceData?: boolean;
   lastUpdated: string;
   dataSource?: 'GATEWAY' | 'REST_API' | 'FALLBACK';
@@ -72,6 +90,28 @@ export default function DiscordServerStats() {
 
         const data = await response.json();
         console.log('Discord stats received:', data);
+
+        // Debug streaming data
+        if (data.streamingStats) {
+          console.log('🔍 Streaming stats received:', data.streamingStats);
+        }
+
+        // Debug individual member streaming data
+        const streamingMembers = data.onlineMembers?.filter((member: OnlineMember) => member.streaming?.isStreaming);
+        const voiceMembers = data.onlineMembers?.filter((member: OnlineMember) => member.streaming?.inVoice || member.streaming?.isStreaming);
+
+        console.log('🔍 All online members with streaming data:', data.onlineMembers?.map(m => ({
+          name: m.displayName,
+          streaming: m.streaming
+        })));
+
+        if (streamingMembers?.length > 0) {
+          console.log('🔴 Members currently streaming:', streamingMembers);
+        }
+
+        if (voiceMembers?.length > 0) {
+          console.log('🎤 Members in voice:', voiceMembers);
+        }
 
         setStats(data);
         setError(data.error || null);
@@ -263,6 +303,30 @@ export default function DiscordServerStats() {
           <div className="text-purple-400 font-semibold">{stats.boostCount}</div>
         </div>
       </div>
+
+      {/* Live Activity Summary - Simple counts only */}
+      {stats.streamingStats && (stats.streamingStats.totalStreaming > 0 || stats.streamingStats.totalInVoice > 0) && (
+        <div className="mb-4 p-3 bg-gray-800/30 rounded-lg border border-red-500/20">
+          <h5 className="text-sm font-semibold text-red-400 mb-2 flex items-center">
+            <span className="mr-2">📺</span>
+            Živá aktivita
+          </h5>
+          <div className="grid grid-cols-2 gap-4 text-xs">
+            {stats.streamingStats.totalStreaming > 0 && (
+              <div>
+                <div className="text-gray-400">Streamuje</div>
+                <div className="text-red-400 font-semibold">{stats.streamingStats.totalStreaming}</div>
+              </div>
+            )}
+            {stats.streamingStats.totalInVoice > 0 && (
+              <div>
+                <div className="text-gray-400">Ve voice</div>
+                <div className="text-green-400 font-semibold">{stats.streamingStats.totalInVoice}</div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
       
 
       <div className="text-xs text-gray-500 mt-2 flex justify-end items-center">
@@ -330,10 +394,33 @@ export default function DiscordServerStats() {
                       ></span>
                     </div>
                   )}
-                  {member.activity && (
+                  {member.activity &&
+                   !(member.streaming?.isStreaming && member.activity.name === 'Screen Share') && (
                     <div className="text-blue-300 text-xs mt-1 flex items-start">
                       <span className="mr-1 mt-0.5 flex-shrink-0">{getActivityIcon(member.activity)}</span>
                       <span className="break-words leading-relaxed">{formatActivityName(member.activity)}</span>
+                    </div>
+                  )}
+
+                  {/* Simple Streaming/Voice Status */}
+                  {member.streaming?.isStreaming && (
+                    <div className="text-red-400 text-xs mt-1 flex items-center">
+                      <span className="mr-1">📺</span>
+                      <span>
+                        Streamuje: {
+                          member.activity?.type === 0
+                            ? member.activity.name // Show game name if playing
+                            : member.streaming.channelName // Otherwise show channel
+                        }
+                      </span>
+                    </div>
+                  )}
+
+                  {/* Voice Channel Status (if not streaming) */}
+                  {member.streaming?.inVoice && !member.streaming?.isStreaming && (
+                    <div className="text-green-400 text-xs mt-1 flex items-center">
+                      <span className="mr-1">🎤</span>
+                      <span>{member.streaming.channelName}</span>
                     </div>
                   )}
                 </div>

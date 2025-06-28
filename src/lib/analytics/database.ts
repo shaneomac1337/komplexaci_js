@@ -19,6 +19,8 @@ export interface GameSession {
   start_time: string;
   end_time: string | null;
   duration_minutes: number;
+  last_updated: string;
+  status: 'active' | 'ended' | 'stale';
   created_at: string;
 }
 
@@ -31,6 +33,8 @@ export interface VoiceSession {
   end_time: string | null;
   duration_minutes: number;
   screen_share_minutes: number;
+  last_updated: string;
+  status: 'active' | 'ended' | 'stale';
   created_at: string;
 }
 
@@ -42,6 +46,8 @@ export interface SpotifySession {
   start_time: string;
   end_time: string | null;
   duration_minutes: number;
+  last_updated: string;
+  status: 'active' | 'ended' | 'stale';
   created_at: string;
 }
 
@@ -113,6 +119,8 @@ class AnalyticsDatabase {
           start_time TEXT NOT NULL,
           end_time TEXT,
           duration_minutes INTEGER DEFAULT 0,
+          last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
+          status TEXT DEFAULT 'active',
           created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -126,6 +134,8 @@ class AnalyticsDatabase {
           end_time TEXT,
           duration_minutes INTEGER DEFAULT 0,
           screen_share_minutes INTEGER DEFAULT 0,
+          last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
+          status TEXT DEFAULT 'active',
           created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
@@ -138,15 +148,20 @@ class AnalyticsDatabase {
           start_time TEXT NOT NULL,
           end_time TEXT,
           duration_minutes INTEGER DEFAULT 0,
+          last_updated TEXT DEFAULT CURRENT_TIMESTAMP,
+          status TEXT DEFAULT 'active',
           created_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
 
       `);
 
-      // Create indexes for better query performance
+      // Handle database migration for existing records BEFORE creating indexes
+      this.migrateExistingData();
+
+      // Create indexes for better query performance (after migration)
       this.createIndexes();
-      
+
       this.isInitialized = true;
       console.log('✅ Analytics database schema initialized');
     } catch (error) {
@@ -155,8 +170,109 @@ class AnalyticsDatabase {
     }
   }
 
+  private migrateExistingData() {
+    try {
+      // Check if migration is needed by looking for missing columns
+      const gameSessionsInfo = this.db.pragma('table_info(game_sessions)') as any[];
+      const voiceSessionsInfo = this.db.pragma('table_info(voice_sessions)') as any[];
+      const spotifySessionsInfo = this.db.pragma('table_info(spotify_sessions)') as any[];
+
+      const gameHasLastUpdated = gameSessionsInfo.some((col: any) => col.name === 'last_updated');
+      const gameHasStatus = gameSessionsInfo.some((col: any) => col.name === 'status');
+      const voiceHasLastUpdated = voiceSessionsInfo.some((col: any) => col.name === 'last_updated');
+      const voiceHasStatus = voiceSessionsInfo.some((col: any) => col.name === 'status');
+      const spotifyHasLastUpdated = spotifySessionsInfo.some((col: any) => col.name === 'last_updated');
+      const spotifyHasStatus = spotifySessionsInfo.some((col: any) => col.name === 'status');
+
+      const needsMigration = !gameHasLastUpdated || !gameHasStatus ||
+                            !voiceHasLastUpdated || !voiceHasStatus ||
+                            !spotifyHasLastUpdated || !spotifyHasStatus;
+
+      if (needsMigration) {
+        console.log('🔄 Migrating existing session data...');
+
+        // Add missing columns to game_sessions
+        if (!gameHasLastUpdated) {
+          this.db.exec(`ALTER TABLE game_sessions ADD COLUMN last_updated TEXT DEFAULT CURRENT_TIMESTAMP;`);
+          console.log('✅ Added last_updated column to game_sessions');
+        }
+        if (!gameHasStatus) {
+          this.db.exec(`ALTER TABLE game_sessions ADD COLUMN status TEXT DEFAULT 'active';`);
+          console.log('✅ Added status column to game_sessions');
+        }
+
+        // Add missing columns to voice_sessions
+        if (!voiceHasLastUpdated) {
+          this.db.exec(`ALTER TABLE voice_sessions ADD COLUMN last_updated TEXT DEFAULT CURRENT_TIMESTAMP;`);
+          console.log('✅ Added last_updated column to voice_sessions');
+        }
+        if (!voiceHasStatus) {
+          this.db.exec(`ALTER TABLE voice_sessions ADD COLUMN status TEXT DEFAULT 'active';`);
+          console.log('✅ Added status column to voice_sessions');
+        }
+
+        // Add missing columns to spotify_sessions
+        if (!spotifyHasLastUpdated) {
+          this.db.exec(`ALTER TABLE spotify_sessions ADD COLUMN last_updated TEXT DEFAULT CURRENT_TIMESTAMP;`);
+          console.log('✅ Added last_updated column to spotify_sessions');
+        }
+        if (!spotifyHasStatus) {
+          this.db.exec(`ALTER TABLE spotify_sessions ADD COLUMN status TEXT DEFAULT 'active';`);
+          console.log('✅ Added status column to spotify_sessions');
+        }
+
+        // Update existing records: mark sessions with end_time as 'ended', others as 'stale'
+        const updateQueries = [
+          `UPDATE game_sessions SET
+            status = CASE WHEN end_time IS NOT NULL THEN 'ended' ELSE 'stale' END,
+            last_updated = COALESCE(end_time, start_time)
+          WHERE (status IS NULL OR status = 'active') AND end_time IS NULL;`,
+
+          `UPDATE voice_sessions SET
+            status = CASE WHEN end_time IS NOT NULL THEN 'ended' ELSE 'stale' END,
+            last_updated = COALESCE(end_time, start_time)
+          WHERE (status IS NULL OR status = 'active') AND end_time IS NULL;`,
+
+          `UPDATE spotify_sessions SET
+            status = CASE WHEN end_time IS NOT NULL THEN 'ended' ELSE 'stale' END,
+            last_updated = COALESCE(end_time, start_time)
+          WHERE (status IS NULL OR status = 'active') AND end_time IS NULL;`
+        ];
+
+        updateQueries.forEach((query, index) => {
+          try {
+            this.db.exec(query);
+            console.log(`✅ Updated existing records for table ${index + 1}`);
+          } catch (updateError) {
+            console.warn(`⚠️ Warning updating table ${index + 1}:`, updateError);
+          }
+        });
+
+        console.log('✅ Database migration completed successfully');
+      } else {
+        console.log('✅ Database schema is up to date, no migration needed');
+      }
+    } catch (error) {
+      console.warn('⚠️ Database migration warning:', error);
+      // Don't throw error for migration issues, just log them
+    }
+  }
+
   private createIndexes() {
+    // Check which columns exist before creating indexes
+    const gameSessionsInfo = this.db.pragma('table_info(game_sessions)') as any[];
+    const voiceSessionsInfo = this.db.pragma('table_info(voice_sessions)') as any[];
+    const spotifySessionsInfo = this.db.pragma('table_info(spotify_sessions)') as any[];
+
+    const gameHasStatus = gameSessionsInfo.some((col: any) => col.name === 'status');
+    const gameHasLastUpdated = gameSessionsInfo.some((col: any) => col.name === 'last_updated');
+    const voiceHasStatus = voiceSessionsInfo.some((col: any) => col.name === 'status');
+    const voiceHasLastUpdated = voiceSessionsInfo.some((col: any) => col.name === 'last_updated');
+    const spotifyHasStatus = spotifySessionsInfo.some((col: any) => col.name === 'status');
+    const spotifyHasLastUpdated = spotifySessionsInfo.some((col: any) => col.name === 'last_updated');
+
     const indexes = [
+      // Always safe indexes
       'CREATE INDEX IF NOT EXISTS idx_daily_snapshots_date ON daily_snapshots(date)',
       'CREATE INDEX IF NOT EXISTS idx_daily_snapshots_user_date ON daily_snapshots(user_id, date)',
       'CREATE INDEX IF NOT EXISTS idx_game_sessions_user ON game_sessions(user_id)',
@@ -168,15 +284,37 @@ class AnalyticsDatabase {
       'CREATE INDEX IF NOT EXISTS idx_spotify_sessions_artist ON spotify_sessions(artist)',
     ];
 
+    // Conditional indexes based on column existence
+    if (gameHasStatus) {
+      indexes.push('CREATE INDEX IF NOT EXISTS idx_game_sessions_status ON game_sessions(status)');
+    }
+    if (gameHasLastUpdated) {
+      indexes.push('CREATE INDEX IF NOT EXISTS idx_game_sessions_last_updated ON game_sessions(last_updated)');
+    }
+    if (voiceHasStatus) {
+      indexes.push('CREATE INDEX IF NOT EXISTS idx_voice_sessions_status ON voice_sessions(status)');
+    }
+    if (voiceHasLastUpdated) {
+      indexes.push('CREATE INDEX IF NOT EXISTS idx_voice_sessions_last_updated ON voice_sessions(last_updated)');
+    }
+    if (spotifyHasStatus) {
+      indexes.push('CREATE INDEX IF NOT EXISTS idx_spotify_sessions_status ON spotify_sessions(status)');
+    }
+    if (spotifyHasLastUpdated) {
+      indexes.push('CREATE INDEX IF NOT EXISTS idx_spotify_sessions_last_updated ON spotify_sessions(last_updated)');
+    }
+
+    let createdIndexes = 0;
     indexes.forEach(indexSql => {
       try {
         this.db.exec(indexSql);
+        createdIndexes++;
       } catch (error) {
         console.warn('⚠️ Index creation warning:', error);
       }
     });
 
-    console.log('📈 Database indexes created');
+    console.log(`📈 Created ${createdIndexes}/${indexes.length} database indexes`);
   }
 
   // Health check method
@@ -252,22 +390,29 @@ class AnalyticsDatabase {
   // Game sessions
   public insertGameSession(session: Omit<GameSession, 'id' | 'created_at'>) {
     const stmt = this.db.prepare(`
-      INSERT INTO game_sessions (user_id, game_name, start_time, end_time, duration_minutes)
-      VALUES (?, ?, ?, ?, ?)
+      INSERT INTO game_sessions (user_id, game_name, start_time, end_time, duration_minutes, last_updated, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
     `);
     return stmt.run(session.user_id, session.game_name, session.start_time,
-                   session.end_time, session.duration_minutes);
+                   session.end_time, session.duration_minutes, session.last_updated, session.status);
   }
 
   public updateGameSession(id: number, endTime: string, durationMinutes: number) {
     const stmt = this.db.prepare(`
-      UPDATE game_sessions SET end_time = ?, duration_minutes = ? WHERE id = ?
+      UPDATE game_sessions SET end_time = ?, duration_minutes = ?, status = 'ended', last_updated = CURRENT_TIMESTAMP WHERE id = ?
     `);
     return stmt.run(endTime, durationMinutes, id);
   }
 
+  public updateGameSessionProgress(id: number, durationMinutes: number) {
+    const stmt = this.db.prepare(`
+      UPDATE game_sessions SET duration_minutes = ?, last_updated = ? WHERE id = ?
+    `);
+    return stmt.run(durationMinutes, new Date().toISOString(), id);
+  }
+
   public getActiveGameSessions(userId?: string) {
-    let query = 'SELECT * FROM game_sessions WHERE end_time IS NULL';
+    let query = "SELECT * FROM game_sessions WHERE status = 'active'";
     const params: any[] = [];
 
     if (userId) {
@@ -278,25 +423,51 @@ class AnalyticsDatabase {
     return this.db.prepare(query).all(...params) as GameSession[];
   }
 
+  public getStaleGameSessions(staleMinutes: number = 5) {
+    const staleTime = new Date();
+    staleTime.setMinutes(staleTime.getMinutes() - staleMinutes);
+    const staleTimeStr = staleTime.toISOString();
+
+    const stmt = this.db.prepare(`
+      SELECT * FROM game_sessions
+      WHERE status = 'active' AND last_updated < ?
+    `);
+    return stmt.all(staleTimeStr) as GameSession[];
+  }
+
+  public markGameSessionAsStale(id: number, endTime: string, durationMinutes: number) {
+    const stmt = this.db.prepare(`
+      UPDATE game_sessions SET end_time = ?, duration_minutes = ?, status = 'stale', last_updated = CURRENT_TIMESTAMP WHERE id = ?
+    `);
+    return stmt.run(endTime, durationMinutes, id);
+  }
+
   // Voice sessions
   public insertVoiceSession(session: Omit<VoiceSession, 'id' | 'created_at'>) {
     const stmt = this.db.prepare(`
-      INSERT INTO voice_sessions (user_id, channel_id, channel_name, start_time, end_time, duration_minutes, screen_share_minutes)
-      VALUES (?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO voice_sessions (user_id, channel_id, channel_name, start_time, end_time, duration_minutes, screen_share_minutes, last_updated, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     return stmt.run(session.user_id, session.channel_id, session.channel_name,
-                   session.start_time, session.end_time, session.duration_minutes, session.screen_share_minutes);
+                   session.start_time, session.end_time, session.duration_minutes, session.screen_share_minutes, session.last_updated, session.status);
   }
 
   public updateVoiceSession(id: number, endTime: string, durationMinutes: number, screenShareMinutes: number) {
     const stmt = this.db.prepare(`
-      UPDATE voice_sessions SET end_time = ?, duration_minutes = ?, screen_share_minutes = ? WHERE id = ?
+      UPDATE voice_sessions SET end_time = ?, duration_minutes = ?, screen_share_minutes = ?, status = 'ended', last_updated = CURRENT_TIMESTAMP WHERE id = ?
     `);
     return stmt.run(endTime, durationMinutes, screenShareMinutes, id);
   }
 
+  public updateVoiceSessionProgress(id: number, durationMinutes: number, screenShareMinutes: number) {
+    const stmt = this.db.prepare(`
+      UPDATE voice_sessions SET duration_minutes = ?, screen_share_minutes = ?, last_updated = ? WHERE id = ?
+    `);
+    return stmt.run(durationMinutes, screenShareMinutes, new Date().toISOString(), id);
+  }
+
   public getActiveVoiceSessions(userId?: string) {
-    let query = 'SELECT * FROM voice_sessions WHERE end_time IS NULL';
+    let query = "SELECT * FROM voice_sessions WHERE status = 'active'";
     const params: any[] = [];
 
     if (userId) {
@@ -307,25 +478,51 @@ class AnalyticsDatabase {
     return this.db.prepare(query).all(...params) as VoiceSession[];
   }
 
+  public getStaleVoiceSessions(staleMinutes: number = 5) {
+    const staleTime = new Date();
+    staleTime.setMinutes(staleTime.getMinutes() - staleMinutes);
+    const staleTimeStr = staleTime.toISOString();
+
+    const stmt = this.db.prepare(`
+      SELECT * FROM voice_sessions
+      WHERE status = 'active' AND last_updated < ?
+    `);
+    return stmt.all(staleTimeStr) as VoiceSession[];
+  }
+
+  public markVoiceSessionAsStale(id: number, endTime: string, durationMinutes: number, screenShareMinutes: number) {
+    const stmt = this.db.prepare(`
+      UPDATE voice_sessions SET end_time = ?, duration_minutes = ?, screen_share_minutes = ?, status = 'stale', last_updated = CURRENT_TIMESTAMP WHERE id = ?
+    `);
+    return stmt.run(endTime, durationMinutes, screenShareMinutes, id);
+  }
+
   // Spotify sessions
   public insertSpotifySession(session: Omit<SpotifySession, 'id' | 'created_at'>) {
     const stmt = this.db.prepare(`
-      INSERT INTO spotify_sessions (user_id, track_name, artist, start_time, end_time, duration_minutes)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO spotify_sessions (user_id, track_name, artist, start_time, end_time, duration_minutes, last_updated, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     `);
     return stmt.run(session.user_id, session.track_name, session.artist,
-                   session.start_time, session.end_time, session.duration_minutes);
+                   session.start_time, session.end_time, session.duration_minutes, session.last_updated, session.status);
   }
 
   public updateSpotifySession(id: number, endTime: string, durationMinutes: number) {
     const stmt = this.db.prepare(`
-      UPDATE spotify_sessions SET end_time = ?, duration_minutes = ? WHERE id = ?
+      UPDATE spotify_sessions SET end_time = ?, duration_minutes = ?, status = 'ended', last_updated = CURRENT_TIMESTAMP WHERE id = ?
     `);
     return stmt.run(endTime, durationMinutes, id);
   }
 
+  public updateSpotifySessionProgress(id: number, durationMinutes: number) {
+    const stmt = this.db.prepare(`
+      UPDATE spotify_sessions SET duration_minutes = ?, last_updated = ? WHERE id = ?
+    `);
+    return stmt.run(durationMinutes, new Date().toISOString(), id);
+  }
+
   public getActiveSpotifySessions(userId?: string) {
-    let query = 'SELECT * FROM spotify_sessions WHERE end_time IS NULL';
+    let query = "SELECT * FROM spotify_sessions WHERE status = 'active'";
     const params: any[] = [];
 
     if (userId) {
@@ -334,6 +531,25 @@ class AnalyticsDatabase {
     }
 
     return this.db.prepare(query).all(...params) as SpotifySession[];
+  }
+
+  public getStaleSpotifySessions(staleMinutes: number = 5) {
+    const staleTime = new Date();
+    staleTime.setMinutes(staleTime.getMinutes() - staleMinutes);
+    const staleTimeStr = staleTime.toISOString();
+
+    const stmt = this.db.prepare(`
+      SELECT * FROM spotify_sessions
+      WHERE status = 'active' AND last_updated < ?
+    `);
+    return stmt.all(staleTimeStr) as SpotifySession[];
+  }
+
+  public markSpotifySessionAsStale(id: number, endTime: string, durationMinutes: number) {
+    const stmt = this.db.prepare(`
+      UPDATE spotify_sessions SET end_time = ?, duration_minutes = ?, status = 'stale', last_updated = CURRENT_TIMESTAMP WHERE id = ?
+    `);
+    return stmt.run(endTime, durationMinutes, id);
   }
 
   // === DATA RETENTION METHODS ===

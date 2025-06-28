@@ -1,5 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDiscordGateway } from '@/lib/discord-gateway';
+import { getAnalyticsService } from '@/lib/analytics/service';
+import { getAnalyticsDatabase } from '@/lib/analytics/database';
 
 export async function GET() {
   try {
@@ -14,8 +16,33 @@ export async function GET() {
       memberCount: gateway.getMemberCount()
     };
 
+    // Check analytics health
+    let analyticsStatus = { status: 'unknown', activeSessions: 0, activeUsers: 0, validationMethod: 'real-time' };
+    try {
+      const analyticsService = getAnalyticsService();
+      const db = getAnalyticsDatabase();
+
+      const analyticsHealth = analyticsService.healthCheck();
+      const dbHealth = db.healthCheck();
+
+      const activeSessions = {
+        games: db.getActiveGameSessions().length,
+        voice: db.getActiveVoiceSessions().length,
+        spotify: db.getActiveSpotifySessions().length
+      };
+
+      analyticsStatus = {
+        status: dbHealth.status,
+        activeSessions: activeSessions.games + activeSessions.voice + activeSessions.spotify,
+        activeUsers: analyticsHealth.activeUsers,
+        validationMethod: 'real-time' // Now using real-time Discord validation instead of stale cleanup
+      };
+    } catch (error) {
+      analyticsStatus.status = 'error';
+    }
+
     // Determine overall health
-    const isHealthy = isReady && !!serverStats;
+    const isHealthy = isReady && !!serverStats && analyticsStatus.status === 'healthy';
 
     const healthData = {
       status: isHealthy ? 'healthy' : 'degraded',
@@ -26,8 +53,12 @@ export async function GET() {
       services: {
         discord_gateway: discordStatus.ready ? 'ready' : 'not_ready',
         discord_stats: discordStatus.hasServerStats ? 'available' : 'unavailable',
-        analytics_db: 'operational',
-        member_count: discordStatus.memberCount
+        analytics_db: analyticsStatus.status,
+        analytics_sessions: analyticsStatus.activeSessions,
+        analytics_validation: analyticsStatus.validationMethod,
+        analytics_active_users: analyticsStatus.activeUsers,
+        member_count: discordStatus.memberCount,
+        session_recovery: discordStatus.ready ? 'available' : 'unavailable'
       },
     system: {
       memory: {
