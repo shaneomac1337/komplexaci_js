@@ -122,27 +122,27 @@ export default function UserAnalyticsModal({ isOpen, onClose, userId, displayNam
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-900 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-hidden shadow-2xl">
+    <div className="fixed inset-0 bg-black/80 backdrop-blur-sm flex items-center justify-center z-50 p-2 sm:p-4">
+      <div className="bg-[#2f3136] rounded-lg w-full max-w-4xl max-h-[95vh] sm:max-h-[90vh] overflow-hidden shadow-xl border border-[#40444b]">
         {/* Header */}
-        <div className="bg-gradient-to-r from-blue-500 to-purple-600 p-6 rounded-t-2xl">
+        <div className="bg-[#36393f] p-4 sm:p-6 border-b border-[#40444b]">
           <div className="flex justify-between items-center">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-3 sm:space-x-4">
               <DiscordAvatar
                 userId={userId}
                 avatar={avatar}
                 displayName={displayName}
-                size={48}
-                className="border-2 border-white/20"
+                size={40}
+                className="sm:w-12 sm:h-12"
               />
               <div>
-                <h2 className="text-xl font-bold text-white">{displayName}</h2>
-                <p className="text-blue-100 text-sm">Osobní statistiky</p>
+                <h2 className="text-lg sm:text-xl font-semibold text-white">{displayName}</h2>
+                <p className="text-[#b9bbbe] text-xs sm:text-sm">Osobní statistiky</p>
               </div>
             </div>
             <button
               onClick={onClose}
-              className="text-white hover:text-gray-300 text-2xl font-bold w-8 h-8 flex items-center justify-center rounded-full hover:bg-white/10 transition-colors"
+              className="text-[#b9bbbe] hover:text-white text-xl sm:text-2xl w-8 h-8 flex items-center justify-center rounded hover:bg-[#40444b] transition-colors"
             >
               ×
             </button>
@@ -150,8 +150,8 @@ export default function UserAnalyticsModal({ isOpen, onClose, userId, displayNam
         </div>
 
         {/* Tab Navigation */}
-        <div className="bg-gray-800 px-6 py-4">
-          <div className="flex space-x-2">
+        <div className="bg-[#36393f] px-4 sm:px-6 py-3 border-b border-[#40444b]">
+          <div className="flex space-x-1 sm:space-x-2 overflow-x-auto">
             {[
               { id: 'overview', label: 'Přehled', icon: '📊' },
               { id: 'games', label: 'Hry', icon: '🎮' },
@@ -160,107 +160,91 @@ export default function UserAnalyticsModal({ isOpen, onClose, userId, displayNam
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`flex items-center space-x-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                className={`flex items-center space-x-2 px-3 sm:px-4 py-2 rounded text-xs sm:text-sm font-medium transition-all whitespace-nowrap ${
                   activeTab === tab.id
-                    ? 'bg-blue-600 text-white shadow-lg'
-                    : 'text-gray-300 hover:text-white hover:bg-gray-700'
+                    ? 'bg-[#5865f2] text-white'
+                    : 'text-[#b9bbbe] hover:text-white hover:bg-[#40444b]'
                 }`}
               >
-                <span>{tab.icon}</span>
-                <span>{tab.label}</span>
+                <span className="text-sm">{tab.icon}</span>
+                <span className="hidden sm:inline">{tab.label}</span>
               </button>
             ))}
           </div>
         </div>
 
         {/* Content */}
-        <div className="p-6 max-h-[60vh] overflow-y-auto">
+        <div className="p-4 sm:p-6 max-h-[calc(95vh-200px)] sm:max-h-[calc(90vh-200px)] overflow-y-auto">
           {analyticsData.loading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-              <span className="ml-3 text-gray-300">Načítání dat...</span>
+            <div className="flex items-center justify-center py-8 sm:py-12">
+              <div className="animate-spin rounded-full h-6 w-6 sm:h-8 sm:w-8 border-b-2 border-[#5865f2]"></div>
+              <span className="ml-3 text-[#b9bbbe] text-sm sm:text-base">Načítání dat...</span>
             </div>
           ) : analyticsData.error ? (
-            <div className="text-center py-12">
-              <div className="text-red-400 text-lg mb-2">❌ Chyba</div>
-              <p className="text-gray-400">{analyticsData.error}</p>
+            <div className="text-center py-8 sm:py-12">
+              <div className="text-red-400 text-base sm:text-lg mb-2">❌ Chyba</div>
+              <p className="text-[#b9bbbe] text-sm sm:text-base">{analyticsData.error}</p>
               <button
                 onClick={fetchUserAnalytics}
-                className="mt-4 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
+                className="mt-4 bg-[#5865f2] hover:bg-[#4752c4] text-white px-4 py-2 rounded text-sm transition-colors"
               >
                 Zkusit znovu
               </button>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4 sm:space-y-6">
               {activeTab === 'overview' && (
-                <div className="space-y-6">
-                  {/* Time Period Cards */}
-                  <div className="grid grid-cols-3 gap-4">
-                    <div className="bg-gray-800 rounded-xl p-4 text-center">
-                      <div className="text-2xl mb-2">⏰</div>
-                      <div className="text-lg font-bold text-white">
-                        {formatTime(analyticsData.totals24h.totalOnlineTime || 0)}
-                      </div>
-                      <div className="text-gray-400 text-sm">24 hodin</div>
-                    </div>
-                    <div className="bg-gray-800 rounded-xl p-4 text-center">
-                      <div className="text-2xl mb-2">📅</div>
-                      <div className="text-lg font-bold text-white">
-                        {formatTime(analyticsData.totals7d.totalOnlineTime || 0)}
-                      </div>
-                      <div className="text-gray-400 text-sm">7 dní</div>
-                    </div>
-                    <div className="bg-gray-800 rounded-xl p-4 text-center">
-                      <div className="text-2xl mb-2">📊</div>
-                      <div className="text-lg font-bold text-white">
-                        {formatTime(analyticsData.totals30d.totalOnlineTime || 0)}
-                      </div>
-                      <div className="text-gray-400 text-sm">30 dní</div>
-                    </div>
-                  </div>
-
+                <div className="space-y-4 sm:space-y-6">
                   {/* Activity Breakdown */}
-                  <div className="grid grid-cols-2 gap-4">
-                    <div className="bg-gray-800 rounded-xl p-4">
-                      <div className="mb-3">
-                        <div className="text-white font-medium">Hry</div>
-                        <div className="text-gray-400 text-sm">30 dní</div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                    <div className="bg-[#36393f] rounded-lg p-4 border border-[#40444b]">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <span className="text-xl sm:text-2xl">🎮</span>
+                        <div>
+                          <div className="text-white font-medium text-sm sm:text-base">Hry</div>
+                          <div className="text-[#b9bbbe] text-xs sm:text-sm">30 dní</div>
+                        </div>
                       </div>
-                      <div className="text-xl font-bold text-white">
+                      <div className="text-lg sm:text-xl font-bold text-white">
                         {formatTime(analyticsData.totals30d.totalGameTime || 0)}
                       </div>
                     </div>
 
-                    <div className="bg-gray-800 rounded-xl p-4">
+                    <div className="bg-[#36393f] rounded-lg p-4 border border-[#40444b]">
                       <div className="flex items-center space-x-3 mb-3">
-                        <span className="text-2xl">🎤</span>
+                        <span className="text-xl sm:text-2xl">🎤</span>
                         <div>
-                          <div className="text-white font-medium">Voice</div>
-                          <div className="text-gray-400 text-sm">30 dní</div>
+                          <div className="text-white font-medium text-sm sm:text-base">Voice</div>
+                          <div className="text-[#b9bbbe] text-xs sm:text-sm">30 dní</div>
                         </div>
                       </div>
-                      <div className="text-xl font-bold text-white">
+                      <div className="text-lg sm:text-xl font-bold text-white">
                         {formatTime(analyticsData.totals30d.totalVoiceTime || 0)}
                       </div>
                     </div>
 
-                    <div className="bg-gray-800 rounded-xl p-4">
-                      <div className="mb-3">
-                        <div className="text-white font-medium">Spotify</div>
-                        <div className="text-gray-400 text-sm">30 dní</div>
+                    <div className="bg-[#36393f] rounded-lg p-4 border border-[#40444b]">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <span className="text-xl sm:text-2xl">🎵</span>
+                        <div>
+                          <div className="text-white font-medium text-sm sm:text-base">Spotify</div>
+                          <div className="text-[#b9bbbe] text-xs sm:text-sm">30 dní</div>
+                        </div>
                       </div>
-                      <div className="text-xl font-bold text-white">
+                      <div className="text-lg sm:text-xl font-bold text-white">
                         {analyticsData.totals30d.totalSongsPlayed || 0} písní
                       </div>
                     </div>
 
-                    <div className="bg-gray-800 rounded-xl p-4">
-                      <div className="mb-3">
-                        <div className="text-white font-medium">Screen Share</div>
-                        <div className="text-gray-400 text-sm">30 dní</div>
+                    <div className="bg-[#36393f] rounded-lg p-4 border border-[#40444b]">
+                      <div className="flex items-center space-x-3 mb-3">
+                        <span className="text-xl sm:text-2xl">🖥️</span>
+                        <div>
+                          <div className="text-white font-medium text-sm sm:text-base">Screen Share</div>
+                          <div className="text-[#b9bbbe] text-xs sm:text-sm">30 dní</div>
+                        </div>
                       </div>
-                      <div className="text-xl font-bold text-white">
+                      <div className="text-lg sm:text-xl font-bold text-white">
                         {formatTime(analyticsData.totals30d.totalScreenShareTime || 0)}
                       </div>
                     </div>
@@ -269,30 +253,30 @@ export default function UserAnalyticsModal({ isOpen, onClose, userId, displayNam
               )}
 
               {activeTab === 'games' && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-bold text-white mb-4">Nejhranější hry (30 dní)</h3>
+                <div className="space-y-3 sm:space-y-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Nejhranější hry (30 dní)</h3>
                   {analyticsData.gameSessions.length === 0 ? (
-                    <div className="text-center py-8 text-gray-400">
-                      <p>Žádná herní aktivita</p>
+                    <div className="text-center py-6 sm:py-8 text-[#b9bbbe]">
+                      <p className="text-sm sm:text-base">Žádná herní aktivita</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       {analyticsData.gameSessions.slice(0, 10).map((game, index) => (
-                        <div key={game.game_name} className="bg-gray-800 rounded-lg p-4">
+                        <div key={game.game_name} className="bg-[#36393f] rounded-lg p-3 sm:p-4 border border-[#40444b]">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <span className="text-lg font-bold text-blue-400 min-w-[2rem]">
+                            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                              <span className="text-sm sm:text-base font-bold text-[#5865f2] min-w-[1.5rem] sm:min-w-[2rem]">
                                 {index + 1}.
                               </span>
-                              <div>
-                                <div className="text-white font-medium">{game.game_name}</div>
-                                <div className="text-gray-400 text-sm">
+                              <div className="min-w-0 flex-1">
+                                <div className="text-white font-medium text-sm sm:text-base truncate">{game.game_name}</div>
+                                <div className="text-[#b9bbbe] text-xs sm:text-sm">
                                   {game.session_count} relací
                                 </div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="text-white font-bold">{formatTime(game.total_minutes)}</div>
+                            <div className="text-right flex-shrink-0 ml-2">
+                              <div className="text-white font-bold text-sm sm:text-base">{formatTime(game.total_minutes)}</div>
                             </div>
                           </div>
                         </div>
@@ -303,29 +287,29 @@ export default function UserAnalyticsModal({ isOpen, onClose, userId, displayNam
               )}
 
               {activeTab === 'spotify' && (
-                <div className="space-y-4">
-                  <h3 className="text-lg font-bold text-white mb-4">Top 10 skladeb (30 dní)</h3>
+                <div className="space-y-3 sm:space-y-4">
+                  <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Top 10 skladeb (30 dní)</h3>
                   {analyticsData.topTracks.length === 0 ? (
-                    <div className="text-center py-8 text-gray-400">
-                      <p>Žádná Spotify aktivita</p>
+                    <div className="text-center py-6 sm:py-8 text-[#b9bbbe]">
+                      <p className="text-sm sm:text-base">Žádná Spotify aktivita</p>
                     </div>
                   ) : (
-                    <div className="space-y-3">
+                    <div className="space-y-2 sm:space-y-3">
                       {analyticsData.topTracks.slice(0, 10).map((track, index) => (
-                        <div key={`${track.track_name}-${track.artist}`} className="bg-gray-800 rounded-lg p-4">
+                        <div key={`${track.track_name}-${track.artist}`} className="bg-[#36393f] rounded-lg p-3 sm:p-4 border border-[#40444b]">
                           <div className="flex items-center justify-between">
-                            <div className="flex items-center space-x-3">
-                              <span className="text-lg font-bold text-purple-400 min-w-[2rem]">
+                            <div className="flex items-center space-x-2 sm:space-x-3 min-w-0 flex-1">
+                              <span className="text-sm sm:text-base font-bold text-[#1db954] min-w-[1.5rem] sm:min-w-[2rem]">
                                 {index + 1}.
                               </span>
-                              <div>
-                                <div className="text-white font-medium">{track.track_name}</div>
-                                <div className="text-gray-400 text-sm">{track.artist}</div>
+                              <div className="min-w-0 flex-1">
+                                <div className="text-white font-medium text-sm sm:text-base truncate">{track.track_name}</div>
+                                <div className="text-[#b9bbbe] text-xs sm:text-sm truncate">{track.artist}</div>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <div className="text-white font-bold">{track.play_count}×</div>
-                              <div className="text-gray-400 text-sm">přehrání</div>
+                            <div className="text-right flex-shrink-0 ml-2">
+                              <div className="text-white font-bold text-sm sm:text-base">{track.play_count}×</div>
+                              <div className="text-[#b9bbbe] text-xs sm:text-sm">přehrání</div>
                             </div>
                           </div>
                         </div>
