@@ -11,6 +11,15 @@ interface CachedMember {
   avatar: string | null;
   status: string;
   activities: Activity[];
+  voice: {
+    channel: {
+      id: string;
+      name: string;
+    } | null;
+    streaming: boolean;
+    selfMute: boolean;
+    selfDeaf: boolean;
+  } | null;
   roles: string[];
   joinedAt: string | null;
   lastSeen: Date;
@@ -71,11 +80,29 @@ class DiscordGatewayService {
       this.isConnected = true;
       this.initializeCache();
 
+      // Fix any existing sessions with timestamp issues (one-time on startup)
+      this.analyticsService.fixInconsistentTimestamps();
+
+      // Recover existing sessions based on Discord's real-time state
+      setTimeout(() => {
+        const guild = this.client.guilds.cache.get(this.serverId);
+        if (guild) {
+          console.log('🔍 Checking Discord real-time state for session recovery...');
+          this.analyticsService.recoverExistingSessions(guild);
+        } else {
+          console.log('⚠️ Guild not found for session recovery');
+        }
+      }, 5000); // Wait 5 seconds for Discord cache to populate
+
       // Set up periodic stats update to track online time and handle daily resets
       this.updateInterval = setInterval(() => {
         if (this.isConnected && this.serverStats) {
           this.updateDailyOnlineTime();
           this.updateServerStats();
+
+          // Enhanced session management
+          this.updateActiveSessionsProgress();
+          this.validateSessionsWithPresence(); // This handles cleanup via real Discord data
         }
       }, 60000); // Update every 1 minute for more accurate time tracking
     });
@@ -239,6 +266,15 @@ class DiscordGatewayService {
         : null,
       status: currentStatus,
       activities: member.presence?.activities || [],
+      voice: member.voice ? {
+        channel: member.voice.channel ? {
+          id: member.voice.channel.id,
+          name: member.voice.channel.name
+        } : null,
+        streaming: member.voice.streaming || false,
+        selfMute: member.voice.selfMute || false,
+        selfDeaf: member.voice.selfDeaf || false
+      } : null,
       roles: member.roles.cache.map(role => role.id),
       joinedAt: member.joinedAt?.toISOString() || null,
       lastSeen: currentTime,
@@ -321,15 +357,39 @@ class DiscordGatewayService {
     // Check if user is streaming (streaming = screen share, selfVideo = camera)
     const isStreaming = newState.streaming || false;
 
+    // Update member cache with new voice state
+    member.voice = channelId ? {
+      channel: {
+        id: channelId,
+        name: channelName
+      },
+      streaming: isStreaming,
+      selfMute: newState.selfMute || false,
+      selfDeaf: newState.selfDeaf || false
+    } : null;
+
+    // Save updated member back to cache
+    this.memberCache.set(userId, member);
+
     // Debug streaming detection
     if (userId === '396360380038774784') { // shaneomac's ID for debugging
-      console.log(`📺 Streaming debug for ${member.displayName}:`, {
+      console.log(`📺 Enhanced streaming debug for ${member.displayName}:`, {
         streaming: newState.streaming, // ← This is screen sharing/streaming
         selfVideo: newState.selfVideo, // ← This is camera
         selfDeaf: newState.selfDeaf,
         selfMute: newState.selfMute,
-        isStreaming
+        isStreaming,
+        // Check for additional streaming properties
+        streamKey: newState.streamKey,
+        applicationId: newState.applicationId,
+        sessionId: newState.sessionId,
+        // Full voice state object
+        fullVoiceState: newState,
+        cachedVoiceState: member.voice
       });
+
+      // Also log current activities to see if there's streaming info there
+      console.log(`🎮 Current activities for ${member.displayName}:`, member.activities);
     }
 
     // Update analytics service with voice state change
@@ -428,6 +488,26 @@ class DiscordGatewayService {
       }
     } catch (error) {
       console.error('❌ Error saving daily stats to database:', error);
+    }
+  }
+
+  // === ENHANCED SESSION MANAGEMENT ===
+
+  private updateActiveSessionsProgress() {
+    try {
+      this.analyticsService.updateActiveSessionsProgress();
+    } catch (error) {
+      console.error('❌ Error updating active sessions progress:', error);
+    }
+  }
+
+
+
+  private validateSessionsWithPresence() {
+    try {
+      this.analyticsService.validateActiveSessionsWithPresence();
+    } catch (error) {
+      console.error('❌ Error validating sessions with presence:', error);
     }
   }
 
