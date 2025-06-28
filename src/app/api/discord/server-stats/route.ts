@@ -51,33 +51,45 @@ export async function GET() {
         }).filter(Boolean);
 
         // Format for frontend compatibility
-        const formattedStats = {
-          name: stats.name,
-          memberCount: stats.memberCount,
-          onlineCount: stats.onlineCount,
-          icon: stats.icon,
-          description: stats.description,
-          features: stats.features,
-          boostLevel: stats.boostLevel,
-          boostCount: stats.boostCount,
-          verificationLevel: stats.verificationLevel,
-          onlineMembers: allMembers.map(member => {
+        const onlineMembersWithDetails = allMembers.map(member => {
             // Find custom status (type 4) first, then other activities
             const customStatus = member.activities.find((activity: any) => activity.type === 4);
             const otherActivity = member.activities.find((activity: any) => activity.type !== 4);
 
-            // Check if user is streaming (voice state)
+            // Enhanced streaming detection
             const voiceState = member.voice;
             const isStreaming = voiceState?.streaming || false;
+            const isInVoice = !!(voiceState && voiceState.channel);
 
-            // Create streaming activity if user is streaming but no other activity
+            // Create streaming activity if user is streaming
             let displayActivity = otherActivity;
-            if (isStreaming && !otherActivity) {
-              displayActivity = {
-                name: 'Screen Share',
-                type: 1, // Streaming type
-                details: voiceState?.channel?.name ? `in ${voiceState.channel.name}` : 'in voice channel',
-                state: 'Streaming'
+            let streamingInfo = null;
+
+            if (isStreaming && voiceState?.channel) {
+              streamingInfo = {
+                isStreaming: true,
+                channelName: voiceState.channel.name,
+                channelId: voiceState.channel.id,
+                streamingTo: `${voiceState.channel.name}`,
+                streamType: 'Screen Share'
+              };
+
+              // Override activity if streaming but no game activity
+              if (!otherActivity || otherActivity.type !== 0) {
+                displayActivity = {
+                  name: 'Screen Share',
+                  type: 1, // Streaming type
+                  details: `Streaming to ${voiceState.channel.name}`,
+                  state: 'Live'
+                };
+              }
+            } else if (isInVoice && voiceState?.channel) {
+              // User in voice but not streaming
+              streamingInfo = {
+                isStreaming: false,
+                channelName: voiceState.channel.name,
+                channelId: voiceState.channel.id,
+                inVoice: true
               };
             }
 
@@ -102,11 +114,42 @@ export async function GET() {
                 } : null,
                 state: customStatus.state
               } : null,
+              streaming: streamingInfo,
               roles: member.roles,
               isRealOnline: member.status !== 'offline',
               joinedAt: member.joinedAt
             };
-          }),
+        });
+
+        // Calculate streaming statistics
+        const streamingUsers = onlineMembersWithDetails.filter(member =>
+          member.streaming?.isStreaming
+        );
+        const voiceUsers = onlineMembersWithDetails.filter(member =>
+          member.streaming?.inVoice || member.streaming?.isStreaming
+        );
+
+        const formattedStats = {
+          name: stats.name,
+          memberCount: stats.memberCount,
+          onlineCount: stats.onlineCount,
+          icon: stats.icon,
+          description: stats.description,
+          features: stats.features,
+          boostLevel: stats.boostLevel,
+          boostCount: stats.boostCount,
+          verificationLevel: stats.verificationLevel,
+          onlineMembers: onlineMembersWithDetails,
+          streamingStats: {
+            totalStreaming: streamingUsers.length,
+            totalInVoice: voiceUsers.length,
+            streamingUsers: streamingUsers.map(user => ({
+              id: user.id,
+              displayName: user.displayName,
+              channelName: user.streaming.channelName,
+              streamType: user.streaming.streamType || 'Screen Share'
+            }))
+          },
           hasRealPresenceData: true,
           lastUpdated: stats.lastUpdated.toISOString(),
           dataSource: 'GATEWAY', // Indicate this is real-time Gateway data
@@ -296,6 +339,11 @@ export async function GET() {
       boostCount: serverData.premium_subscription_count || 0,
       verificationLevel: serverData.verification_level || 0,
       onlineMembers: allServerMembers,
+      streamingStats: {
+        totalStreaming: 0,
+        totalInVoice: 0,
+        streamingUsers: []
+      },
       hasRealPresenceData: hasRealPresenceData,
       lastUpdated: new Date().toISOString(),
       dataSource: 'REST_API', // Indicate this is fallback data
@@ -325,6 +373,7 @@ export async function GET() {
           avatar: null,
           status: 'online',
           activity: { name: 'Coding the website', type: 0 },
+          streaming: null,
           roles: [],
           isRealOnline: false
         },
@@ -335,6 +384,7 @@ export async function GET() {
           avatar: null,
           status: 'dnd',
           activity: { name: 'CS2', type: 0 },
+          streaming: null,
           roles: [],
           isRealOnline: false
         },
@@ -345,10 +395,16 @@ export async function GET() {
           avatar: null,
           status: 'idle',
           activity: null,
+          streaming: null,
           roles: [],
           isRealOnline: false
         }
       ],
+      streamingStats: {
+        totalStreaming: 0,
+        totalInVoice: 0,
+        streamingUsers: []
+      },
       hasRealPresenceData: false,
       lastUpdated: new Date().toISOString(),
       dataSource: 'FALLBACK',
