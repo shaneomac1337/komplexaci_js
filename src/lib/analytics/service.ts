@@ -904,6 +904,14 @@ class AnalyticsService {
     }
   }
 
+  // Reset in-memory tracking (for daily reset)
+  public resetInMemoryTracking() {
+    console.log('🔄 Resetting analytics service in-memory tracking...');
+    const userCount = this.activeUsers.size;
+    this.activeUsers.clear();
+    console.log(`🔄 Cleared ${userCount} active users from analytics service`);
+  }
+
   // Health check
   public healthCheck() {
     return {

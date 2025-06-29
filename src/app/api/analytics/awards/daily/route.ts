@@ -31,24 +31,24 @@ export async function GET(request: NextRequest) {
     const allMembers = gateway.isReady() ? gateway.getAllMembers() : [];
     const memberMap = new Map(allMembers.map(m => [m.id, m]));
 
-    // 1. NERD OF THE DAY - Most online time
+    // 1. NERD OF THE DAY - Most online time (from real-time user_stats)
     const nerdQuery = db.getDatabase().prepare(`
-      SELECT 
+      SELECT
         user_id,
-        online_minutes,
-        created_at
-      FROM daily_snapshots 
-      WHERE date = ? AND online_minutes > 0
-      ORDER BY online_minutes DESC, created_at ASC
+        daily_online_minutes as online_minutes,
+        last_daily_reset as created_at
+      FROM user_stats
+      WHERE daily_online_minutes > 0
+      ORDER BY daily_online_minutes DESC, last_daily_reset ASC
       LIMIT 1
     `);
-    const nerdWinner = nerdQuery.get(today) as any;
+    const nerdWinner = nerdQuery.get() as any;
 
     const nerdParticipants = db.getDatabase().prepare(`
-      SELECT COUNT(*) as count 
-      FROM daily_snapshots 
-      WHERE date = ? AND online_minutes > 0
-    `).get(today) as any;
+      SELECT COUNT(*) as count
+      FROM user_stats
+      WHERE daily_online_minutes > 0
+    `).get() as any;
 
     // 2. GAMER OF THE DAY - Most gaming time
     const gamerQuery = db.getDatabase().prepare(`

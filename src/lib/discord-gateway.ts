@@ -2,6 +2,7 @@
 // This avoids the need for Visual Studio build tools
 import { Client, GatewayIntentBits, Presence, GuildMember, Activity } from 'discord.js';
 import { getAnalyticsService } from './analytics/service';
+import { getAnalyticsDatabase } from './analytics/database';
 import { initializeAnalytics } from './analytics';
 
 interface CachedMember {
@@ -472,22 +473,66 @@ class DiscordGatewayService {
 
       this.memberCache.forEach((member, userId) => {
         if (member.dailyOnlineTime > 0) {
-          // Save current daily online time to analytics database
+          // Save to old daily_snapshots (for historical data)
           this.analyticsService.saveDailyOnlineTime(
             userId,
             member.displayName,
             today,
             Math.round(member.dailyOnlineTime)
           );
+
+          // Update user_stats table for real-time tracking
+          this.updateUserStatsInDatabase(userId, member);
           savedCount++;
         }
       });
 
       if (savedCount > 0) {
-        console.log(`💾 Saved daily stats for ${savedCount} users`);
+        console.log(`💾 Saved daily stats for ${savedCount} users to both daily_snapshots and user_stats`);
       }
     } catch (error) {
       console.error('❌ Error saving daily stats to database:', error);
+    }
+  }
+
+  private updateUserStatsInDatabase(userId: string, member: CachedMember) {
+    try {
+      const analyticsDb = getAnalyticsDatabase();
+      
+      // Get current user stats or create new ones
+      let userStats = analyticsDb.getUserStats(userId);
+      
+      if (!userStats) {
+        // Create new user stats entry
+        userStats = {
+          user_id: userId,
+          daily_online_minutes: Math.round(member.dailyOnlineTime),
+          daily_voice_minutes: 0, // TODO: Calculate from voice sessions
+          daily_games_played: 0, // TODO: Calculate from game sessions
+          daily_spotify_minutes: 0, // TODO: Calculate from spotify sessions
+          monthly_online_minutes: Math.round(member.dailyOnlineTime),
+          monthly_voice_minutes: 0,
+          monthly_games_played: 0,
+          monthly_spotify_minutes: 0,
+          last_daily_reset: new Date().toISOString(),
+          last_monthly_reset: new Date().toISOString(),
+          created_at: new Date().toISOString(),
+          updated_at: new Date().toISOString()
+        };
+        
+        console.log(`📊 Created new user stats for ${member.displayName}: ${userStats.daily_online_minutes}m daily`);
+      } else {
+        // Update existing stats - only update daily minutes, don't accumulate
+        const previousDaily = userStats.daily_online_minutes;
+        userStats.daily_online_minutes = Math.round(member.dailyOnlineTime);
+        userStats.updated_at = new Date().toISOString();
+        
+        console.log(`📊 Updated user stats for ${member.displayName}: ${previousDaily}m -> ${userStats.daily_online_minutes}m daily`);
+      }
+
+      analyticsDb.upsertUserStats(userStats);
+    } catch (error) {
+      console.error(`❌ Error updating user stats for ${userId}:`, error);
     }
   }
 
@@ -525,6 +570,9 @@ class DiscordGatewayService {
             today,
             Math.round(member.dailyOnlineTime)
           );
+          
+          // Also update user_stats
+          this.updateUserStatsInDatabase(userId, member);
           savedCount++;
         }
       });
@@ -535,6 +583,122 @@ class DiscordGatewayService {
       console.error('❌ Error force saving daily stats:', error);
       return 0;
     }
+  }
+
+  // Public method to trigger daily reset
+  public async triggerDailyReset() {
+    try {
+      console.log('🌅 Triggering daily reset from Discord Gateway...');
+      
+      // First reset in-memory cache
+      console.log('🔄 Resetting Discord Gateway in-memory cache...');
+      const currentTime = new Date();
+      
+      // Reset analytics service in-memory tracking first
+      this.analyticsService.resetInMemoryTracking();
+      
+      this.memberCache.forEach((member, userId) => {
+        member.dailyOnlineTime = 0;
+        member.lastDailyReset = currentTime;
+        
+        // Only reset session start time for offline members
+        // Online members need to keep tracking their current session
+        if (member.status === 'offline') {
+          member.sessionStartTime = null;
+        } else {
+          // For online members, restart their session from now
+          member.sessionStartTime = currentTime;
+          console.log(`🔄 Restarted session for online member: ${member.displayName}`);
+        }
+        
+        this.memberCache.set(userId, member);
+      });
+      console.log(`🔄 Reset in-memory cache for ${this.memberCache.size} members`);
+      
+      // Re-initialize analytics tracking for currently online users
+      this.reinitializeAnalyticsTracking();
+      
+      // Then call the daily reset API
+      const response = await fetch('/api/analytics/reset-daily', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        console.log('✅ Daily reset completed:', result.summary);
+        return result;
+      } else {
+        throw new Error(`Daily reset API returned ${response.status}`);
+      }
+    } catch (error) {
+      console.error('❌ Error triggering daily reset:', error);
+      throw error;
+    }
+  }
+
+  // Public method to reset in-memory cache only (for testing)
+  public resetInMemoryCache() {
+    console.log('🔄 Resetting Discord Gateway in-memory cache only...');
+    const currentTime = new Date();
+    
+    // Reset analytics service in-memory tracking first
+    this.analyticsService.resetInMemoryTracking();
+    
+    this.memberCache.forEach((member, userId) => {
+      member.dailyOnlineTime = 0;
+      member.lastDailyReset = currentTime;
+      
+      // Only reset session start time for offline members
+      // Online members need to keep tracking their current session
+      if (member.status === 'offline') {
+        member.sessionStartTime = null;
+      } else {
+        // For online members, restart their session from now
+        member.sessionStartTime = currentTime;
+        console.log(`🔄 Restarted session for online member: ${member.displayName}`);
+      }
+      
+      this.memberCache.set(userId, member);
+    });
+    console.log(`🔄 Reset in-memory cache for ${this.memberCache.size} members`);
+    
+    // Re-initialize analytics tracking for currently online users
+    this.reinitializeAnalyticsTracking();
+  }
+
+  // Re-initialize analytics tracking for currently online users after reset
+  private reinitializeAnalyticsTracking() {
+    console.log('🔄 Re-initializing analytics tracking for online users...');
+    let reinitializedCount = 0;
+    
+    this.memberCache.forEach((member, userId) => {
+      if (member.status !== 'offline') {
+        // Re-initialize analytics tracking for this user
+        this.analyticsService.updateUserPresence(
+          userId,
+          member.displayName,
+          member.status as 'online' | 'idle' | 'dnd' | 'offline',
+          member.activities
+        );
+        
+        // If user is in voice, re-initialize voice tracking
+        if (member.voice && member.voice.channel) {
+          this.analyticsService.updateUserVoiceState(
+            userId,
+            member.voice.channel.id,
+            member.voice.channel.name,
+            member.voice.streaming
+          );
+        }
+        
+        reinitializedCount++;
+      }
+    });
+    
+    console.log(`🔄 Re-initialized analytics tracking for ${reinitializedCount} online users`);
   }
 
   private updateServerStats() {
