@@ -12,6 +12,22 @@ export interface DailySnapshot {
   created_at: string;
 }
 
+export interface UserStats {
+  user_id: string;
+  daily_online_minutes: number;
+  daily_voice_minutes: number;
+  daily_games_played: number;
+  daily_spotify_minutes: number;
+  monthly_online_minutes: number;
+  monthly_voice_minutes: number;
+  monthly_games_played: number;
+  monthly_spotify_minutes: number;
+  last_daily_reset: string;
+  last_monthly_reset: string;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface GameSession {
   id?: number;
   user_id: string;
@@ -99,7 +115,7 @@ class AnalyticsDatabase {
     try {
       // Create tables with proper indexes
       this.db.exec(`
-        -- Daily activity snapshots
+        -- Daily activity snapshots (historical data)
         CREATE TABLE IF NOT EXISTS daily_snapshots (
           user_id TEXT NOT NULL,
           date TEXT NOT NULL,
@@ -109,6 +125,23 @@ class AnalyticsDatabase {
           spotify_minutes INTEGER DEFAULT 0,
           created_at TEXT DEFAULT CURRENT_TIMESTAMP,
           PRIMARY KEY (user_id, date)
+        );
+
+        -- User statistics with separate 1-day and 30-day tracking
+        CREATE TABLE IF NOT EXISTS user_stats (
+          user_id TEXT PRIMARY KEY,
+          daily_online_minutes INTEGER DEFAULT 0,
+          daily_voice_minutes INTEGER DEFAULT 0,
+          daily_games_played INTEGER DEFAULT 0,
+          daily_spotify_minutes INTEGER DEFAULT 0,
+          monthly_online_minutes INTEGER DEFAULT 0,
+          monthly_voice_minutes INTEGER DEFAULT 0,
+          monthly_games_played INTEGER DEFAULT 0,
+          monthly_spotify_minutes INTEGER DEFAULT 0,
+          last_daily_reset TEXT DEFAULT CURRENT_TIMESTAMP,
+          last_monthly_reset TEXT DEFAULT CURRENT_TIMESTAMP,
+          created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+          updated_at TEXT DEFAULT CURRENT_TIMESTAMP
         );
 
         -- Game sessions tracking
@@ -275,6 +308,8 @@ class AnalyticsDatabase {
       // Always safe indexes
       'CREATE INDEX IF NOT EXISTS idx_daily_snapshots_date ON daily_snapshots(date)',
       'CREATE INDEX IF NOT EXISTS idx_daily_snapshots_user_date ON daily_snapshots(user_id, date)',
+      'CREATE INDEX IF NOT EXISTS idx_user_stats_daily_reset ON user_stats(last_daily_reset)',
+      'CREATE INDEX IF NOT EXISTS idx_user_stats_monthly_reset ON user_stats(last_monthly_reset)',
       'CREATE INDEX IF NOT EXISTS idx_game_sessions_user ON game_sessions(user_id)',
       'CREATE INDEX IF NOT EXISTS idx_game_sessions_start_time ON game_sessions(start_time)',
       'CREATE INDEX IF NOT EXISTS idx_game_sessions_game_name ON game_sessions(game_name)',
@@ -623,6 +658,108 @@ class AnalyticsDatabase {
     };
   }
 
+  // === USER STATS MANAGEMENT ===
+
+  public upsertUserStats(stats: Omit<UserStats, 'created_at' | 'updated_at'>) {
+    const stmt = this.db.prepare(`
+      INSERT INTO user_stats (
+        user_id, daily_online_minutes, daily_voice_minutes, daily_games_played, daily_spotify_minutes,
+        monthly_online_minutes, monthly_voice_minutes, monthly_games_played, monthly_spotify_minutes,
+        last_daily_reset, last_monthly_reset
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON CONFLICT(user_id) DO UPDATE SET
+        daily_online_minutes = excluded.daily_online_minutes,
+        daily_voice_minutes = excluded.daily_voice_minutes,
+        daily_games_played = excluded.daily_games_played,
+        daily_spotify_minutes = excluded.daily_spotify_minutes,
+        monthly_online_minutes = excluded.monthly_online_minutes,
+        monthly_voice_minutes = excluded.monthly_voice_minutes,
+        monthly_games_played = excluded.monthly_games_played,
+        monthly_spotify_minutes = excluded.monthly_spotify_minutes,
+        last_daily_reset = excluded.last_daily_reset,
+        last_monthly_reset = excluded.last_monthly_reset,
+        updated_at = CURRENT_TIMESTAMP
+    `);
+    return stmt.run(
+      stats.user_id, stats.daily_online_minutes, stats.daily_voice_minutes, stats.daily_games_played, stats.daily_spotify_minutes,
+      stats.monthly_online_minutes, stats.monthly_voice_minutes, stats.monthly_games_played, stats.monthly_spotify_minutes,
+      stats.last_daily_reset, stats.last_monthly_reset
+    );
+  }
+
+  public getUserStats(userId: string): UserStats | null {
+    const stmt = this.db.prepare('SELECT * FROM user_stats WHERE user_id = ?');
+    return stmt.get(userId) as UserStats | null;
+  }
+
+  public getAllUserStats(): UserStats[] {
+    const stmt = this.db.prepare('SELECT * FROM user_stats ORDER BY daily_online_minutes DESC');
+    return stmt.all() as UserStats[];
+  }
+
+  public resetDailyStats(userId?: string) {
+    const now = new Date().toISOString();
+    
+    if (userId) {
+      // Reset specific user
+      const stmt = this.db.prepare(`
+        UPDATE user_stats SET
+          daily_online_minutes = 0,
+          daily_voice_minutes = 0,
+          daily_games_played = 0,
+          daily_spotify_minutes = 0,
+          last_daily_reset = ?,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = ?
+      `);
+      return stmt.run(now, userId);
+    } else {
+      // Reset all users
+      const stmt = this.db.prepare(`
+        UPDATE user_stats SET
+          daily_online_minutes = 0,
+          daily_voice_minutes = 0,
+          daily_games_played = 0,
+          daily_spotify_minutes = 0,
+          last_daily_reset = ?,
+          updated_at = CURRENT_TIMESTAMP
+      `);
+      return stmt.run(now);
+    }
+  }
+
+  public resetMonthlyStats(userId?: string) {
+    const now = new Date().toISOString();
+    
+    if (userId) {
+      // Reset specific user
+      const stmt = this.db.prepare(`
+        UPDATE user_stats SET
+          monthly_online_minutes = 0,
+          monthly_voice_minutes = 0,
+          monthly_games_played = 0,
+          monthly_spotify_minutes = 0,
+          last_monthly_reset = ?,
+          updated_at = CURRENT_TIMESTAMP
+        WHERE user_id = ?
+      `);
+      return stmt.run(now, userId);
+    } else {
+      // Reset all users
+      const stmt = this.db.prepare(`
+        UPDATE user_stats SET
+          monthly_online_minutes = 0,
+          monthly_voice_minutes = 0,
+          monthly_games_played = 0,
+          monthly_spotify_minutes = 0,
+          last_monthly_reset = ?,
+          updated_at = CURRENT_TIMESTAMP
+      `);
+      return stmt.run(now);
+    }
+  }
+
   // === DAILY RESET MANAGEMENT ===
 
   public getCurrentDayData(date?: string) {
@@ -630,6 +767,7 @@ class AnalyticsDatabase {
     
     return {
       dailySnapshots: this.db.prepare('SELECT * FROM daily_snapshots WHERE date = ? ORDER BY user_id').all(targetDate),
+      userStats: this.db.prepare('SELECT * FROM user_stats ORDER BY daily_online_minutes DESC').all(),
       todaysSessions: {
         games: this.db.prepare('SELECT * FROM game_sessions WHERE DATE(start_time) = ? ORDER BY start_time DESC').all(targetDate),
         voice: this.db.prepare('SELECT * FROM voice_sessions WHERE DATE(start_time) = ? ORDER BY start_time DESC').all(targetDate),
