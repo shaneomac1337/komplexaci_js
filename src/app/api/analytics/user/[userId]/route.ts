@@ -12,9 +12,17 @@ export async function GET(
     
     const db = getAnalyticsDatabase();
     
+    // Get user's reset dates and monthly counters to respect monthly reset
+    const userStats = db.getDatabase().prepare(`
+      SELECT last_monthly_reset, last_daily_reset, monthly_online_minutes, monthly_voice_minutes,
+             monthly_games_played, monthly_games_minutes, monthly_spotify_minutes
+      FROM user_stats
+      WHERE user_id = ?
+    `).get(userId) as any;
+    
     // Calculate date range
     const endDate = new Date();
-    const startDate = new Date();
+    let startDate = new Date();
     
     switch (timeRange) {
       case '1d':
@@ -24,6 +32,8 @@ export async function GET(
         startDate.setDate(startDate.getDate() - 7);
         break;
       case '30d':
+        // For monthly view, we use accumulated counters from user_stats, not session calculations
+        // This makes it work exactly like daily reset system
         startDate.setDate(startDate.getDate() - 30);
         break;
       case '90d':
@@ -120,9 +130,23 @@ export async function GET(
     recentSessions.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
     
     // Calculate totals from actual session data
-    const totalGameTime = gameSessions.reduce((sum, game) => sum + game.total_minutes, 0);
-    const totalVoiceTime = voiceActivity.reduce((sum, voice) => sum + voice.total_minutes, 0);
-    const totalSongsPlayed = spotifyActivity.reduce((sum, artist) => sum + artist.plays_count, 0);
+    // For 30d (monthly) view, use accumulated counters from user_stats (like daily reset system)
+    // For other time ranges, use session-based calculations
+    let totalGameTime, totalVoiceTime, totalSongsPlayed, totalScreenShareTime;
+    
+    if (timeRange === '30d') {
+      // Use monthly counters from user_stats (reset to 0 by monthly reset)
+      totalGameTime = userStats?.monthly_games_minutes || 0; // Now we have proper monthly game time tracking!
+      totalVoiceTime = userStats?.monthly_voice_minutes || 0;
+      totalSongsPlayed = userStats?.monthly_spotify_minutes || 0; // This represents songs, not minutes
+      totalScreenShareTime = 0; // Not tracked in monthly counters yet
+    } else {
+      // Use session-based calculations for other time ranges
+      totalGameTime = gameSessions.reduce((sum: number, game: any) => sum + game.total_minutes, 0);
+      totalVoiceTime = voiceActivity.reduce((sum: number, voice: any) => sum + voice.total_minutes, 0);
+      totalSongsPlayed = spotifyActivity.reduce((sum: number, artist: any) => sum + artist.plays_count, 0);
+      totalScreenShareTime = voiceActivity.reduce((sum: number, voice: any) => sum + voice.screen_share_minutes, 0);
+    }
 
     // Use saved daily snapshots for online time (this comes from Discord Gateway's real tracking)
     const totalOnlineTime = dailySnapshots.reduce((sum, day) => sum + day.online_minutes, 0);
@@ -132,7 +156,7 @@ export async function GET(
       totalGameTime,
       totalVoiceTime,
       totalSongsPlayed,
-      totalScreenShareTime: voiceActivity.reduce((sum, voice) => sum + voice.screen_share_minutes, 0),
+      totalScreenShareTime: totalScreenShareTime,
       gamesPlayed: gameSessions.length,
       voiceChannelsUsed: voiceActivity.length,
       artistsListened: spotifyActivity.length,
