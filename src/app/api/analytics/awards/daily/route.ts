@@ -3,7 +3,7 @@ import { getAnalyticsDatabase } from '@/lib/analytics/database';
 import { getDiscordGateway } from '@/lib/discord-gateway';
 
 export interface DailyAward {
-  category: 'nerd' | 'gamer' | 'listener' | 'streamer';
+  category: 'nerd' | 'gamer' | 'streamer';
   title: string;
   czechTitle: string;
   description: string;
@@ -12,7 +12,7 @@ export interface DailyAward {
     displayName: string;
     avatar: string | null;
     value: number; // minutes or track count
-    unit: string; // 'minut' | 'skladeb' | 'minut streamování'
+    unit: string; // 'minut' | 'minut streamování'
     achievedAt: string; // timestamp when they achieved this score (for tie-breaking)
   } | null;
   icon: string; // emoji
@@ -50,68 +50,43 @@ export async function GET(request: NextRequest) {
       WHERE daily_online_minutes > 0
     `).get() as any;
 
-    // 2. GAMER OF THE DAY - Most gaming time
+    // 2. GAMER OF THE DAY - Most gaming time (from real-time user_stats)
     const gamerQuery = db.getDatabase().prepare(`
-      SELECT 
+      SELECT
         user_id,
-        SUM(duration_minutes) as total_gaming_minutes,
-        MIN(start_time) as first_achieved
-      FROM game_sessions 
-      WHERE date(start_time) = ? AND status IN ('active', 'ended')
-      GROUP BY user_id
-      HAVING total_gaming_minutes > 0
-      ORDER BY total_gaming_minutes DESC, first_achieved ASC
+        daily_games_minutes as total_gaming_minutes,
+        last_daily_reset as created_at
+      FROM user_stats
+      WHERE daily_games_minutes > 0
+      ORDER BY daily_games_minutes DESC, last_daily_reset ASC
       LIMIT 1
     `);
-    const gamerWinner = gamerQuery.get(today) as any;
+    const gamerWinner = gamerQuery.get() as any;
 
     const gamerParticipants = db.getDatabase().prepare(`
-      SELECT COUNT(DISTINCT user_id) as count 
-      FROM game_sessions 
-      WHERE date(start_time) = ? AND status IN ('active', 'ended')
-    `).get(today) as any;
+      SELECT COUNT(*) as count
+      FROM user_stats
+      WHERE daily_games_minutes > 0
+    `).get() as any;
 
-    // 3. LISTENER OF THE DAY - Most Spotify tracks
-    const listenerQuery = db.getDatabase().prepare(`
-      SELECT 
-        user_id,
-        COUNT(*) as total_tracks,
-        MIN(start_time) as first_achieved
-      FROM spotify_sessions 
-      WHERE date(start_time) = ? AND status IN ('active', 'ended')
-      GROUP BY user_id
-      HAVING total_tracks > 0
-      ORDER BY total_tracks DESC, first_achieved ASC
-      LIMIT 1
-    `);
-    const listenerWinner = listenerQuery.get(today) as any;
-
-    const listenerParticipants = db.getDatabase().prepare(`
-      SELECT COUNT(DISTINCT user_id) as count 
-      FROM spotify_sessions 
-      WHERE date(start_time) = ? AND status IN ('active', 'ended')
-    `).get(today) as any;
-
-    // 4. STREAMER OF THE DAY - Most streaming minutes
+    // 3. STREAMER OF THE DAY - Most streaming minutes (from real-time user_stats)
     const streamerQuery = db.getDatabase().prepare(`
-      SELECT 
+      SELECT
         user_id,
-        SUM(screen_share_minutes) as total_streaming_minutes,
-        MIN(start_time) as first_achieved
-      FROM voice_sessions 
-      WHERE date(start_time) = ? AND screen_share_minutes > 0 AND status IN ('active', 'ended')
-      GROUP BY user_id
-      HAVING total_streaming_minutes > 0
-      ORDER BY total_streaming_minutes DESC, first_achieved ASC
+        daily_streaming_minutes as total_streaming_minutes,
+        last_daily_reset as created_at
+      FROM user_stats
+      WHERE daily_streaming_minutes > 0
+      ORDER BY daily_streaming_minutes DESC, last_daily_reset ASC
       LIMIT 1
     `);
-    const streamerWinner = streamerQuery.get(today) as any;
+    const streamerWinner = streamerQuery.get() as any;
 
     const streamerParticipants = db.getDatabase().prepare(`
-      SELECT COUNT(DISTINCT user_id) as count 
-      FROM voice_sessions 
-      WHERE date(start_time) = ? AND screen_share_minutes > 0 AND status IN ('active', 'ended')
-    `).get(today) as any;
+      SELECT COUNT(*) as count
+      FROM user_stats
+      WHERE daily_streaming_minutes > 0
+    `).get() as any;
 
     // Helper function to create award object
     const createAward = (
@@ -173,17 +148,6 @@ export async function GET(request: NextRequest) {
         'total_gaming_minutes',
         'minut',
         gamerParticipants?.count || 0
-      ),
-      createAward(
-        'listener',
-        'Listener of the Day',
-        'Posluchač dne',
-        'Nejvíce přehraných skladeb na Spotify',
-        '🎵',
-        listenerWinner,
-        'total_tracks',
-        'skladeb',
-        listenerParticipants?.count || 0
       ),
       createAward(
         'streamer',

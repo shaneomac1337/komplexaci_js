@@ -74,7 +74,7 @@ export default function DailyAwards({ onAwardClick }: DailyAwardsProps) {
           <h4 className="text-lg font-semibold text-white">Ocenění dne</h4>
         </div>
         <div className="space-y-2">
-          {[1, 2, 3, 4].map((i) => (
+          {[1, 2, 3].map((i) => (
             <div key={i} className="bg-gray-800/30 rounded-lg p-2 animate-pulse">
               <div className="h-4 bg-gray-600 rounded"></div>
             </div>

@@ -424,6 +424,7 @@ class DiscordGatewayService {
       }
 
       // Add time for currently online members with active sessions
+      // Only track if they have a session start time (not immediately after reset)
       if (member.status !== 'offline' && member.sessionStartTime) {
         // Add 1 minute to daily online time (since we run every minute)
         member.dailyOnlineTime += 1;
@@ -516,12 +517,14 @@ class DiscordGatewayService {
           daily_games_minutes: 0, // TODO: Calculate from game sessions
           daily_spotify_minutes: 0, // TODO: Calculate from spotify sessions
           daily_spotify_songs: 0,
+          daily_streaming_minutes: 0,
           monthly_online_minutes: Math.round(member.dailyOnlineTime),
           monthly_voice_minutes: 0,
           monthly_games_played: 0,
           monthly_games_minutes: 0,
           monthly_spotify_minutes: 0,
           monthly_spotify_songs: 0,
+          monthly_streaming_minutes: 0,
           last_daily_reset: now.toISOString(),
           last_monthly_reset: now.toISOString(),
           created_at: now.toISOString(),
@@ -583,28 +586,34 @@ class DiscordGatewayService {
       for (const userStat of allUserStats) {
         const userId = userStat.user_id;
         
-        // Calculate today's stats from session tables (including active sessions for real-time updates)
+        // Calculate today's stats from session tables (only sessions created after last daily reset)
         const gameStats = analyticsDb.getDatabase().prepare(`
           SELECT
             SUM(duration_minutes) as total_minutes,
             COUNT(DISTINCT game_name) as games_played
           FROM game_sessions
-          WHERE user_id = ? AND date(start_time) = ? AND status IN ('active', 'ended')
-        `).get(userId, today) as any;
+          WHERE user_id = ? AND date(start_time) = ? AND start_time >= ? AND status IN ('active', 'ended')
+        `).get(userId, today, userStat.last_daily_reset) as any;
 
         const voiceStats = analyticsDb.getDatabase().prepare(`
           SELECT SUM(duration_minutes) as total_minutes
           FROM voice_sessions
-          WHERE user_id = ? AND date(start_time) = ? AND status IN ('active', 'ended')
-        `).get(userId, today) as any;
+          WHERE user_id = ? AND date(start_time) = ? AND start_time >= ? AND status IN ('active', 'ended')
+        `).get(userId, today, userStat.last_daily_reset) as any;
 
         const spotifyStats = analyticsDb.getDatabase().prepare(`
           SELECT
             SUM(duration_minutes) as total_minutes,
             COUNT(*) as songs_played
           FROM spotify_sessions
-          WHERE user_id = ? AND date(start_time) = ? AND status IN ('active', 'ended')
-        `).get(userId, today) as any;
+          WHERE user_id = ? AND date(start_time) = ? AND start_time >= ? AND status IN ('active', 'ended')
+        `).get(userId, today, userStat.last_daily_reset) as any;
+
+        const streamingStats = analyticsDb.getDatabase().prepare(`
+          SELECT SUM(screen_share_minutes) as total_minutes
+          FROM voice_sessions
+          WHERE user_id = ? AND date(start_time) = ? AND start_time >= ? AND status IN ('active', 'ended')
+        `).get(userId, today, userStat.last_daily_reset) as any;
 
         // Calculate new daily values
         const newDailyVoice = Math.round(voiceStats?.total_minutes || 0);
@@ -612,50 +621,111 @@ class DiscordGatewayService {
         const newDailyGameMinutes = Math.round(gameStats?.total_minutes || 0);
         const newDailySpotify = Math.round(spotifyStats?.total_minutes || 0);
         const newDailySpotifySongs = spotifyStats?.songs_played || 0;
+        const newDailyStreaming = Math.round(streamingStats?.total_minutes || 0);
+
+        // Calculate differences for monthly accumulation (real-time updates)
+        const voiceDiff = newDailyVoice - userStat.daily_voice_minutes;
+        const gamesDiff = newDailyGames - userStat.daily_games_played;
+        // For real-time monthly updates, we don't need to calculate differences
+        // We'll use Math.max() logic below to ensure monthly >= daily
+        const spotifyDiff = newDailySpotify - userStat.daily_spotify_minutes;
+
+        // Check if we need to reset monthly stats (if it's been more than 30 days)
+        const now = new Date();
+        const lastMonthlyReset = new Date(userStat.last_monthly_reset);
+        const daysSinceMonthlyReset = Math.floor((now.getTime() - lastMonthlyReset.getTime()) / (1000 * 60 * 60 * 24));
+        
+        let newMonthlyVoice = userStat.monthly_voice_minutes;
+        let newMonthlyGames = userStat.monthly_games_played;
+        let newMonthlyGameMinutes = userStat.monthly_games_minutes;
+        let newMonthlySpotify = userStat.monthly_spotify_minutes;
+        let newMonthlySpotifySongs = userStat.monthly_spotify_songs;
+        let newLastMonthlyReset = userStat.last_monthly_reset;
+
+        if (daysSinceMonthlyReset >= 30) {
+          // Reset monthly stats if it's been 30+ days
+          newMonthlyVoice = newDailyVoice;
+          newMonthlyGames = newDailyGames;
+          newMonthlyGameMinutes = newDailyGameMinutes;
+          newMonthlySpotify = newDailySpotify;
+          newMonthlySpotifySongs = newDailySpotifySongs;
+          newLastMonthlyReset = now.toISOString();
+        } else {
+          // Real-time monthly accumulation: calculate monthly values independently from daily
+          // This ensures monthly counters include all sessions since monthly reset
+          
+          // Calculate monthly stats directly from sessions since monthly reset
+          // Handle sessions that span the monthly reset boundary
+          const monthlyResetTime = new Date(userStat.last_monthly_reset);
+
+          // Get sessions that started after monthly reset (normal case)
+          const monthlyGameStats = analyticsDb.getDatabase().prepare(`
+            SELECT
+              SUM(duration_minutes) as total_minutes,
+              COUNT(DISTINCT game_name) as games_played
+            FROM game_sessions
+            WHERE user_id = ? AND start_time >= ? AND status IN ('active', 'ended')
+          `).get(userId, userStat.last_monthly_reset) as any;
+
+          const monthlyVoiceStats = analyticsDb.getDatabase().prepare(`
+            SELECT SUM(duration_minutes) as total_minutes
+            FROM voice_sessions
+            WHERE user_id = ? AND start_time >= ? AND status IN ('active', 'ended')
+          `).get(userId, userStat.last_monthly_reset) as any;
+
+          // Handle active sessions that started before monthly reset (spanning sessions)
+          const spanningGameStats = analyticsDb.getDatabase().prepare(`
+            SELECT SUM(duration_minutes) as total_minutes
+            FROM game_sessions
+            WHERE user_id = ? AND start_time < ? AND status = 'active' AND duration_minutes > 0
+          `).get(userId, userStat.last_monthly_reset) as any;
+
+          const spanningVoiceStats = analyticsDb.getDatabase().prepare(`
+            SELECT SUM(duration_minutes) as total_minutes
+            FROM voice_sessions
+            WHERE user_id = ? AND start_time < ? AND status = 'active' AND duration_minutes > 0
+          `).get(userId, userStat.last_monthly_reset) as any;
+
+          // For spanning sessions, calculate how much time occurred after the monthly reset
+          const spanningGameMinutes = spanningGameStats?.total_minutes || 0;
+          const spanningVoiceMinutes = spanningVoiceStats?.total_minutes || 0;
+
+          // Estimate the portion of spanning sessions that occurred after monthly reset
+          // This is a conservative estimate - we could make it more precise with session start times
+          const monthlyResetMinutesAgo = Math.max(0, (now.getTime() - monthlyResetTime.getTime()) / (1000 * 60));
+          const spanningGameContribution = Math.min(spanningGameMinutes, monthlyResetMinutesAgo);
+          const spanningVoiceContribution = Math.min(spanningVoiceMinutes, monthlyResetMinutesAgo);
+          
+
+          const monthlySpotifyStats = analyticsDb.getDatabase().prepare(`
+            SELECT
+              SUM(duration_minutes) as total_minutes,
+              COUNT(*) as songs_played
+            FROM spotify_sessions
+            WHERE user_id = ? AND start_time >= ? AND status IN ('active', 'ended')
+          `).get(userId, userStat.last_monthly_reset) as any;
+
+          // Combine normal monthly stats with spanning session contributions
+          newMonthlyVoice = Math.round((monthlyVoiceStats?.total_minutes || 0) + spanningVoiceContribution);
+          newMonthlyGames = monthlyGameStats?.games_played || 0;
+          newMonthlyGameMinutes = Math.round((monthlyGameStats?.total_minutes || 0) + spanningGameContribution);
+          newMonthlySpotify = Math.round(monthlySpotifyStats?.total_minutes || 0);
+          newMonthlySpotifySongs = monthlySpotifyStats?.songs_played || 0;
+        }
 
         // Check if any values changed (including game minutes and spotify songs count)
+        // Also check monthly values to ensure they're always updated independently
         if (userStat.daily_voice_minutes !== newDailyVoice ||
             userStat.daily_games_played !== newDailyGames ||
             (userStat.daily_games_minutes || 0) !== newDailyGameMinutes ||
             userStat.daily_spotify_minutes !== newDailySpotify ||
-            userStat.daily_spotify_songs !== newDailySpotifySongs) {
-
-          // Calculate differences for monthly accumulation (real-time updates)
-          const voiceDiff = newDailyVoice - userStat.daily_voice_minutes;
-          const gamesDiff = newDailyGames - userStat.daily_games_played;
-          // For real-time monthly updates, we don't need to calculate differences
-          // We'll use Math.max() logic below to ensure monthly >= daily
-          const spotifyDiff = newDailySpotify - userStat.daily_spotify_minutes;
-
-          // Check if we need to reset monthly stats (if it's been more than 30 days)
-          const now = new Date();
-          const lastMonthlyReset = new Date(userStat.last_monthly_reset);
-          const daysSinceMonthlyReset = Math.floor((now.getTime() - lastMonthlyReset.getTime()) / (1000 * 60 * 60 * 24));
-          
-          let newMonthlyVoice = userStat.monthly_voice_minutes;
-          let newMonthlyGames = userStat.monthly_games_played;
-          let newMonthlyGameMinutes = userStat.monthly_games_minutes;
-          let newMonthlySpotify = userStat.monthly_spotify_minutes;
-          let newMonthlySpotifySongs = userStat.monthly_spotify_songs;
-          let newLastMonthlyReset = userStat.last_monthly_reset;
-
-          if (daysSinceMonthlyReset >= 30) {
-            // Reset monthly stats if it's been 30+ days
-            newMonthlyVoice = newDailyVoice;
-            newMonthlyGames = newDailyGames;
-            newMonthlyGameMinutes = newDailyGameMinutes;
-            newMonthlySpotify = newDailySpotify;
-            newMonthlySpotifySongs = newDailySpotifySongs;
-            newLastMonthlyReset = now.toISOString();
-          } else {
-            // Real-time monthly accumulation: set monthly values to current daily totals
-            // This ensures monthly counters update every minute with active sessions
-            newMonthlyVoice = Math.max(newMonthlyVoice, newDailyVoice);
-            newMonthlyGames = Math.max(newMonthlyGames, newDailyGames);
-            newMonthlyGameMinutes = Math.max(newMonthlyGameMinutes, newDailyGameMinutes);
-            newMonthlySpotify = Math.max(newMonthlySpotify, newDailySpotify);
-            newMonthlySpotifySongs = Math.max(newMonthlySpotifySongs, newDailySpotifySongs);
-          }
+            userStat.daily_spotify_songs !== newDailySpotifySongs ||
+            (userStat.daily_streaming_minutes || 0) !== newDailyStreaming ||
+            userStat.monthly_voice_minutes !== newMonthlyVoice ||
+            userStat.monthly_games_played !== newMonthlyGames ||
+            userStat.monthly_games_minutes !== newMonthlyGameMinutes ||
+            userStat.monthly_spotify_minutes !== newMonthlySpotify ||
+            userStat.monthly_spotify_songs !== newMonthlySpotifySongs) {
 
           // Update user stats
           const updatedStats = {
@@ -665,6 +735,7 @@ class DiscordGatewayService {
             daily_games_minutes: newDailyGameMinutes,
             daily_spotify_minutes: newDailySpotify,
             daily_spotify_songs: newDailySpotifySongs,
+            daily_streaming_minutes: newDailyStreaming,
             monthly_voice_minutes: newMonthlyVoice,
             monthly_games_played: newMonthlyGames,
             monthly_games_minutes: newMonthlyGameMinutes,
@@ -798,14 +869,14 @@ class DiscordGatewayService {
   public resetInMemoryCache() {
     console.log('🔄 Resetting Discord Gateway in-memory cache only...');
     const currentTime = new Date();
-    
+
     // Reset analytics service in-memory tracking first
     this.analyticsService.resetInMemoryTracking();
-    
+
     this.memberCache.forEach((member, userId) => {
       member.dailyOnlineTime = 0;
       member.lastDailyReset = currentTime;
-      
+
       // Only reset session start time for offline members
       // Online members need to keep tracking their current session
       if (member.status === 'offline') {
@@ -815,13 +886,51 @@ class DiscordGatewayService {
         member.sessionStartTime = currentTime;
         console.log(`🔄 Restarted session for online member: ${member.displayName}`);
       }
-      
+
       this.memberCache.set(userId, member);
     });
     console.log(`🔄 Reset in-memory cache for ${this.memberCache.size} members`);
-    
+
     // Re-initialize analytics tracking for currently online users
     this.reinitializeAnalyticsTracking();
+
+    // After reset, recreate active sessions based on current Discord state
+    setTimeout(() => {
+      const guild = this.client.guilds.cache.get(this.serverId);
+      if (guild) {
+        console.log('🔄 Recreating active sessions after reset...');
+        this.analyticsService.recoverExistingSessions(guild);
+      }
+    }, 1000); // Wait 1 second for reset to complete
+  }
+
+  // Reset only daily online time without restarting sessions (for daily reset)
+  public resetDailyOnlineTimeOnly() {
+    console.log('🔄 Resetting daily online time only (fresh session start)...');
+    const currentTime = new Date();
+    let resetCount = 0;
+
+    this.memberCache.forEach((member, userId) => {
+      if (member.dailyOnlineTime > 0 || member.sessionStartTime) {
+        member.dailyOnlineTime = 0;
+        member.lastDailyReset = currentTime;
+
+        // Reset session start time to current time for online members
+        // This makes their "session" start fresh from the daily reset time
+        if (member.status !== 'offline' && member.sessionStartTime) {
+          member.sessionStartTime = currentTime;
+          console.log(`🔄 Fresh session start for ${member.displayName} from daily reset time`);
+        } else if (member.status === 'offline') {
+          member.sessionStartTime = null;
+        }
+
+        this.memberCache.set(userId, member);
+        resetCount++;
+      }
+    });
+
+    console.log(`✅ Reset daily online time for ${resetCount} members with fresh session starts`);
+    return resetCount;
   }
 
   // Re-initialize analytics tracking for currently online users after reset
