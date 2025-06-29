@@ -549,6 +549,9 @@ class AnalyticsService {
       user.currentSpotify = { track, artist };
       user.spotifySessionId = result.lastInsertRowid as number;
       console.log(`🎵 Started Spotify session: ${user.displayName} listening to ${track} by ${artist}`);
+
+      // IMMEDIATE UPDATE: Update Spotify song count in user_stats immediately
+      this.updateSpotifySongCountImmediately(user.userId);
     } catch (error) {
       console.error('❌ Error starting Spotify session:', error);
     }
@@ -574,6 +577,69 @@ class AnalyticsService {
       user.spotifySessionId = undefined;
     } catch (error) {
       console.error('❌ Error ending Spotify session:', error);
+    }
+  }
+
+  // IMMEDIATE UPDATE: Update Spotify song count in user_stats immediately when a new song starts
+  private updateSpotifySongCountImmediately(userId: string) {
+    try {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      // Count today's Spotify songs (including active sessions for real-time updates)
+      const spotifyStats = this.db.getDatabase().prepare(`
+        SELECT COUNT(*) as songs_played
+        FROM spotify_sessions
+        WHERE user_id = ? AND date(start_time) = ? AND status IN ('active', 'ended')
+      `).get(userId, today) as any;
+
+      const newDailySpotifySongs = spotifyStats?.songs_played || 0;
+
+      // Get current user stats
+      let userStats = this.db.getUserStats(userId);
+      
+      if (!userStats) {
+        // Create new user stats if they don't exist
+        const now = new Date();
+        userStats = {
+          user_id: userId,
+          daily_online_minutes: 0,
+          daily_voice_minutes: 0,
+          daily_games_played: 0,
+          daily_games_minutes: 0,
+          daily_spotify_minutes: 0,
+          daily_spotify_songs: newDailySpotifySongs,
+          monthly_online_minutes: 0,
+          monthly_voice_minutes: 0,
+          monthly_games_played: 0,
+          monthly_games_minutes: 0,
+          monthly_spotify_minutes: 0,
+          monthly_spotify_songs: newDailySpotifySongs,
+          last_daily_reset: now.toISOString(),
+          last_monthly_reset: now.toISOString(),
+          created_at: now.toISOString(),
+          updated_at: now.toISOString()
+        };
+      } else {
+        // Update existing user stats with new song count
+        const now = new Date();
+        
+        // Real-time monthly accumulation: use Math.max() to ensure monthly >= daily
+        const newMonthlySpotifySongs = Math.max(userStats.monthly_spotify_songs, newDailySpotifySongs);
+        
+        userStats = {
+          ...userStats,
+          daily_spotify_songs: newDailySpotifySongs,
+          monthly_spotify_songs: newMonthlySpotifySongs,
+          updated_at: now.toISOString()
+        };
+      }
+
+      // Save updated stats to database
+      this.db.upsertUserStats(userStats);
+      
+      console.log(`🎵 IMMEDIATE UPDATE: Updated Spotify song count for user ${userId}: ${newDailySpotifySongs} daily songs, ${userStats.monthly_spotify_songs} monthly songs`);
+    } catch (error) {
+      console.error(`❌ Error updating Spotify song count immediately for ${userId}:`, error);
     }
   }
 
