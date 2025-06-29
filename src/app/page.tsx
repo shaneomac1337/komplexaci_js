@@ -7,8 +7,7 @@ import Header from './components/Header';
 import ServerStatus from './components/ServerStatus';
 import DiscordServerStats from './components/DiscordServerStats';
 import MostActiveMembers from './components/MostActiveMembers';
-import DailyAwards from './components/DailyAwards';
-import AwardsRankingModal from './components/AwardsRankingModal';
+
 import PerformanceStatus from '../components/PerformanceStatus';
 
 
@@ -254,10 +253,7 @@ export default function Home() {
   // Discord stats for Most Active Members
   const [discordStats, setDiscordStats] = useState<any>(null);
 
-  // Awards modal state
-  const [isAwardsModalOpen, setIsAwardsModalOpen] = useState(false);
-  const [selectedAwardCategory, setSelectedAwardCategory] = useState<string>('');
-  const [selectedAward, setSelectedAward] = useState<any>(null);
+
 
   const [scrollDownTimeout, setScrollDownTimeout] = useState<NodeJS.Timeout | null>(null);
   const [activityTimeout, setActivityTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -828,12 +824,7 @@ export default function Home() {
     return () => clearInterval(interval);
   }, []);
 
-  // Handle award click to open ranking modal
-  const handleAwardClick = (category: string, award: any) => {
-    setSelectedAwardCategory(category);
-    setSelectedAward(award);
-    setIsAwardsModalOpen(true);
-  };
+
 
   // Inactivity-based auto-hide (only when music is paused)
   useEffect(() => {
@@ -1685,8 +1676,7 @@ export default function Home() {
                   </div>
                 </div>
 
-                {/* Daily Awards */}
-                <DailyAwards onAwardClick={handleAwardClick} />
+
 
               </div>
             </div>
@@ -2008,13 +1998,7 @@ export default function Home() {
         )}
       </div>
 
-      {/* Awards Ranking Modal */}
-      <AwardsRankingModal
-        isOpen={isAwardsModalOpen}
-        onClose={() => setIsAwardsModalOpen(false)}
-        category={selectedAwardCategory}
-        award={selectedAward}
-      />
+
       </div>
     </>
   );

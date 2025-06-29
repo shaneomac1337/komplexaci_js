@@ -1,9 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
 import DiscordAvatar from './DiscordAvatar';
-import UserAnalyticsModal from './UserAnalyticsModal';
-import { DailyAward } from '@/app/api/analytics/awards/daily/route';
 
 interface ActiveMember {
   id: string;
@@ -30,49 +27,6 @@ function extractAvatarHash(avatarUrl: string): string | null {
 }
 
 export default function MostActiveMembers({ members, dataSource }: MostActiveMembersProps) {
-  const [selectedUser, setSelectedUser] = useState<ActiveMember | null>(null);
-  const [awards, setAwards] = useState<DailyAward[]>([]);
-  const [awardWinners, setAwardWinners] = useState<Set<string>>(new Set());
-
-  // Fetch daily awards to show badges
-  useEffect(() => {
-    const fetchAwards = async () => {
-      try {
-        const response = await fetch('/api/analytics/awards/daily', {
-          cache: 'no-store'
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) {
-            setAwards(data.awards);
-
-            // Create set of winner IDs for quick lookup
-            const winners = new Set<string>();
-            data.awards.forEach((award: DailyAward) => {
-              if (award.winner) {
-                winners.add(award.winner.id);
-              }
-            });
-            setAwardWinners(winners);
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching awards for badges:', error);
-      }
-    };
-
-    fetchAwards();
-
-    // Refresh awards every 5 minutes
-    const interval = setInterval(fetchAwards, 5 * 60 * 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  // Get user's award badges
-  const getUserBadges = (userId: string): DailyAward[] => {
-    return awards.filter(award => award.winner?.id === userId);
-  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -152,10 +106,9 @@ export default function MostActiveMembers({ members, dataSource }: MostActiveMem
           const activityLevel = getActivityLevel(member.dailyOnlineTime);
 
           return (
-            <button
+            <div
               key={member.id}
-              onClick={() => setSelectedUser(member)}
-              className="w-full flex items-center space-x-3 p-2 rounded-lg bg-gray-800/30 hover:bg-gray-800/50 transition-colors cursor-pointer group"
+              className="w-full flex items-center space-x-3 p-2 rounded-lg bg-gray-800/30"
             >
               {/* Rank */}
               <div className="flex-shrink-0 w-8 text-center">
@@ -178,41 +131,20 @@ export default function MostActiveMembers({ members, dataSource }: MostActiveMem
 
               {/* Member info */}
               <div className="flex-1 min-w-0 text-left">
-                <div className="flex items-center gap-2">
-                  <div className="text-white font-medium text-sm truncate group-hover:text-blue-300 transition-colors">{member.displayName}</div>
-                  {/* Award Badges */}
-                  {getUserBadges(member.id).map((award) => (
-                    <div
-                      key={award.category}
-                      className="flex-shrink-0 text-xs bg-yellow-500/20 border border-yellow-500/40 rounded-full px-1.5 py-0.5 flex items-center gap-1"
-                      title={`${award.czechTitle} - ${award.winner?.value} ${award.winner?.unit}`}
-                    >
-                      <span className="text-xs">{award.icon}</span>
-                    </div>
-                  ))}
-                </div>
-                <div className="flex items-center space-x-2 text-xs">
+                <div className="text-white font-medium text-sm truncate">{member.displayName}</div>
+                <div className="text-xs">
                   <span className={activityLevel.color}>{activityLevel.text}</span>
-                  <span className="text-gray-500">•</span>
-                  <span className="text-gray-400">Klikni pro statistiky</span>
                 </div>
               </div>
 
               {/* Daily Time */}
               <div className="flex-shrink-0 text-right">
-                <div className="text-xs text-green-300 font-semibold group-hover:text-blue-300 transition-colors">{formatOnlineTime(member.dailyOnlineTime)}</div>
+                <div className="text-xs text-green-300 font-semibold">{formatOnlineTime(member.dailyOnlineTime)}</div>
                 <div className="text-xs text-gray-500">dnes</div>
               </div>
-            </button>
+            </div>
           );
         })}
-      </div>
-
-      {/* Info Text */}
-      <div className="mt-3 pt-2 border-t border-gray-600/30">
-        <p className="text-xs text-gray-500 text-center">
-          💡 Klikni na uživatele pro zobrazení detailních statistik
-        </p>
       </div>
 
       {/* Footer info */}
@@ -237,17 +169,6 @@ export default function MostActiveMembers({ members, dataSource }: MostActiveMem
           </div>
         </div>
       </div>
-
-      {/* User Analytics Modal */}
-      {selectedUser && (
-        <UserAnalyticsModal
-          isOpen={!!selectedUser}
-          onClose={() => setSelectedUser(null)}
-          userId={selectedUser.id}
-          displayName={selectedUser.displayName}
-          avatar={selectedUser.avatar ? extractAvatarHash(selectedUser.avatar) : null}
-        />
-      )}
     </div>
   );
 }
