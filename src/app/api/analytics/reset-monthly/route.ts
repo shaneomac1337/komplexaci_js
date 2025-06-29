@@ -116,9 +116,12 @@ export async function POST(request: NextRequest) {
 
     console.log(`📸 Created ${monthlySnapshotsCreated} monthly snapshots for ${previousMonth}`);
 
-    // Reset monthly stats in user_stats table
+    // Reset monthly stats in user_stats table (this doesn't affect active sessions)
     const resetResult = db.resetMonthlyStats();
     console.log(`🔄 Reset monthly stats for all users: ${resetResult.changes} records updated`);
+
+    // Note: We don't end active sessions during monthly reset - they continue tracking
+    console.log(`ℹ️ Active sessions continue tracking across monthly reset boundary`);
 
     // Also reset current month's monthly snapshots to 0 (for backward compatibility)
     const snapshotResetCount = db.getDatabase().prepare(`

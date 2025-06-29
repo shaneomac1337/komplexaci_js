@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAnalyticsDatabase } from '@/lib/analytics/database';
 import { getDiscordGateway } from '@/lib/discord-gateway';
+import { getAnalyticsService } from '@/lib/analytics/service';
 
 /**
  * Daily Analytics Reset API
@@ -19,13 +20,14 @@ export async function POST(request: NextRequest) {
 
     console.log(`🌅 Starting daily reset for ${today}`);
 
-    // Reset Discord Gateway in-memory cache first
-    console.log('🔄 Resetting Discord Gateway in-memory cache...');
+    // Reset Discord Gateway daily online time without restarting sessions
+    console.log('🔄 Resetting Discord Gateway daily online time...');
     if (gateway.isReady()) {
-      gateway.resetInMemoryCache();
-      console.log('✅ Discord Gateway in-memory cache reset completed');
+      // Reset daily online time in member cache without restarting sessions
+      gateway.resetDailyOnlineTimeOnly();
+      console.log('✅ Discord Gateway daily online time reset');
     } else {
-      console.log('⚠️ Discord Gateway not ready, skipping in-memory cache reset');
+      console.log('⚠️ Discord Gateway not ready, skipping daily online time reset');
     }
 
     // Get current user stats before reset
@@ -68,26 +70,31 @@ export async function POST(request: NextRequest) {
 
     console.log(`🔄 Reset ${snapshotResetCount.changes} daily snapshots for ${today}`);
 
-    // Mark all active sessions as 'stale' to prevent data leakage
-    const staleGameSessions = db.getDatabase().prepare(`
-      UPDATE game_sessions 
-      SET status = 'stale', end_time = ?, last_updated = CURRENT_TIMESTAMP
+    // End all active sessions properly (but don't mark as stale - let Discord Gateway recreate them)
+    const endedGameSessions = db.getDatabase().prepare(`
+      UPDATE game_sessions
+      SET status = 'ended', end_time = ?, last_updated = CURRENT_TIMESTAMP
       WHERE status = 'active'
     `).run(now.toISOString());
 
-    const staleVoiceSessions = db.getDatabase().prepare(`
-      UPDATE voice_sessions 
-      SET status = 'stale', end_time = ?, last_updated = CURRENT_TIMESTAMP
+    const endedVoiceSessions = db.getDatabase().prepare(`
+      UPDATE voice_sessions
+      SET status = 'ended', end_time = ?, last_updated = CURRENT_TIMESTAMP
       WHERE status = 'active'
     `).run(now.toISOString());
 
-    const staleSpotifySessions = db.getDatabase().prepare(`
-      UPDATE spotify_sessions 
-      SET status = 'stale', end_time = ?, last_updated = CURRENT_TIMESTAMP
+    const endedSpotifySessions = db.getDatabase().prepare(`
+      UPDATE spotify_sessions
+      SET status = 'ended', end_time = ?, last_updated = CURRENT_TIMESTAMP
       WHERE status = 'active'
     `).run(now.toISOString());
 
-    console.log(`🔄 Marked ${staleGameSessions.changes} game sessions, ${staleVoiceSessions.changes} voice sessions, and ${staleSpotifySessions.changes} Spotify sessions as stale`);
+    console.log(`🔄 Ended ${endedGameSessions.changes} game sessions, ${endedVoiceSessions.changes} voice sessions, and ${endedSpotifySessions.changes} Spotify sessions`);
+
+    // Note: We don't immediately restart analytics tracking after daily reset
+    // This ensures awards start completely fresh at 0 progress
+    // Tracking will restart naturally when users perform new activities (join voice, start games, etc.)
+    console.log('ℹ️ Analytics tracking will restart naturally when users perform new activities');
 
     // Get summary of reset operation
     const summary = {
@@ -96,10 +103,10 @@ export async function POST(request: NextRequest) {
       gatewayReset: gateway.isReady(),
       userStatsReset: resetResult.changes,
       dailySnapshotsReset: snapshotResetCount.changes,
-      sessionsMarkedStale: {
-        game: staleGameSessions.changes,
-        voice: staleVoiceSessions.changes,
-        spotify: staleSpotifySessions.changes
+      sessionsEnded: {
+        game: endedGameSessions.changes,
+        voice: endedVoiceSessions.changes,
+        spotify: endedSpotifySessions.changes
       },
       historicalSnapshotsCreated: currentUserStats.filter(s =>
         s.daily_online_minutes > 0 || s.daily_voice_minutes > 0 ||

@@ -63,7 +63,23 @@ class AnalyticsService {
   public recoverExistingSessions(discordGuild: any) {
     console.log('🔄 Checking Discord real-time state for existing sessions...');
     let recoveredSessions = 0;
-    const startTime = new Date();
+    const currentTime = new Date();
+
+    // FIRST: Clean up any existing active sessions to prevent duplicates
+    console.log('🧹 Cleaning up existing active sessions before recovery...');
+    this.endAllActiveSessions(currentTime);
+
+    // Check if this is a fresh daily reset (within 10 minutes of midnight Czech time)
+    const czechTime = new Date(currentTime.toLocaleString("en-US", {timeZone: "Europe/Prague"}));
+    const minutesSinceMidnight = czechTime.getHours() * 60 + czechTime.getMinutes();
+    const isFreshDailyReset = minutesSinceMidnight <= 10; // Within 10 minutes of midnight
+
+    // Use minimal backdate estimation to avoid inflated gaming minutes
+    // If it's a fresh daily reset, don't backdate at all
+    const estimatedBackdateMinutes = isFreshDailyReset ? 0 : 1; // No backdate on fresh reset, minimal otherwise
+    const estimatedStartTime = new Date(currentTime.getTime() - (estimatedBackdateMinutes * 60 * 1000));
+
+    console.log(`🕐 Session recovery: ${isFreshDailyReset ? 'Fresh daily reset detected' : 'Normal recovery'}, backdate: ${estimatedBackdateMinutes}m`);
 
     try {
       if (!discordGuild) {
@@ -103,7 +119,7 @@ class AnalyticsService {
               }
 
               // Start fresh game session
-              this.startGameSession(user, activity.name, startTime);
+              this.startGameSession(user, activity.name, estimatedStartTime);
               recoveredSessions++;
               break; // Only one game at a time
             } else if (activity.type === 2 && activity.name === 'Spotify') { // Spotify
@@ -122,7 +138,7 @@ class AnalyticsService {
               }
 
               // Start fresh Spotify session
-              this.startSpotifySession(user, activity.details || 'Unknown Track', activity.state || 'Unknown Artist', startTime);
+              this.startSpotifySession(user, activity.details || 'Unknown Track', activity.state || 'Unknown Artist', estimatedStartTime);
               recoveredSessions++;
             }
           }
@@ -150,10 +166,10 @@ class AnalyticsService {
           user.voiceChannelName = member.voice.channel.name;
           user.isStreaming = member.voice.streaming || false;
 
-          this.startVoiceSession(user, member.voice.channel.id, member.voice.channel.name, startTime);
+          this.startVoiceSession(user, member.voice.channel.id, member.voice.channel.name, estimatedStartTime);
 
           if (user.isStreaming) {
-            user.streamingStartTime = startTime;
+            user.streamingStartTime = estimatedStartTime;
             console.log(`📺 User ${displayName} is currently streaming`);
           }
 
@@ -379,6 +395,9 @@ class AnalyticsService {
       user.currentGame = gameName;
       user.gameSessionId = result.lastInsertRowid as number;
       console.log(`🎮 Started game session: ${user.displayName} playing ${gameName} (Session ID: ${user.gameSessionId})`);
+
+      // IMMEDIATE UPDATE: Update game time in user_stats immediately
+      this.updateGameTimeImmediately(user.userId);
     } catch (error) {
       console.error('❌ Error starting game session:', error);
     }
@@ -643,6 +662,75 @@ class AnalyticsService {
     }
   }
 
+  // IMMEDIATE UPDATE: Update game time in user_stats immediately when a game starts or progresses
+  private updateGameTimeImmediately(userId: string) {
+    try {
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      
+      // Count today's game time (including active sessions for real-time updates)
+      const gameStats = this.db.getDatabase().prepare(`
+        SELECT
+          SUM(duration_minutes) as total_minutes,
+          COUNT(DISTINCT game_name) as games_played
+        FROM game_sessions
+        WHERE user_id = ? AND date(start_time) = ? AND status IN ('active', 'ended')
+      `).get(userId, today) as any;
+
+      const newDailyGameMinutes = gameStats?.total_minutes || 0;
+      const newDailyGamesPlayed = gameStats?.games_played || 0;
+
+      // Get current user stats
+      let userStats = this.db.getUserStats(userId);
+      
+      if (!userStats) {
+        // Create new user stats if they don't exist
+        const now = new Date();
+        userStats = {
+          user_id: userId,
+          daily_online_minutes: 0,
+          daily_voice_minutes: 0,
+          daily_games_played: newDailyGamesPlayed,
+          daily_games_minutes: newDailyGameMinutes,
+          daily_spotify_minutes: 0,
+          daily_spotify_songs: 0,
+          monthly_online_minutes: 0,
+          monthly_voice_minutes: 0,
+          monthly_games_played: newDailyGamesPlayed,
+          monthly_games_minutes: newDailyGameMinutes,
+          monthly_spotify_minutes: 0,
+          monthly_spotify_songs: 0,
+          last_daily_reset: now.toISOString(),
+          last_monthly_reset: now.toISOString(),
+          created_at: now.toISOString(),
+          updated_at: now.toISOString()
+        };
+      } else {
+        // Update existing user stats with new game time
+        const now = new Date();
+        
+        // Real-time monthly accumulation: use Math.max() to ensure monthly >= daily
+        const newMonthlyGameMinutes = Math.max(userStats.monthly_games_minutes, newDailyGameMinutes);
+        const newMonthlyGamesPlayed = Math.max(userStats.monthly_games_played, newDailyGamesPlayed);
+        
+        userStats = {
+          ...userStats,
+          daily_games_played: newDailyGamesPlayed,
+          daily_games_minutes: newDailyGameMinutes,
+          monthly_games_played: newMonthlyGamesPlayed,
+          monthly_games_minutes: newMonthlyGameMinutes,
+          updated_at: now.toISOString()
+        };
+      }
+
+      // Save updated stats to database
+      this.db.upsertUserStats(userStats);
+      
+      console.log(`🎮 IMMEDIATE UPDATE: Updated game time for user ${userId}: ${newDailyGameMinutes} daily minutes (${newDailyGamesPlayed} games), ${userStats.monthly_games_minutes} monthly minutes`);
+    } catch (error) {
+      console.error(`❌ Error updating game time immediately for ${userId}:`, error);
+    }
+  }
+
   private endAllUserSessions(user: UserActivity, endTime: Date) {
     if (user.gameSessionId) {
       this.endGameSession(user, endTime);
@@ -694,6 +782,42 @@ class AnalyticsService {
       const currentTime = new Date();
       this.endAllUserSessions(user, currentTime);
       console.log(`🔧 Force ended all active sessions for ${user.displayName}`);
+    }
+  }
+
+  // End all active sessions in the database (used during session recovery)
+  private endAllActiveSessions(endTime: Date) {
+    try {
+      const endTimeISO = endTime.toISOString();
+
+      // End all active game sessions
+      const gameResult = this.db.getDatabase().prepare(`
+        UPDATE game_sessions
+        SET status = 'ended', end_time = ?, last_updated = CURRENT_TIMESTAMP
+        WHERE status = 'active'
+      `).run(endTimeISO);
+
+      // End all active voice sessions
+      const voiceResult = this.db.getDatabase().prepare(`
+        UPDATE voice_sessions
+        SET status = 'ended', end_time = ?, last_updated = CURRENT_TIMESTAMP
+        WHERE status = 'active'
+      `).run(endTimeISO);
+
+      // End all active Spotify sessions
+      const spotifyResult = this.db.getDatabase().prepare(`
+        UPDATE spotify_sessions
+        SET status = 'ended', end_time = ?, last_updated = CURRENT_TIMESTAMP
+        WHERE status = 'active'
+      `).run(endTimeISO);
+
+      console.log(`🧹 Ended ${gameResult.changes} game sessions, ${voiceResult.changes} voice sessions, ${spotifyResult.changes} Spotify sessions`);
+
+      // Clear active users map to start fresh
+      this.activeUsers.clear();
+
+    } catch (error) {
+      console.error('❌ Error ending all active sessions:', error);
     }
   }
 
@@ -831,6 +955,9 @@ class AnalyticsService {
             updatedSessions++;
 
             console.log(`📊 Updated game session: ${user.displayName} playing ${user.currentGame} - ${durationMinutes}m`);
+
+            // IMMEDIATE UPDATE: Update game time in user_stats immediately
+            this.updateGameTimeImmediately(userId);
           } else {
             console.warn(`⚠️ Game session not found for ${user.displayName} (ID: ${user.gameSessionId})`);
           }
