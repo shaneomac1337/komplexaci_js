@@ -439,6 +439,9 @@ class DiscordGatewayService {
 
     // Save daily stats to database every minute for real-time persistence
     this.saveDailyStatsToDatabase();
+    
+    // Update calculated stats (voice, games, spotify) every minute
+    this.updateCalculatedStats();
   }
 
   private restoreDailyOnlineTime(userId: string, date: string) {
@@ -498,6 +501,7 @@ class DiscordGatewayService {
   private updateUserStatsInDatabase(userId: string, member: CachedMember) {
     try {
       const analyticsDb = getAnalyticsDatabase();
+      const now = new Date();
       
       // Get current user stats or create new ones
       let userStats = analyticsDb.getUserStats(userId);
@@ -513,26 +517,160 @@ class DiscordGatewayService {
           monthly_online_minutes: Math.round(member.dailyOnlineTime),
           monthly_voice_minutes: 0,
           monthly_games_played: 0,
+          monthly_games_minutes: 0,
           monthly_spotify_minutes: 0,
-          last_daily_reset: new Date().toISOString(),
-          last_monthly_reset: new Date().toISOString(),
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString()
+          last_daily_reset: now.toISOString(),
+          last_monthly_reset: now.toISOString(),
+          created_at: now.toISOString(),
+          updated_at: now.toISOString()
         };
         
-        console.log(`📊 Created new user stats for ${member.displayName}: ${userStats.daily_online_minutes}m daily`);
+        console.log(`📊 Created new user stats for ${member.displayName}: ${userStats!.daily_online_minutes}m daily, ${userStats!.monthly_online_minutes}m monthly`);
       } else {
-        // Update existing stats - only update daily minutes, don't accumulate
+        // Check if we need to reset monthly stats (if it's been more than 30 days since last monthly reset)
+        const lastMonthlyReset = new Date(userStats.last_monthly_reset);
+        const daysSinceMonthlyReset = Math.floor((now.getTime() - lastMonthlyReset.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysSinceMonthlyReset >= 30) {
+          // Reset monthly stats if it's been 30+ days
+          userStats.monthly_online_minutes = Math.round(member.dailyOnlineTime);
+          userStats.monthly_voice_minutes = 0;
+          userStats.monthly_games_played = 0;
+          userStats.monthly_games_minutes = 0;
+          userStats.monthly_spotify_minutes = 0;
+          userStats.last_monthly_reset = now.toISOString();
+          console.log(`🗓️ Auto-reset monthly stats for ${member.displayName} (${daysSinceMonthlyReset} days since last reset)`);
+        } else {
+          // Update monthly stats by calculating the difference in daily minutes
+          const previousDaily = userStats.daily_online_minutes;
+          const currentDaily = Math.round(member.dailyOnlineTime);
+          const dailyDifference = currentDaily - previousDaily;
+          
+          // Only add positive differences to monthly total (in case of corrections)
+          if (dailyDifference > 0) {
+            userStats.monthly_online_minutes += dailyDifference;
+          }
+        }
+        
+        // Always update daily stats
         const previousDaily = userStats.daily_online_minutes;
         userStats.daily_online_minutes = Math.round(member.dailyOnlineTime);
-        userStats.updated_at = new Date().toISOString();
+        userStats.updated_at = now.toISOString();
         
-        console.log(`📊 Updated user stats for ${member.displayName}: ${previousDaily}m -> ${userStats.daily_online_minutes}m daily`);
+        console.log(`📊 Updated user stats for ${member.displayName}: ${previousDaily}m -> ${userStats.daily_online_minutes}m daily, ${userStats.monthly_online_minutes}m monthly`);
       }
 
-      analyticsDb.upsertUserStats(userStats);
+      analyticsDb.upsertUserStats(userStats!);
     } catch (error) {
       console.error(`❌ Error updating user stats for ${userId}:`, error);
+    }
+  }
+
+  // Update calculated stats (voice, games, spotify) for all users
+  private updateCalculatedStats() {
+    try {
+      const analyticsDb = getAnalyticsDatabase();
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      let updatedCount = 0;
+
+      // Get all users who have stats in user_stats table
+      const allUserStats = analyticsDb.getAllUserStats();
+      
+      for (const userStat of allUserStats) {
+        const userId = userStat.user_id;
+        
+        // Calculate today's stats from session tables
+        const gameStats = analyticsDb.getDatabase().prepare(`
+          SELECT
+            SUM(duration_minutes) as total_minutes,
+            COUNT(DISTINCT game_name) as games_played
+          FROM game_sessions
+          WHERE user_id = ? AND date(start_time) = ? AND status IN ('active', 'ended')
+        `).get(userId, today) as any;
+
+        const voiceStats = analyticsDb.getDatabase().prepare(`
+          SELECT SUM(duration_minutes) as total_minutes
+          FROM voice_sessions
+          WHERE user_id = ? AND date(start_time) = ? AND status IN ('active', 'ended')
+        `).get(userId, today) as any;
+
+        const spotifyStats = analyticsDb.getDatabase().prepare(`
+          SELECT SUM(duration_minutes) as total_minutes
+          FROM spotify_sessions
+          WHERE user_id = ? AND date(start_time) = ? AND status IN ('active', 'ended')
+        `).get(userId, today) as any;
+
+        // Calculate new daily values
+        const newDailyVoice = Math.round(voiceStats?.total_minutes || 0);
+        const newDailyGames = gameStats?.games_played || 0;
+        const newDailyGameMinutes = Math.round(gameStats?.total_minutes || 0);
+        const newDailySpotify = Math.round(spotifyStats?.total_minutes || 0);
+
+        // Check if any values changed (note: we don't track daily_games_minutes, only monthly)
+        if (userStat.daily_voice_minutes !== newDailyVoice ||
+            userStat.daily_games_played !== newDailyGames ||
+            userStat.daily_spotify_minutes !== newDailySpotify) {
+
+          // Calculate differences for monthly accumulation
+          const voiceDiff = newDailyVoice - userStat.daily_voice_minutes;
+          const gamesDiff = newDailyGames - userStat.daily_games_played;
+          const gameMinutesDiff = newDailyGameMinutes; // For monthly games minutes, we accumulate the total daily amount
+          const spotifyDiff = newDailySpotify - userStat.daily_spotify_minutes;
+
+          // Check if we need to reset monthly stats (if it's been more than 30 days)
+          const now = new Date();
+          const lastMonthlyReset = new Date(userStat.last_monthly_reset);
+          const daysSinceMonthlyReset = Math.floor((now.getTime() - lastMonthlyReset.getTime()) / (1000 * 60 * 60 * 24));
+          
+          let newMonthlyVoice = userStat.monthly_voice_minutes;
+          let newMonthlyGames = userStat.monthly_games_played;
+          let newMonthlyGameMinutes = userStat.monthly_games_minutes;
+          let newMonthlySpotify = userStat.monthly_spotify_minutes;
+          let newLastMonthlyReset = userStat.last_monthly_reset;
+
+          if (daysSinceMonthlyReset >= 30) {
+            // Reset monthly stats if it's been 30+ days
+            newMonthlyVoice = newDailyVoice;
+            newMonthlyGames = newDailyGames;
+            newMonthlyGameMinutes = newDailyGameMinutes;
+            newMonthlySpotify = newDailySpotify;
+            newLastMonthlyReset = now.toISOString();
+          } else {
+            // Accumulate positive differences to monthly totals
+            if (voiceDiff > 0) newMonthlyVoice += voiceDiff;
+            if (gamesDiff > 0) newMonthlyGames += gamesDiff;
+            if (gameMinutesDiff > 0) newMonthlyGameMinutes += gameMinutesDiff;
+            if (spotifyDiff > 0) newMonthlySpotify += spotifyDiff;
+          }
+
+          // Update user stats
+          const updatedStats = {
+            ...userStat,
+            daily_voice_minutes: newDailyVoice,
+            daily_games_played: newDailyGames,
+            daily_spotify_minutes: newDailySpotify,
+            monthly_voice_minutes: newMonthlyVoice,
+            monthly_games_played: newMonthlyGames,
+            monthly_games_minutes: newMonthlyGameMinutes,
+            monthly_spotify_minutes: newMonthlySpotify,
+            last_monthly_reset: newLastMonthlyReset,
+            updated_at: now.toISOString()
+          };
+
+          analyticsDb.upsertUserStats(updatedStats);
+          updatedCount++;
+
+          const member = this.memberCache.get(userId);
+          const displayName = member?.displayName || userId;
+          console.log(`📊 Updated calculated stats for ${displayName}: voice ${userStat.daily_voice_minutes}→${newDailyVoice}m, games ${userStat.daily_games_played}→${newDailyGames} (${userStat.monthly_games_minutes}→${newMonthlyGameMinutes}m monthly), spotify ${userStat.daily_spotify_minutes}→${newDailySpotify}m`);
+        }
+      }
+
+      if (updatedCount > 0) {
+        console.log(`📊 Updated calculated stats for ${updatedCount} users`);
+      }
+    } catch (error) {
+      console.error('❌ Error updating calculated stats:', error);
     }
   }
 

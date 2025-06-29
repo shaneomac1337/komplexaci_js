@@ -21,6 +21,7 @@ export interface UserStats {
   monthly_online_minutes: number;
   monthly_voice_minutes: number;
   monthly_games_played: number;
+  monthly_games_minutes: number;
   monthly_spotify_minutes: number;
   last_daily_reset: string;
   last_monthly_reset: string;
@@ -137,6 +138,7 @@ class AnalyticsDatabase {
           monthly_online_minutes INTEGER DEFAULT 0,
           monthly_voice_minutes INTEGER DEFAULT 0,
           monthly_games_played INTEGER DEFAULT 0,
+          monthly_games_minutes INTEGER DEFAULT 0,
           monthly_spotify_minutes INTEGER DEFAULT 0,
           last_daily_reset TEXT DEFAULT CURRENT_TIMESTAMP,
           last_monthly_reset TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -209,6 +211,7 @@ class AnalyticsDatabase {
       const gameSessionsInfo = this.db.pragma('table_info(game_sessions)') as any[];
       const voiceSessionsInfo = this.db.pragma('table_info(voice_sessions)') as any[];
       const spotifySessionsInfo = this.db.pragma('table_info(spotify_sessions)') as any[];
+      const userStatsInfo = this.db.pragma('table_info(user_stats)') as any[];
 
       const gameHasLastUpdated = gameSessionsInfo.some((col: any) => col.name === 'last_updated');
       const gameHasStatus = gameSessionsInfo.some((col: any) => col.name === 'status');
@@ -216,10 +219,12 @@ class AnalyticsDatabase {
       const voiceHasStatus = voiceSessionsInfo.some((col: any) => col.name === 'status');
       const spotifyHasLastUpdated = spotifySessionsInfo.some((col: any) => col.name === 'last_updated');
       const spotifyHasStatus = spotifySessionsInfo.some((col: any) => col.name === 'status');
+      const userStatsHasMonthlyGamesMinutes = userStatsInfo.some((col: any) => col.name === 'monthly_games_minutes');
 
       const needsMigration = !gameHasLastUpdated || !gameHasStatus ||
                             !voiceHasLastUpdated || !voiceHasStatus ||
-                            !spotifyHasLastUpdated || !spotifyHasStatus;
+                            !spotifyHasLastUpdated || !spotifyHasStatus ||
+                            !userStatsHasMonthlyGamesMinutes;
 
       if (needsMigration) {
         console.log('🔄 Migrating existing session data...');
@@ -252,6 +257,12 @@ class AnalyticsDatabase {
         if (!spotifyHasStatus) {
           this.db.exec(`ALTER TABLE spotify_sessions ADD COLUMN status TEXT DEFAULT 'active';`);
           console.log('✅ Added status column to spotify_sessions');
+        }
+
+        // Add missing monthly_games_minutes column to user_stats
+        if (!userStatsHasMonthlyGamesMinutes) {
+          this.db.exec(`ALTER TABLE user_stats ADD COLUMN monthly_games_minutes INTEGER DEFAULT 0;`);
+          console.log('✅ Added monthly_games_minutes column to user_stats');
         }
 
         // Update existing records: mark sessions with end_time as 'ended', others as 'stale'
@@ -664,10 +675,10 @@ class AnalyticsDatabase {
     const stmt = this.db.prepare(`
       INSERT INTO user_stats (
         user_id, daily_online_minutes, daily_voice_minutes, daily_games_played, daily_spotify_minutes,
-        monthly_online_minutes, monthly_voice_minutes, monthly_games_played, monthly_spotify_minutes,
+        monthly_online_minutes, monthly_voice_minutes, monthly_games_played, monthly_games_minutes, monthly_spotify_minutes,
         last_daily_reset, last_monthly_reset
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET
         daily_online_minutes = excluded.daily_online_minutes,
         daily_voice_minutes = excluded.daily_voice_minutes,
@@ -676,6 +687,7 @@ class AnalyticsDatabase {
         monthly_online_minutes = excluded.monthly_online_minutes,
         monthly_voice_minutes = excluded.monthly_voice_minutes,
         monthly_games_played = excluded.monthly_games_played,
+        monthly_games_minutes = excluded.monthly_games_minutes,
         monthly_spotify_minutes = excluded.monthly_spotify_minutes,
         last_daily_reset = excluded.last_daily_reset,
         last_monthly_reset = excluded.last_monthly_reset,
@@ -683,7 +695,7 @@ class AnalyticsDatabase {
     `);
     return stmt.run(
       stats.user_id, stats.daily_online_minutes, stats.daily_voice_minutes, stats.daily_games_played, stats.daily_spotify_minutes,
-      stats.monthly_online_minutes, stats.monthly_voice_minutes, stats.monthly_games_played, stats.monthly_spotify_minutes,
+      stats.monthly_online_minutes, stats.monthly_voice_minutes, stats.monthly_games_played, stats.monthly_games_minutes, stats.monthly_spotify_minutes,
       stats.last_daily_reset, stats.last_monthly_reset
     );
   }
@@ -739,6 +751,7 @@ class AnalyticsDatabase {
           monthly_online_minutes = 0,
           monthly_voice_minutes = 0,
           monthly_games_played = 0,
+          monthly_games_minutes = 0,
           monthly_spotify_minutes = 0,
           last_monthly_reset = ?,
           updated_at = CURRENT_TIMESTAMP
@@ -752,6 +765,7 @@ class AnalyticsDatabase {
           monthly_online_minutes = 0,
           monthly_voice_minutes = 0,
           monthly_games_played = 0,
+          monthly_games_minutes = 0,
           monthly_spotify_minutes = 0,
           last_monthly_reset = ?,
           updated_at = CURRENT_TIMESTAMP

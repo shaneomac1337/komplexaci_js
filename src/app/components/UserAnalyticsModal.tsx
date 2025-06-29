@@ -202,7 +202,7 @@ export default function UserAnalyticsModal({ isOpen, onClose, userId, displayNam
                         <span className="text-xl sm:text-2xl">🎮</span>
                         <div>
                           <div className="text-white font-medium text-sm sm:text-base">Hry</div>
-                          <div className="text-[#b9bbbe] text-xs sm:text-sm">30 dní</div>
+                          <div className="text-[#b9bbbe] text-xs sm:text-sm">Měsíc</div>
                         </div>
                       </div>
                       <div className="text-lg sm:text-xl font-bold text-white">
@@ -215,7 +215,7 @@ export default function UserAnalyticsModal({ isOpen, onClose, userId, displayNam
                         <span className="text-xl sm:text-2xl">🎤</span>
                         <div>
                           <div className="text-white font-medium text-sm sm:text-base">Voice</div>
-                          <div className="text-[#b9bbbe] text-xs sm:text-sm">30 dní</div>
+                          <div className="text-[#b9bbbe] text-xs sm:text-sm">Měsíc</div>
                         </div>
                       </div>
                       <div className="text-lg sm:text-xl font-bold text-white">
@@ -228,7 +228,7 @@ export default function UserAnalyticsModal({ isOpen, onClose, userId, displayNam
                         <span className="text-xl sm:text-2xl">🎵</span>
                         <div>
                           <div className="text-white font-medium text-sm sm:text-base">Spotify</div>
-                          <div className="text-[#b9bbbe] text-xs sm:text-sm">30 dní</div>
+                          <div className="text-[#b9bbbe] text-xs sm:text-sm">Měsíc</div>
                         </div>
                       </div>
                       <div className="text-lg sm:text-xl font-bold text-white">
@@ -241,7 +241,7 @@ export default function UserAnalyticsModal({ isOpen, onClose, userId, displayNam
                         <span className="text-xl sm:text-2xl">🖥️</span>
                         <div>
                           <div className="text-white font-medium text-sm sm:text-base">Screen Share</div>
-                          <div className="text-[#b9bbbe] text-xs sm:text-sm">30 dní</div>
+                          <div className="text-[#b9bbbe] text-xs sm:text-sm">Měsíc</div>
                         </div>
                       </div>
                       <div className="text-lg sm:text-xl font-bold text-white">
@@ -254,7 +254,7 @@ export default function UserAnalyticsModal({ isOpen, onClose, userId, displayNam
 
               {activeTab === 'games' && (
                 <div className="space-y-3 sm:space-y-4">
-                  <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Nejhranější hry (30 dní)</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Nejhranější hry (Měsíc)</h3>
                   {analyticsData.gameSessions.length === 0 ? (
                     <div className="text-center py-6 sm:py-8 text-[#b9bbbe]">
                       <p className="text-sm sm:text-base">Žádná herní aktivita</p>
@@ -288,7 +288,7 @@ export default function UserAnalyticsModal({ isOpen, onClose, userId, displayNam
 
               {activeTab === 'spotify' && (
                 <div className="space-y-3 sm:space-y-4">
-                  <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Top 10 skladeb (30 dní)</h3>
+                  <h3 className="text-base sm:text-lg font-semibold text-white mb-3 sm:mb-4">Top 10 skladeb (Měsíc)</h3>
                   {analyticsData.topTracks.length === 0 ? (
                     <div className="text-center py-6 sm:py-8 text-[#b9bbbe]">
                       <p className="text-sm sm:text-base">Žádná Spotify aktivita</p>

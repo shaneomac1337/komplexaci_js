@@ -13,18 +13,65 @@ export async function GET(request: NextRequest) {
     const db = getAnalyticsDatabase();
     const currentMonth = new Date().toISOString().substring(0, 7); // YYYY-MM format
 
-    console.log(`🏆 Calculating monthly awards for ${currentMonth}`);
+    console.log(`🏆 Calculating monthly awards for ${currentMonth} using session-based method`);
 
-    // Get all user stats with monthly data
+    // Calculate date range for the month (30 days from now)
+    const now = new Date();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const startDateStr = thirtyDaysAgo.toISOString().split('T')[0];
+    const endDateStr = now.toISOString().split('T')[0];
+
+    // Get all user stats and calculate monthly data using session-based method (same as UI)
     const allUserStats = db.getAllUserStats();
-    const activeUsers = allUserStats.filter(user => 
-      user.monthly_online_minutes > 0 || 
-      user.monthly_voice_minutes > 0 || 
-      user.monthly_games_played > 0 || 
-      user.monthly_spotify_minutes > 0
-    );
+    const activeUsers = [];
+    
+    for (const userStat of allUserStats) {
+      const userId = userStat.user_id;
+      
+      // Calculate from sessions (same method as UI)
+      const gameStats = db.getDatabase().prepare(`
+        SELECT SUM(duration_minutes) as total_minutes, COUNT(DISTINCT game_name) as games_played
+        FROM game_sessions
+        WHERE user_id = ? AND date(start_time) >= ? AND date(start_time) <= ?
+      `).get(userId, startDateStr, endDateStr) as any;
+      
+      const voiceStats = db.getDatabase().prepare(`
+        SELECT SUM(duration_minutes) as total_minutes
+        FROM voice_sessions
+        WHERE user_id = ? AND date(start_time) >= ? AND date(start_time) <= ?
+      `).get(userId, startDateStr, endDateStr) as any;
+      
+      const spotifyStats = db.getDatabase().prepare(`
+        SELECT COUNT(*) as plays_count
+        FROM spotify_sessions
+        WHERE user_id = ? AND date(start_time) >= ? AND date(start_time) <= ?
+      `).get(userId, startDateStr, endDateStr) as any;
+      
+      const onlineStats = db.getDatabase().prepare(`
+        SELECT SUM(online_minutes) as total_minutes
+        FROM daily_snapshots
+        WHERE user_id = ? AND date >= ? AND date <= ?
+      `).get(userId, startDateStr, endDateStr) as any;
+      
+      const monthlyGameTime = Math.round(gameStats?.total_minutes || 0);
+      const monthlyVoiceTime = Math.round(voiceStats?.total_minutes || 0);
+      const monthlyGamesPlayed = gameStats?.games_played || 0;
+      const monthlySpotifyPlays = spotifyStats?.plays_count || 0;
+      const monthlyOnlineTime = Math.round(onlineStats?.total_minutes || 0);
+      
+      if (monthlyOnlineTime > 0 || monthlyVoiceTime > 0 || monthlyGamesPlayed > 0 || monthlySpotifyPlays > 0) {
+        activeUsers.push({
+          ...userStat,
+          monthly_online_minutes: monthlyOnlineTime,
+          monthly_voice_minutes: monthlyVoiceTime,
+          monthly_games_played: monthlyGamesPlayed,
+          monthly_spotify_minutes: monthlySpotifyPlays
+        });
+      }
+    }
 
-    console.log(`📊 Found ${activeUsers.length} active users this month`);
+    console.log(`📊 Found ${activeUsers.length} active users this month (session-based calculation)`);
 
     // 1. Nerd of the Month (most online time)
     const nerdOfTheMonth = activeUsers.length > 0 
@@ -126,7 +173,8 @@ export async function GET(request: NextRequest) {
       summary,
       metadata: {
         calculatedAt: new Date().toISOString(),
-        dataSource: 'user_stats.monthly_*',
+        dataSource: 'session-based (game_sessions, voice_sessions, spotify_sessions, daily_snapshots)',
+        dateRange: { startDate: startDateStr, endDate: endDateStr },
         activeUsers: activeUsers.length,
         totalUsers: allUserStats.length
       }

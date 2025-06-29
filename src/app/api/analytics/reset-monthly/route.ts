@@ -41,11 +41,53 @@ export async function POST(request: NextRequest) {
       CREATE INDEX IF NOT EXISTS idx_monthly_snapshots_user_month ON monthly_snapshots(user_id, month);
     `);
 
-    // Create historical monthly snapshots for previous month from current user stats
+    // Calculate monthly snapshots using session-based method (same as UI)
+    // Calculate date range for the previous month (30 days from now)
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const startDateStr = thirtyDaysAgo.toISOString().split('T')[0];
+    const endDateStr = now.toISOString().split('T')[0];
+    
+    console.log(`📊 Calculating monthly stats from ${startDateStr} to ${endDateStr} using session-based method`);
+    
     let monthlySnapshotsCreated = 0;
     for (const userStat of currentUserStats) {
-      if (userStat.monthly_online_minutes > 0 || userStat.monthly_voice_minutes > 0 ||
-          userStat.monthly_games_played > 0 || userStat.monthly_spotify_minutes > 0) {
+      const userId = userStat.user_id;
+      
+      // Calculate from sessions (same method as UI)
+      const gameStats = db.getDatabase().prepare(`
+        SELECT SUM(duration_minutes) as total_minutes, COUNT(DISTINCT game_name) as games_played
+        FROM game_sessions
+        WHERE user_id = ? AND date(start_time) >= ? AND date(start_time) <= ?
+      `).get(userId, startDateStr, endDateStr) as any;
+      
+      const voiceStats = db.getDatabase().prepare(`
+        SELECT SUM(duration_minutes) as total_minutes
+        FROM voice_sessions
+        WHERE user_id = ? AND date(start_time) >= ? AND date(start_time) <= ?
+      `).get(userId, startDateStr, endDateStr) as any;
+      
+      const spotifyStats = db.getDatabase().prepare(`
+        SELECT COUNT(*) as plays_count
+        FROM spotify_sessions
+        WHERE user_id = ? AND date(start_time) >= ? AND date(start_time) <= ?
+      `).get(userId, startDateStr, endDateStr) as any;
+      
+      // Use daily snapshots for online time (from Discord Gateway tracking)
+      const onlineStats = db.getDatabase().prepare(`
+        SELECT SUM(online_minutes) as total_minutes
+        FROM daily_snapshots
+        WHERE user_id = ? AND date >= ? AND date <= ?
+      `).get(userId, startDateStr, endDateStr) as any;
+      
+      const monthlyGameTime = Math.round(gameStats?.total_minutes || 0);
+      const monthlyVoiceTime = Math.round(voiceStats?.total_minutes || 0);
+      const monthlyGamesPlayed = gameStats?.games_played || 0;
+      const monthlySpotifyPlays = spotifyStats?.plays_count || 0;
+      const monthlyOnlineTime = Math.round(onlineStats?.total_minutes || 0);
+      
+      // Only create snapshot if user has any activity
+      if (monthlyOnlineTime > 0 || monthlyVoiceTime > 0 || monthlyGamesPlayed > 0 || monthlySpotifyPlays > 0) {
         try {
           db.getDatabase().prepare(`
             INSERT INTO monthly_snapshots (user_id, month, online_minutes, voice_minutes, games_played, spotify_minutes)
@@ -56,16 +98,18 @@ export async function POST(request: NextRequest) {
               games_played = excluded.games_played,
               spotify_minutes = excluded.spotify_minutes
           `).run(
-            userStat.user_id,
+            userId,
             previousMonth,
-            userStat.monthly_online_minutes,
-            userStat.monthly_voice_minutes,
-            userStat.monthly_games_played,
-            userStat.monthly_spotify_minutes
+            monthlyOnlineTime,
+            monthlyVoiceTime,
+            monthlyGamesPlayed,
+            monthlySpotifyPlays
           );
           monthlySnapshotsCreated++;
+          
+          console.log(`📸 Created snapshot for ${userId}: ${monthlyOnlineTime}m online, ${monthlyVoiceTime}m voice, ${monthlyGamesPlayed} games, ${monthlySpotifyPlays} spotify`);
         } catch (error) {
-          console.warn(`⚠️ Failed to create monthly snapshot for user ${userStat.user_id}:`, error);
+          console.warn(`⚠️ Failed to create monthly snapshot for user ${userId}:`, error);
         }
       }
     }
@@ -128,13 +172,58 @@ export async function GET(request: NextRequest) {
     const now = new Date();
     const currentMonth = now.toISOString().substring(0, 7);
     
-    // Get current monthly data to show what would be reset
+    // Get current monthly data using session-based calculations (same as UI and POST method)
     const currentUserStats = db.getAllUserStats();
+    const thirtyDaysAgo = new Date();
+    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+    const startDateStr = thirtyDaysAgo.toISOString().split('T')[0];
+    const endDateStr = now.toISOString().split('T')[0];
 
-    const activeUserStats = currentUserStats.filter(s =>
-      s.monthly_online_minutes > 0 || s.monthly_voice_minutes > 0 ||
-      s.monthly_games_played > 0 || s.monthly_spotify_minutes > 0
-    );
+    const activeUserStats = [];
+    for (const userStat of currentUserStats) {
+      const userId = userStat.user_id;
+      
+      // Calculate from sessions (same method as UI and POST)
+      const gameStats = db.getDatabase().prepare(`
+        SELECT SUM(duration_minutes) as total_minutes, COUNT(DISTINCT game_name) as games_played
+        FROM game_sessions
+        WHERE user_id = ? AND date(start_time) >= ? AND date(start_time) <= ?
+      `).get(userId, startDateStr, endDateStr) as any;
+      
+      const voiceStats = db.getDatabase().prepare(`
+        SELECT SUM(duration_minutes) as total_minutes
+        FROM voice_sessions
+        WHERE user_id = ? AND date(start_time) >= ? AND date(start_time) <= ?
+      `).get(userId, startDateStr, endDateStr) as any;
+      
+      const spotifyStats = db.getDatabase().prepare(`
+        SELECT COUNT(*) as plays_count
+        FROM spotify_sessions
+        WHERE user_id = ? AND date(start_time) >= ? AND date(start_time) <= ?
+      `).get(userId, startDateStr, endDateStr) as any;
+      
+      const onlineStats = db.getDatabase().prepare(`
+        SELECT SUM(online_minutes) as total_minutes
+        FROM daily_snapshots
+        WHERE user_id = ? AND date >= ? AND date <= ?
+      `).get(userId, startDateStr, endDateStr) as any;
+      
+      const monthlyGameTime = Math.round(gameStats?.total_minutes || 0);
+      const monthlyVoiceTime = Math.round(voiceStats?.total_minutes || 0);
+      const monthlyGamesPlayed = gameStats?.games_played || 0;
+      const monthlySpotifyPlays = spotifyStats?.plays_count || 0;
+      const monthlyOnlineTime = Math.round(onlineStats?.total_minutes || 0);
+      
+      if (monthlyOnlineTime > 0 || monthlyVoiceTime > 0 || monthlyGamesPlayed > 0 || monthlySpotifyPlays > 0) {
+        activeUserStats.push({
+          ...userStat,
+          monthly_online_minutes: monthlyOnlineTime,
+          monthly_voice_minutes: monthlyVoiceTime,
+          monthly_games_played: monthlyGamesPlayed,
+          monthly_spotify_minutes: monthlySpotifyPlays
+        });
+      }
+    }
 
     // Check if monthly_snapshots table exists
     let monthlySnapshotsExist = false;
