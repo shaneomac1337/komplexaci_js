@@ -15,7 +15,7 @@ export async function GET(
     // Get user's reset dates and monthly counters to respect monthly reset
     const userStats = db.getDatabase().prepare(`
       SELECT last_monthly_reset, last_daily_reset, monthly_online_minutes, monthly_voice_minutes,
-             monthly_games_played, monthly_games_minutes, monthly_spotify_minutes
+             monthly_games_played, monthly_games_minutes, monthly_spotify_minutes, monthly_spotify_songs
       FROM user_stats
       WHERE user_id = ?
     `).get(userId) as any;
@@ -32,9 +32,18 @@ export async function GET(
         startDate.setDate(startDate.getDate() - 7);
         break;
       case '30d':
-        // For monthly view, we use accumulated counters from user_stats, not session calculations
-        // This makes it work exactly like daily reset system
+        // Legacy 30-day rolling period (session-based)
         startDate.setDate(startDate.getDate() - 30);
+        break;
+      case 'monthly':
+        // Monthly view uses accumulated counters from user_stats (reset-based)
+        // This works exactly like daily reset system
+        if (userStats?.last_monthly_reset) {
+          startDate = new Date(userStats.last_monthly_reset);
+        } else {
+          // Fallback to 30 days if no monthly reset date
+          startDate.setDate(startDate.getDate() - 30);
+        }
         break;
       case '90d':
         startDate.setDate(startDate.getDate() - 90);
@@ -134,11 +143,11 @@ export async function GET(
     // For other time ranges, use session-based calculations
     let totalGameTime, totalVoiceTime, totalSongsPlayed, totalScreenShareTime;
     
-    if (timeRange === '30d') {
+    if (timeRange === 'monthly') {
       // Use monthly counters from user_stats (reset to 0 by monthly reset)
       totalGameTime = userStats?.monthly_games_minutes || 0; // Now we have proper monthly game time tracking!
       totalVoiceTime = userStats?.monthly_voice_minutes || 0;
-      totalSongsPlayed = userStats?.monthly_spotify_minutes || 0; // This represents songs, not minutes
+      totalSongsPlayed = userStats?.monthly_spotify_songs || 0; // Use monthly_spotify_songs for song count
       totalScreenShareTime = 0; // Not tracked in monthly counters yet
     } else {
       // Use session-based calculations for other time ranges

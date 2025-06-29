@@ -47,7 +47,7 @@ export default function UserAnalyticsModal({ isOpen, onClose, userId, displayNam
       const [response24h, response7d, response30d] = await Promise.all([
         fetch(`/api/analytics/user/${userId}?timeRange=1d`),
         fetch(`/api/analytics/user/${userId}?timeRange=7d`),
-        fetch(`/api/analytics/user/${userId}?timeRange=30d`)
+        fetch(`/api/analytics/user/${userId}?timeRange=monthly`)
       ]);
 
       const [result24h, result7d, result30d] = await Promise.all([
