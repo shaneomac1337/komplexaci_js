@@ -382,58 +382,20 @@ class AnalyticsService {
 
   private startGameSession(user: UserActivity, gameName: string, startTime: Date) {
     try {
-      const result = this.db.insertGameSession({
-        user_id: user.userId,
-        game_name: gameName,
-        start_time: startTime.toISOString(),
-        end_time: null,
-        duration_minutes: 0,
-        last_updated: startTime.toISOString(),
-        status: 'active'
-      });
-
+      // Just track what game is being played, no session duration
       user.currentGame = gameName;
-      user.gameSessionId = result.lastInsertRowid as number;
-      console.log(`🎮 Started game session: ${user.displayName} playing ${gameName} (Session ID: ${user.gameSessionId})`);
-
-      // IMMEDIATE UPDATE: Update game time in user_stats immediately
-      this.updateGameTimeImmediately(user.userId);
+      console.log(`🎮 Game detected: ${user.displayName} playing ${gameName}`);
     } catch (error) {
-      console.error('❌ Error starting game session:', error);
+      console.error('❌ Error detecting game:', error);
     }
   }
 
   private endGameSession(user: UserActivity, endTime: Date) {
-    if (!user.gameSessionId) {
-      console.log(`⚠️ No active game session to end for ${user.displayName}`);
-      return;
-    }
-
     try {
-      console.log(`🎮 Ending game session ${user.gameSessionId} for ${user.displayName}`);
-
-      // Calculate duration from database record
-      const sessions = this.db.getActiveGameSessions(user.userId);
-      console.log(`📊 Found ${sessions.length} active sessions for ${user.userId}`);
-
-      const session = sessions.find(s => s.id === user.gameSessionId);
-
-      if (session) {
-        const startTime = new Date(session.start_time);
-        const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
-
-        console.log(`⏱️ Session duration: ${durationMinutes} minutes (${startTime.toISOString()} to ${endTime.toISOString()})`);
-
-        this.db.updateGameSession(user.gameSessionId, endTime.toISOString(), Math.max(0, durationMinutes));
-        console.log(`🎮 Ended game session: ${user.displayName} played ${user.currentGame} for ${durationMinutes} minutes`);
-      } else {
-        console.error(`❌ Could not find session ${user.gameSessionId} in active sessions`);
-      }
-
+      console.log(`🎮 Game ended: ${user.displayName} stopped playing ${user.currentGame}`);
       user.currentGame = undefined;
-      user.gameSessionId = undefined;
     } catch (error) {
-      console.error('❌ Error ending game session:', error);
+      console.error('❌ Error ending game detection:', error);
     }
   }
 
@@ -554,48 +516,22 @@ class AnalyticsService {
 
   private startSpotifySession(user: UserActivity, track: string, artist: string, startTime: Date) {
     try {
-      const result = this.db.insertSpotifySession({
-        user_id: user.userId,
-        track_name: track,
-        artist: artist,
-        start_time: startTime.toISOString(),
-        end_time: null,
-        duration_minutes: 0,
-        last_updated: startTime.toISOString(),
-        status: 'active'
-      });
-
       user.currentSpotify = { track, artist };
-      user.spotifySessionId = result.lastInsertRowid as number;
-      console.log(`🎵 Started Spotify session: ${user.displayName} listening to ${track} by ${artist}`);
+      console.log(`🎵 Spotify detected: ${user.displayName} listening to ${track} by ${artist}`);
 
       // IMMEDIATE UPDATE: Update Spotify song count in user_stats immediately
       this.updateSpotifySongCountImmediately(user.userId);
     } catch (error) {
-      console.error('❌ Error starting Spotify session:', error);
+      console.error('❌ Error detecting Spotify:', error);
     }
   }
 
   private endSpotifySession(user: UserActivity, endTime: Date) {
-    if (!user.spotifySessionId) return;
-    
     try {
-      // Calculate duration from database record
-      const sessions = this.db.getActiveSpotifySessions(user.userId);
-      const session = sessions.find(s => s.id === user.spotifySessionId);
-      
-      if (session) {
-        const startTime = new Date(session.start_time);
-        const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
-        
-        this.db.updateSpotifySession(user.spotifySessionId, endTime.toISOString(), Math.max(0, durationMinutes));
-        console.log(`🎵 Ended Spotify session: ${user.displayName} listened for ${durationMinutes} minutes`);
-      }
-      
+      console.log(`🎵 Spotify ended: ${user.displayName} stopped listening`);
       user.currentSpotify = undefined;
-      user.spotifySessionId = undefined;
     } catch (error) {
-      console.error('❌ Error ending Spotify session:', error);
+      console.error('❌ Error ending Spotify detection:', error);
     }
   }
 
@@ -627,12 +563,14 @@ class AnalyticsService {
           daily_games_minutes: 0,
           daily_spotify_minutes: 0,
           daily_spotify_songs: newDailySpotifySongs,
+          daily_streaming_minutes: 0,
           monthly_online_minutes: 0,
           monthly_voice_minutes: 0,
           monthly_games_played: 0,
           monthly_games_minutes: 0,
           monthly_spotify_minutes: 0,
           monthly_spotify_songs: newDailySpotifySongs,
+          monthly_streaming_minutes: 0,
           last_daily_reset: now.toISOString(),
           last_monthly_reset: now.toISOString(),
           created_at: now.toISOString(),
@@ -693,12 +631,14 @@ class AnalyticsService {
           daily_games_minutes: newDailyGameMinutes,
           daily_spotify_minutes: 0,
           daily_spotify_songs: 0,
+          daily_streaming_minutes: 0,
           monthly_online_minutes: 0,
           monthly_voice_minutes: 0,
           monthly_games_played: newDailyGamesPlayed,
           monthly_games_minutes: newDailyGameMinutes,
           monthly_spotify_minutes: 0,
           monthly_spotify_songs: 0,
+          monthly_streaming_minutes: 0,
           last_daily_reset: now.toISOString(),
           last_monthly_reset: now.toISOString(),
           created_at: now.toISOString(),
