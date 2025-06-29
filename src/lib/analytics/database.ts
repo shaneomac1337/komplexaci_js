@@ -20,12 +20,14 @@ export interface UserStats {
   daily_games_minutes: number;
   daily_spotify_minutes: number;
   daily_spotify_songs: number;
+  daily_streaming_minutes: number;
   monthly_online_minutes: number;
   monthly_voice_minutes: number;
   monthly_games_played: number;
   monthly_games_minutes: number;
   monthly_spotify_minutes: number;
   monthly_spotify_songs: number;
+  monthly_streaming_minutes: number;
   last_daily_reset: string;
   last_monthly_reset: string;
   created_at: string;
@@ -95,6 +97,9 @@ class AnalyticsDatabase {
     
     // Initialize schema
     this.initializeSchema();
+
+    // Run migrations for existing databases
+    this.runMigrations();
     
     console.log('📊 Analytics database initialized:', dbPath);
   }
@@ -103,15 +108,41 @@ class AnalyticsDatabase {
     try {
       // Enable WAL mode for better concurrent performance
       this.db.pragma('journal_mode = WAL');
-      
+
       // Optimize for performance
       this.db.pragma('synchronous = NORMAL');
       this.db.pragma('cache_size = 10000');
       this.db.pragma('temp_store = MEMORY');
-      
+
       console.log('⚡ Database performance optimizations enabled');
     } catch (error) {
       console.error('❌ Failed to set performance optimizations:', error);
+    }
+  }
+
+  private runMigrations() {
+    try {
+      // Migration 1: Add daily_streaming_minutes and monthly_streaming_minutes columns
+      const columns = this.db.prepare("PRAGMA table_info(user_stats)").all() as any[];
+      const hasStreamingColumns = columns.some(col => col.name === 'daily_streaming_minutes');
+
+      if (!hasStreamingColumns) {
+        console.log('🔄 Running migration: Adding streaming minutes columns...');
+
+        this.db.prepare(`
+          ALTER TABLE user_stats
+          ADD COLUMN daily_streaming_minutes INTEGER DEFAULT 0
+        `).run();
+
+        this.db.prepare(`
+          ALTER TABLE user_stats
+          ADD COLUMN monthly_streaming_minutes INTEGER DEFAULT 0
+        `).run();
+
+        console.log('✅ Migration completed: Added daily_streaming_minutes and monthly_streaming_minutes columns');
+      }
+    } catch (error) {
+      console.error('❌ Migration failed:', error);
     }
   }
 
@@ -140,12 +171,14 @@ class AnalyticsDatabase {
           daily_games_minutes INTEGER DEFAULT 0,
           daily_spotify_minutes INTEGER DEFAULT 0,
           daily_spotify_songs INTEGER DEFAULT 0,
+          daily_streaming_minutes INTEGER DEFAULT 0,
           monthly_online_minutes INTEGER DEFAULT 0,
           monthly_voice_minutes INTEGER DEFAULT 0,
           monthly_games_played INTEGER DEFAULT 0,
           monthly_games_minutes INTEGER DEFAULT 0,
           monthly_spotify_minutes INTEGER DEFAULT 0,
           monthly_spotify_songs INTEGER DEFAULT 0,
+          monthly_streaming_minutes INTEGER DEFAULT 0,
           last_daily_reset TEXT DEFAULT CURRENT_TIMESTAMP,
           last_monthly_reset TEXT DEFAULT CURRENT_TIMESTAMP,
           created_at TEXT DEFAULT CURRENT_TIMESTAMP,
@@ -700,11 +733,11 @@ class AnalyticsDatabase {
   public upsertUserStats(stats: Omit<UserStats, 'created_at' | 'updated_at'>) {
     const stmt = this.db.prepare(`
       INSERT INTO user_stats (
-        user_id, daily_online_minutes, daily_voice_minutes, daily_games_played, daily_games_minutes, daily_spotify_minutes, daily_spotify_songs,
-        monthly_online_minutes, monthly_voice_minutes, monthly_games_played, monthly_games_minutes, monthly_spotify_minutes, monthly_spotify_songs,
+        user_id, daily_online_minutes, daily_voice_minutes, daily_games_played, daily_games_minutes, daily_spotify_minutes, daily_spotify_songs, daily_streaming_minutes,
+        monthly_online_minutes, monthly_voice_minutes, monthly_games_played, monthly_games_minutes, monthly_spotify_minutes, monthly_spotify_songs, monthly_streaming_minutes,
         last_daily_reset, last_monthly_reset
       )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id) DO UPDATE SET
         daily_online_minutes = excluded.daily_online_minutes,
         daily_voice_minutes = excluded.daily_voice_minutes,
@@ -712,19 +745,21 @@ class AnalyticsDatabase {
         daily_games_minutes = excluded.daily_games_minutes,
         daily_spotify_minutes = excluded.daily_spotify_minutes,
         daily_spotify_songs = excluded.daily_spotify_songs,
+        daily_streaming_minutes = excluded.daily_streaming_minutes,
         monthly_online_minutes = excluded.monthly_online_minutes,
         monthly_voice_minutes = excluded.monthly_voice_minutes,
         monthly_games_played = excluded.monthly_games_played,
         monthly_games_minutes = excluded.monthly_games_minutes,
         monthly_spotify_minutes = excluded.monthly_spotify_minutes,
         monthly_spotify_songs = excluded.monthly_spotify_songs,
+        monthly_streaming_minutes = excluded.monthly_streaming_minutes,
         last_daily_reset = excluded.last_daily_reset,
         last_monthly_reset = excluded.last_monthly_reset,
         updated_at = CURRENT_TIMESTAMP
     `);
     return stmt.run(
-      stats.user_id, stats.daily_online_minutes, stats.daily_voice_minutes, stats.daily_games_played, stats.daily_games_minutes, stats.daily_spotify_minutes, stats.daily_spotify_songs,
-      stats.monthly_online_minutes, stats.monthly_voice_minutes, stats.monthly_games_played, stats.monthly_games_minutes, stats.monthly_spotify_minutes, stats.monthly_spotify_songs,
+      stats.user_id, stats.daily_online_minutes, stats.daily_voice_minutes, stats.daily_games_played, stats.daily_games_minutes, stats.daily_spotify_minutes, stats.daily_spotify_songs, stats.daily_streaming_minutes,
+      stats.monthly_online_minutes, stats.monthly_voice_minutes, stats.monthly_games_played, stats.monthly_games_minutes, stats.monthly_spotify_minutes, stats.monthly_spotify_songs, stats.monthly_streaming_minutes,
       stats.last_daily_reset, stats.last_monthly_reset
     );
   }
@@ -752,6 +787,7 @@ class AnalyticsDatabase {
           daily_games_minutes = 0,
           daily_spotify_minutes = 0,
           daily_spotify_songs = 0,
+          daily_streaming_minutes = 0,
           last_daily_reset = ?,
           updated_at = CURRENT_TIMESTAMP
         WHERE user_id = ?
@@ -767,6 +803,7 @@ class AnalyticsDatabase {
           daily_games_minutes = 0,
           daily_spotify_minutes = 0,
           daily_spotify_songs = 0,
+          daily_streaming_minutes = 0,
           last_daily_reset = ?,
           updated_at = CURRENT_TIMESTAMP
       `);

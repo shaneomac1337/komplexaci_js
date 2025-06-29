@@ -36,7 +36,7 @@ export async function GET(
     const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
     // Validate category
-    const validCategories = ['nerd', 'gamer', 'listener', 'streamer'];
+    const validCategories = ['nerd', 'gamer', 'streamer'];
     if (!validCategories.includes(category)) {
       return NextResponse.json({
         success: false,
@@ -133,42 +133,7 @@ export async function GET(
         break;
       }
 
-      case 'listener': {
-        categoryInfo = {
-          title: 'Listener of the Day',
-          czechTitle: 'Posluchač dne',
-          description: 'Nejvíce přehraných skladeb na Spotify',
-          icon: '🎵',
-          unit: 'skladeb'
-        };
 
-        const results = db.getDatabase().prepare(`
-          SELECT 
-            user_id,
-            COUNT(*) as total_tracks,
-            MIN(start_time) as first_achieved
-          FROM spotify_sessions 
-          WHERE date(start_time) = ? AND status IN ('active', 'ended')
-          GROUP BY user_id
-          HAVING total_tracks > 0
-          ORDER BY total_tracks DESC, first_achieved ASC
-        `).all(today) as any[];
-
-        rankings = results.map((result, index) => {
-          const member = memberMap.get(result.user_id);
-          return {
-            rank: index + 1,
-            id: result.user_id,
-            displayName: member?.displayName || 'Unknown User',
-            avatar: member?.avatar || null,
-            value: result.total_tracks,
-            unit: 'skladeb',
-            achievedAt: result.first_achieved,
-            isWinner: index === 0
-          };
-        });
-        break;
-      }
 
       case 'streamer': {
         categoryInfo = {

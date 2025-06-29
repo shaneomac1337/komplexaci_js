@@ -27,31 +27,33 @@ export async function GET() {
         // Get all members from Gateway (both online and offline)
         const allMembers = gateway.getAllMembers();
 
-        // Get most active members from database (today's data)
+        // Get real-time daily online minutes from user_stats for ALL members
         const db = getAnalyticsDatabase();
-        const today = new Date().toISOString().split('T')[0];
+        const allUserStats = db.getDatabase().prepare(`
+          SELECT user_id, daily_online_minutes
+          FROM user_stats
+        `).all();
 
-        const mostActiveFromDB = db.getDatabase().prepare(`
-          SELECT
-            user_id,
-            online_minutes
-          FROM daily_snapshots
-          WHERE date = ?
-          ORDER BY online_minutes DESC
-          LIMIT 10
-        `).all(today);
+        // Create a map for quick lookup
+        const userStatsMap = new Map();
+        allUserStats.forEach((stat: any) => {
+          userStatsMap.set(stat.user_id, stat.daily_online_minutes);
+        });
 
-        // Merge with member data from Gateway
-        const mostActiveMembers = mostActiveFromDB.map(dbMember => {
-          const member = allMembers.find(m => m.id === dbMember.user_id);
-          return member ? {
-            ...member,
-            dailyOnlineTime: dbMember.online_minutes
-          } : null;
-        }).filter(Boolean);
+        // Update all members with real-time database data
+        const membersWithRealTimeData = allMembers.map(member => ({
+          ...member,
+          dailyOnlineTime: userStatsMap.get(member.id) || 0
+        }));
+
+        // Get most active members (those with > 0 minutes)
+        const mostActiveMembers = membersWithRealTimeData
+          .filter(member => member.dailyOnlineTime > 0)
+          .sort((a, b) => b.dailyOnlineTime - a.dailyOnlineTime)
+          .slice(0, 10);
 
         // Format for frontend compatibility
-        const onlineMembersWithDetails = allMembers.map(member => {
+        const onlineMembersWithDetails = membersWithRealTimeData.map(member => {
             // Find custom status (type 4) first, then other activities
             const customStatus = member.activities.find((activity: any) => activity.type === 4);
             const otherActivity = member.activities.find((activity: any) => activity.type !== 4);
