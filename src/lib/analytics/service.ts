@@ -97,8 +97,6 @@ class AnalyticsService {
         // Skip if user is offline
         if (!member.presence || member.presence.status === 'offline') return;
 
-        console.log(`🔍 Checking real-time activity for ${displayName}...`);
-
         // Check for game sessions from Discord presence
         if (member.presence.activities) {
           for (const activity of member.presence.activities) {
@@ -384,20 +382,58 @@ class AnalyticsService {
 
   private startGameSession(user: UserActivity, gameName: string, startTime: Date) {
     try {
-      // Just track what game is being played, no session duration
+      // Force UTC time to avoid timezone issues
+      const utcStartTime = new Date(startTime.getTime());
+      const startTimeISO = utcStartTime.toISOString();
+
+      const result = this.db.insertGameSession({
+        user_id: user.userId,
+        game_name: gameName,
+        start_time: startTimeISO,
+        end_time: null,
+        duration_minutes: 0,
+        last_updated: startTimeISO,
+        status: 'active'
+      });
+
+      user.gameSessionId = result.lastInsertRowid as number;
       user.currentGame = gameName;
-      console.log(`🎮 Game detected: ${user.displayName} playing ${gameName}`);
+      console.log(`🎮 Started game session: ${user.displayName} playing ${gameName} (Session ID: ${user.gameSessionId})`);
     } catch (error) {
-      console.error('❌ Error detecting game:', error);
+      console.error('❌ Error starting game session:', error);
     }
   }
 
   private endGameSession(user: UserActivity, endTime: Date) {
     try {
-      console.log(`🎮 Game ended: ${user.displayName} stopped playing ${user.currentGame}`);
+      if (!user.gameSessionId) {
+        console.log(`⚠️ No active game session to end for ${user.displayName}`);
+        return;
+      }
+
+      // Force UTC time to avoid timezone issues
+      const utcEndTime = new Date(endTime.getTime());
+      const endTimeISO = utcEndTime.toISOString();
+
+      // Get the current session to calculate duration
+      const session = this.db.getGameSession(user.gameSessionId);
+      if (session) {
+        const startTime = new Date(session.start_time);
+        const durationMinutes = Math.max(1, Math.round((utcEndTime.getTime() - startTime.getTime()) / (1000 * 60)));
+
+        // Update the session in database
+        this.db.updateGameSession(user.gameSessionId, endTimeISO, durationMinutes);
+
+        console.log(`🎮 Ended game session: ${user.displayName} played ${user.currentGame} for ${durationMinutes} minutes (Session ID: ${user.gameSessionId})`);
+
+        // Update user stats immediately
+        this.updateGameTimeImmediately(user.userId, durationMinutes);
+      }
+
+      user.gameSessionId = undefined;
       user.currentGame = undefined;
     } catch (error) {
-      console.error('❌ Error ending game detection:', error);
+      console.error('❌ Error ending game session:', error);
     }
   }
 
@@ -635,19 +671,26 @@ class AnalyticsService {
   // IMMEDIATE UPDATE: Update game time in user_stats immediately when a game starts or progresses
   private updateGameTimeImmediately(userId: string) {
     try {
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      // Get user's last daily reset time to only count sessions after reset
+      const userStats = this.db.getUserStats(userId);
+      const resetTime = userStats?.last_daily_reset || new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
       
-      // Count today's game time (including active sessions for real-time updates)
+      // Count game time since last daily reset (including active sessions for real-time updates)
       const gameStats = this.db.getDatabase().prepare(`
         SELECT
           SUM(duration_minutes) as total_minutes,
           COUNT(DISTINCT game_name) as games_played
         FROM game_sessions
-        WHERE user_id = ? AND date(start_time) = ? AND status IN ('active', 'ended')
-      `).get(userId, today) as any;
+        WHERE user_id = ? AND start_time >= ? AND status IN ('active', 'ended')
+      `).get(userId, resetTime) as any;
 
       const newDailyGameMinutes = gameStats?.total_minutes || 0;
       const newDailyGamesPlayed = gameStats?.games_played || 0;
+
+      // Debug logging
+      console.log(`🔍 Game time calculation for ${userId}:`);
+      console.log(`  Reset time: ${resetTime}`);
+      console.log(`  Sessions found: ${newDailyGamesPlayed} games, ${newDailyGameMinutes} minutes`);
 
       // Get current user stats
       let userStats = this.db.getUserStats(userId);
@@ -926,7 +969,7 @@ class AnalyticsService {
             this.db.updateGameSessionProgress(user.gameSessionId, Math.max(0, durationMinutes));
             updatedSessions++;
 
-            console.log(`📊 Updated game session: ${user.displayName} playing ${user.currentGame} - ${durationMinutes}m`);
+            console.log(`📊 Updated game session: ${user.displayName} playing ${user.currentGame} - ${durationMinutes}m (Session ID: ${user.gameSessionId})`);
 
             // IMMEDIATE UPDATE: Update game time in user_stats immediately
             this.updateGameTimeImmediately(userId);
