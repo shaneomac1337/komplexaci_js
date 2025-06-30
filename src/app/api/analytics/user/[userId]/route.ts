@@ -56,9 +56,41 @@ export async function GET(
     const startDateStr = startDate.toISOString().split('T')[0];
     const endDateStr = endDate.toISOString().split('T')[0];
     
-    // Get user's daily snapshots
-    const dailySnapshots = db.getDailySnapshots(userId, startDateStr, endDateStr);
+    // Get user's daily snapshots - for 1d timeRange, only get today's data after reset
+    let dailySnapshots;
+    if (timeRange === '1d') {
+      // For daily view, only show today's snapshot (which gets reset to 0 by daily reset)
+      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      dailySnapshots = db.getDailySnapshots(userId, today, today);
+    } else {
+      // For other time ranges, use the original date range
+      dailySnapshots = db.getDailySnapshots(userId, startDateStr, endDateStr);
+    }
     
+    // For daily data (1d), use the same timezone-aware filtering as Spotify
+    let sessionStartTime, sessionEndTime;
+    
+    if (timeRange === '1d') {
+      // Get the user's last daily reset time, or use today's midnight Czech time
+      const userStats = db.getUserStats(userId);
+      if (userStats?.last_daily_reset) {
+        sessionStartTime = userStats.last_daily_reset;
+      } else {
+        // Fallback: Use today's midnight in Czech time (CET/CEST)
+        const czechMidnight = new Date();
+        czechMidnight.setHours(0, 0, 0, 0);
+        // Adjust for Czech timezone (UTC+1 or UTC+2)
+        const timezoneOffset = czechMidnight.getTimezoneOffset();
+        czechMidnight.setMinutes(czechMidnight.getMinutes() + timezoneOffset + 60); // +60 for CET
+        sessionStartTime = czechMidnight.toISOString();
+      }
+      sessionEndTime = endDate.toISOString();
+    } else {
+      // For other time ranges, use the original date-based filtering
+      sessionStartTime = startDate.toISOString();
+      sessionEndTime = endDate.toISOString();
+    }
+
     // Get user's game sessions
     const gameSessions = db.getDatabase().prepare(`
       SELECT 
@@ -69,10 +101,10 @@ export async function GET(
         MIN(start_time) as first_played,
         MAX(start_time) as last_played
       FROM game_sessions 
-      WHERE user_id = ? AND date(start_time) >= ? AND date(start_time) <= ?
+      WHERE user_id = ? AND start_time >= ? AND start_time <= ?
       GROUP BY game_name
       ORDER BY total_minutes DESC
-    `).all(userId, startDateStr, endDateStr);
+    `).all(userId, sessionStartTime, sessionEndTime);
     
     // Get user's voice activity
     const voiceActivity = db.getDatabase().prepare(`
@@ -83,23 +115,23 @@ export async function GET(
         SUM(screen_share_minutes) as screen_share_minutes,
         AVG(duration_minutes) as avg_minutes
       FROM voice_sessions 
-      WHERE user_id = ? AND date(start_time) >= ? AND date(start_time) <= ?
+      WHERE user_id = ? AND start_time >= ? AND start_time <= ?
       GROUP BY channel_name
       ORDER BY total_minutes DESC
-    `).all(userId, startDateStr, endDateStr);
+    `).all(userId, sessionStartTime, sessionEndTime);
     
-    // Get user's Spotify activity (focus on plays, not time)
+    // Get user's Spotify activity (focus on plays, not time) - using same time filtering as other sessions
     const spotifyActivity = db.getDatabase().prepare(`
       SELECT
         artist,
         COUNT(*) as plays_count,
         COUNT(DISTINCT track_name) as unique_tracks
       FROM spotify_sessions
-      WHERE user_id = ? AND date(start_time) >= ? AND date(start_time) <= ?
+      WHERE user_id = ? AND start_time >= ? AND start_time <= ?
       GROUP BY artist
       ORDER BY plays_count DESC
       LIMIT 10
-    `).all(userId, startDateStr, endDateStr);
+    `).all(userId, sessionStartTime, sessionEndTime);
     
     // Get top tracks (focus on play count)
     const topTracks = db.getDatabase().prepare(`
@@ -108,11 +140,11 @@ export async function GET(
         artist,
         COUNT(*) as play_count
       FROM spotify_sessions
-      WHERE user_id = ? AND date(start_time) >= ? AND date(start_time) <= ?
+      WHERE user_id = ? AND start_time >= ? AND start_time <= ?
       GROUP BY track_name, artist
       ORDER BY play_count DESC
       LIMIT 10
-    `).all(userId, startDateStr, endDateStr);
+    `).all(userId, sessionStartTime, sessionEndTime);
     
     // Get recent sessions
     const recentSessions = [];
