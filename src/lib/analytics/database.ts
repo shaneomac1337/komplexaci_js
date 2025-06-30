@@ -502,6 +502,11 @@ class AnalyticsDatabase {
                    session.end_time, session.duration_minutes, session.last_updated, session.status);
   }
 
+  public getGameSession(id: number): GameSession | null {
+    const stmt = this.db.prepare('SELECT * FROM game_sessions WHERE id = ?');
+    return stmt.get(id) as GameSession | null;
+  }
+
   public updateGameSession(id: number, endTime: string, durationMinutes: number) {
     const stmt = this.db.prepare(`
       UPDATE game_sessions SET end_time = ?, duration_minutes = ?, status = 'ended', last_updated = CURRENT_TIMESTAMP WHERE id = ?

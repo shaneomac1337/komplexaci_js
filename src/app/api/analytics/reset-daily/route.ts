@@ -91,10 +91,22 @@ export async function POST(request: NextRequest) {
 
     console.log(`🔄 Ended ${endedGameSessions.changes} game sessions, ${endedVoiceSessions.changes} voice sessions, and ${endedSpotifySessions.changes} Spotify sessions`);
 
-    // Note: We don't immediately restart analytics tracking after daily reset
-    // This ensures awards start completely fresh at 0 progress
-    // Tracking will restart naturally when users perform new activities (join voice, start games, etc.)
-    console.log('ℹ️ Analytics tracking will restart naturally when users perform new activities');
+    // Restart active sessions for users who are currently active (playing games, in voice, listening to Spotify)
+    console.log(`🔄 Checking if Discord Gateway is ready for session recovery... Ready: ${gateway.isReady()}`);
+    if (gateway.isReady()) {
+      const guild = gateway.getGuild();
+      console.log(`🔄 Guild found: ${guild ? guild.name : 'null'}`);
+      if (guild) {
+        console.log('🔄 Recovering active sessions after daily reset...');
+        const analyticsService = getAnalyticsService();
+        analyticsService.recoverExistingSessions(guild);
+        console.log('✅ Session recovery completed after daily reset');
+      } else {
+        console.log('⚠️ Guild not available for session recovery after daily reset');
+      }
+    } else {
+      console.log('⚠️ Discord Gateway not ready for session recovery after daily reset');
+    }
 
     // Get summary of reset operation
     const summary = {
@@ -108,6 +120,7 @@ export async function POST(request: NextRequest) {
         voice: endedVoiceSessions.changes,
         spotify: endedSpotifySessions.changes
       },
+      sessionRecoveryAttempted: gateway.isReady(),
       historicalSnapshotsCreated: currentUserStats.filter(s =>
         s.daily_online_minutes > 0 || s.daily_voice_minutes > 0 ||
         s.daily_games_played > 0 || s.daily_spotify_minutes > 0
