@@ -672,8 +672,8 @@ class AnalyticsService {
   private updateGameTimeImmediately(userId: string) {
     try {
       // Get user's last daily reset time to only count sessions after reset
-      const userStats = this.db.getUserStats(userId);
-      const resetTime = userStats?.last_daily_reset || new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
+      const initialUserStats = this.db.getUserStats(userId);
+      const resetTime = initialUserStats?.last_daily_reset || new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
       
       // Count game time since last daily reset (including active sessions for real-time updates)
       const gameStats = this.db.getDatabase().prepare(`
