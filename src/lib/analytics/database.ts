@@ -780,8 +780,10 @@ class AnalyticsDatabase {
   }
 
   public resetDailyStats(userId?: string) {
-    const now = new Date().toISOString();
-    
+    const now = new Date();
+    // Set reset time to 2 minutes before actual reset to ensure recovered sessions are counted
+    const resetTime = new Date(now.getTime() - 2 * 60 * 1000).toISOString();
+
     if (userId) {
       // Reset specific user
       const stmt = this.db.prepare(`
@@ -797,7 +799,7 @@ class AnalyticsDatabase {
           updated_at = CURRENT_TIMESTAMP
         WHERE user_id = ?
       `);
-      return stmt.run(now, userId);
+      return stmt.run(resetTime, userId);
     } else {
       // Reset all users
       const stmt = this.db.prepare(`
@@ -812,7 +814,7 @@ class AnalyticsDatabase {
           last_daily_reset = ?,
           updated_at = CURRENT_TIMESTAMP
       `);
-      return stmt.run(now);
+      return stmt.run(resetTime);
     }
   }
 
