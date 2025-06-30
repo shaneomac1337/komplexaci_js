@@ -343,6 +343,8 @@ class AnalyticsService {
   private handleSpotifyActivities(user: UserActivity, activities: any[], currentTime: Date) {
     const spotifyActivity = activities.find(a => a.name?.toLowerCase().includes('spotify') || a.type === 2);
 
+
+
     if (spotifyActivity && spotifyActivity.details && spotifyActivity.state) {
       const track = this.normalizeTrackName(spotifyActivity.details);
       const artist = this.normalizeArtistName(spotifyActivity.state.replace('by ', ''));
@@ -516,22 +518,52 @@ class AnalyticsService {
 
   private startSpotifySession(user: UserActivity, track: string, artist: string, startTime: Date) {
     try {
+      // Create actual database session
+      const result = this.db.insertSpotifySession({
+        user_id: user.userId,
+        track_name: track,
+        artist: artist,
+        start_time: startTime.toISOString(),
+        end_time: null,
+        duration_minutes: 0,
+        last_updated: startTime.toISOString(),
+        status: 'active'
+      });
+      
+      user.spotifySessionId = result.lastInsertRowid as number;
       user.currentSpotify = { track, artist };
-      console.log(`🎵 Spotify detected: ${user.displayName} listening to ${track} by ${artist}`);
+      console.log(`🎵 Started Spotify session: ${user.displayName} listening to ${track} by ${artist} (Session ID: ${user.spotifySessionId})`);
 
       // IMMEDIATE UPDATE: Update Spotify song count in user_stats immediately
       this.updateSpotifySongCountImmediately(user.userId);
     } catch (error) {
-      console.error('❌ Error detecting Spotify:', error);
+      console.error('❌ Error starting Spotify session:', error);
     }
   }
 
   private endSpotifySession(user: UserActivity, endTime: Date) {
     try {
-      console.log(`🎵 Spotify ended: ${user.displayName} stopped listening`);
+      if (user.spotifySessionId) {
+        // Calculate session duration
+        const sessions = this.db.getActiveSpotifySessions(user.userId);
+        const session = sessions.find(s => s.id === user.spotifySessionId);
+        
+        if (session) {
+          const startTime = this.parseUTCTime(session.start_time);
+          const durationMinutes = Math.round((endTime.getTime() - startTime.getTime()) / (1000 * 60));
+          
+          // End the session in database
+          this.db.updateSpotifySession(user.spotifySessionId, endTime.toISOString(), Math.max(0, durationMinutes));
+          
+          console.log(`🎵 Ended Spotify session: ${user.displayName} - ${session.track_name} by ${session.artist} (${Math.max(0, durationMinutes)}m)`);
+        }
+        
+        user.spotifySessionId = undefined;
+      }
+      
       user.currentSpotify = undefined;
     } catch (error) {
-      console.error('❌ Error ending Spotify detection:', error);
+      console.error('❌ Error ending Spotify session:', error);
     }
   }
 

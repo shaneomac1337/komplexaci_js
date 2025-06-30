@@ -189,6 +189,8 @@ class DiscordGatewayService {
           // Initialize analytics for existing members
           const presence = member.presence;
           if (presence) {
+
+            
             this.analyticsService.updateUserPresence(
               member.id,
               member.nickname || member.user.globalName || member.user.username,
@@ -330,6 +332,8 @@ class DiscordGatewayService {
       member.activities = presence.activities;
       member.lastSeen = currentTime;
       this.memberCache.set(presence.userId, member);
+
+
 
       // Update analytics service with presence change
       this.analyticsService.updateUserPresence(

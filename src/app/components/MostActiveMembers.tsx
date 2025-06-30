@@ -1,6 +1,8 @@
 'use client';
 
+import { useState } from 'react';
 import DiscordAvatar from './DiscordAvatar';
+import UserStatsModal from './UserStatsModal';
 
 interface ActiveMember {
   id: string;
@@ -27,6 +29,11 @@ function extractAvatarHash(avatarUrl: string): string | null {
 }
 
 export default function MostActiveMembers({ members, dataSource }: MostActiveMembersProps) {
+  const [selectedUser, setSelectedUser] = useState<{
+    userId: string;
+    displayName: string;
+    avatar: string | null;
+  } | null>(null);
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -108,7 +115,12 @@ export default function MostActiveMembers({ members, dataSource }: MostActiveMem
           return (
             <div
               key={member.id}
-              className="w-full flex items-center space-x-3 p-2 rounded-lg bg-gray-800/30"
+              className="w-full flex items-center space-x-3 p-2 rounded-lg bg-gray-800/30 hover:bg-gray-700/40 cursor-pointer transition-colors"
+              onClick={() => setSelectedUser({
+                userId: member.id,
+                displayName: member.displayName,
+                avatar: member.avatar
+              })}
             >
               {/* Rank */}
               <div className="flex-shrink-0 w-8 text-center">
@@ -169,6 +181,17 @@ export default function MostActiveMembers({ members, dataSource }: MostActiveMem
           </div>
         </div>
       </div>
+
+      {/* User Stats Modal */}
+      {selectedUser && (
+        <UserStatsModal
+          isOpen={!!selectedUser}
+          onClose={() => setSelectedUser(null)}
+          userId={selectedUser.userId}
+          displayName={selectedUser.displayName}
+          avatar={selectedUser.avatar}
+        />
+      )}
     </div>
   );
 }
