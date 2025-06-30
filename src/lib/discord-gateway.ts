@@ -1012,6 +1012,10 @@ class DiscordGatewayService {
     return this.isConnected && this.serverStats !== null;
   }
 
+  getGuild() {
+    return this.client.guilds.cache.get(this.serverId);
+  }
+
   getMemberCount(): number {
     return this.memberCache.size;
   }

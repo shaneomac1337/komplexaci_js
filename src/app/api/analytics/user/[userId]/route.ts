@@ -91,20 +91,51 @@ export async function GET(
       sessionEndTime = endDate.toISOString();
     }
 
+    // Debug: Log the time range being used for game sessions
+    console.log(`🔍 Game sessions query for ${userId}:`);
+    console.log(`  Time range: ${timeRange}`);
+    console.log(`  Session start: ${sessionStartTime}`);
+    console.log(`  Session end: ${sessionEndTime}`);
+
     // Get user's game sessions
-    const gameSessions = db.getDatabase().prepare(`
-      SELECT 
-        game_name,
-        COUNT(*) as session_count,
-        SUM(duration_minutes) as total_minutes,
-        AVG(duration_minutes) as avg_minutes,
-        MIN(start_time) as first_played,
-        MAX(start_time) as last_played
-      FROM game_sessions 
-      WHERE user_id = ? AND start_time >= ? AND start_time <= ?
-      GROUP BY game_name
-      ORDER BY total_minutes DESC
-    `).all(userId, sessionStartTime, sessionEndTime);
+    // For 1d timeRange, use reset-time-based filtering to only count sessions after daily reset
+    let gameSessions;
+    if (timeRange === '1d') {
+      // Get user's last daily reset time to only count sessions after reset
+      const userStats = db.getUserStats(userId);
+      const resetTime = userStats?.last_daily_reset || sessionStartTime;
+      
+      console.log(`🔍 API Game sessions query for ${userId}:`);
+      console.log(`  Using reset time: ${resetTime}`);
+      
+      gameSessions = db.getDatabase().prepare(`
+        SELECT 
+          game_name,
+          COUNT(*) as session_count,
+          SUM(duration_minutes) as total_minutes,
+          AVG(duration_minutes) as avg_minutes,
+          MIN(start_time) as first_played,
+          MAX(start_time) as last_played
+        FROM game_sessions 
+        WHERE user_id = ? AND start_time >= ?
+        GROUP BY game_name
+        ORDER BY total_minutes DESC
+      `).all(userId, resetTime);
+    } else {
+      gameSessions = db.getDatabase().prepare(`
+        SELECT 
+          game_name,
+          COUNT(*) as session_count,
+          SUM(duration_minutes) as total_minutes,
+          AVG(duration_minutes) as avg_minutes,
+          MIN(start_time) as first_played,
+          MAX(start_time) as last_played
+        FROM game_sessions 
+        WHERE user_id = ? AND start_time >= ? AND start_time <= ?
+        GROUP BY game_name
+        ORDER BY total_minutes DESC
+      `).all(userId, sessionStartTime, sessionEndTime);
+    }
     
     // Get user's voice activity
     const voiceActivity = db.getDatabase().prepare(`
