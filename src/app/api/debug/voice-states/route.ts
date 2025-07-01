@@ -11,7 +11,7 @@ export async function GET() {
 
     if (!gateway.isReady()) {
       return NextResponse.json(
-        { 
+        {
           error: 'Discord Gateway not ready',
           timestamp: new Date().toISOString()
         },
@@ -21,11 +21,35 @@ export async function GET() {
 
     // Get all members and their voice states
     const allMembers = gateway.getAllMembers();
-    
+
+    // Also get raw Discord guild data for comparison
+    const rawGuild = gateway.getGuild();
+    const rawVoiceStates = [];
+
+    if (rawGuild) {
+      rawGuild.members.cache.forEach((member: any) => {
+        if (member.user.bot) return;
+        if (!member.presence || member.presence.status === 'offline') return;
+
+        rawVoiceStates.push({
+          userId: member.id,
+          displayName: member.displayName || member.user.username,
+          hasVoiceProperty: !!member.voice,
+          voiceChannel: member.voice?.channel ? {
+            id: member.voice.channel.id,
+            name: member.voice.channel.name,
+            streaming: member.voice.streaming || false
+          } : null,
+          rawVoiceState: member.voice
+        });
+      });
+    }
+
     const voiceStateDebug = {
       timestamp: new Date().toISOString(),
       totalMembers: allMembers.length,
       onlineMembers: allMembers.filter(m => m.status !== 'offline').length,
+      rawVoiceStatesFromGuild: rawVoiceStates,
       membersWithVoiceData: [],
       voiceStateAnalysis: {
         hasVoiceProperty: 0,

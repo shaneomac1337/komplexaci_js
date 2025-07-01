@@ -85,15 +85,10 @@ class DiscordGatewayService {
       this.analyticsService.fixInconsistentTimestamps();
 
       // Recover existing sessions based on Discord's real-time state
+      // Use longer delay and retry logic for voice states
       setTimeout(() => {
-        const guild = this.client.guilds.cache.get(this.serverId);
-        if (guild) {
-          console.log('🔍 Checking Discord real-time state for session recovery...');
-          this.analyticsService.recoverExistingSessions(guild);
-        } else {
-          console.log('⚠️ Guild not found for session recovery');
-        }
-      }, 5000); // Wait 5 seconds for Discord cache to populate
+        this.attemptSessionRecovery(1);
+      }, 8000); // Wait 8 seconds for Discord cache to populate
 
       // Set up periodic stats update to track online time and handle daily resets
       this.updateInterval = setInterval(() => {
@@ -208,6 +203,44 @@ class DiscordGatewayService {
       console.log(`Initialized cache with ${this.memberCache.size} members and analytics tracking`);
     } catch (error) {
       console.error('Failed to initialize member cache:', error);
+    }
+  }
+
+  private attemptSessionRecovery(attempt: number) {
+    const guild = this.client.guilds.cache.get(this.serverId);
+    if (!guild) {
+      console.log('⚠️ Guild not found for session recovery');
+      return;
+    }
+
+    console.log(`🔍 Session recovery attempt ${attempt}/3 - Checking Discord real-time state...`);
+
+    // Count voice states before recovery
+    let voiceStatesFound = 0;
+    guild.members.cache.forEach((member: any) => {
+      if (member.user.bot) return;
+      if (!member.presence || member.presence.status === 'offline') return;
+      if (member.voice && member.voice.channel) {
+        voiceStatesFound++;
+        console.log(`🎤 Pre-recovery: Found ${member.displayName || member.user.username} in ${member.voice.channel.name}`);
+      }
+    });
+
+    console.log(`📊 Pre-recovery: Found ${voiceStatesFound} voice states`);
+
+    // Attempt recovery
+    this.analyticsService.recoverExistingSessions(guild);
+
+    // If no voice sessions were recovered but we found voice states, retry
+    if (voiceStatesFound > 0 && attempt < 3) {
+      console.log(`🔄 Voice states detected but may not have been recovered. Retrying in 5 seconds... (attempt ${attempt + 1}/3)`);
+      setTimeout(() => {
+        this.attemptSessionRecovery(attempt + 1);
+      }, 5000);
+    } else if (voiceStatesFound > 0) {
+      console.log(`✅ Session recovery completed after ${attempt} attempts with ${voiceStatesFound} voice states detected`);
+    } else {
+      console.log(`✅ Session recovery completed - no voice states found`);
     }
   }
 
@@ -1010,12 +1043,12 @@ class DiscordGatewayService {
       .sort((a, b) => b.lastSeen.getTime() - a.lastSeen.getTime());
   }
 
-  isReady(): boolean {
-    return this.isConnected && this.serverStats !== null;
-  }
-
   getGuild() {
     return this.client.guilds.cache.get(this.serverId);
+  }
+
+  isReady(): boolean {
+    return this.isConnected && this.serverStats !== null;
   }
 
   getMemberCount(): number {
