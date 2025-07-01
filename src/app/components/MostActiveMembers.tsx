@@ -17,6 +17,7 @@ interface ActiveMember {
 interface MostActiveMembersProps {
   members: ActiveMember[];
   dataSource?: 'GATEWAY' | 'REST_API' | 'FALLBACK';
+  totalMemberCount?: number;
 }
 
 // Helper function to extract avatar hash from Discord CDN URL
@@ -28,12 +29,25 @@ function extractAvatarHash(avatarUrl: string): string | null {
   return match ? match[1] : null;
 }
 
-export default function MostActiveMembers({ members, dataSource }: MostActiveMembersProps) {
+export default function MostActiveMembers({ members, dataSource, totalMemberCount }: MostActiveMembersProps) {
   const [selectedUser, setSelectedUser] = useState<{
     userId: string;
     displayName: string;
     avatar: string | null;
   } | null>(null);
+
+  const [showCount, setShowCount] = useState(20);
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const handleShowMore = () => {
+    setShowCount(members.length);
+    setIsExpanded(true);
+  };
+
+  const handleShowLess = () => {
+    setShowCount(20);
+    setIsExpanded(false);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -79,7 +93,14 @@ export default function MostActiveMembers({ members, dataSource }: MostActiveMem
               <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9M19 9H14V4H5V21H19V9Z"/>
             </svg>
           </div>
-          <h4 className="text-lg font-semibold text-white">Nejaktivnější členové</h4>
+          <div className="flex items-center justify-between">
+            <h4 className="text-lg font-semibold text-white">Nejaktivnější členové</h4>
+            {totalMemberCount && (
+              <span className="text-sm text-gray-400">
+                0 z 0 aktivních ({totalMemberCount} celkem)
+              </span>
+            )}
+          </div>
         </div>
         
         <div className="text-center py-8">
@@ -102,14 +123,21 @@ export default function MostActiveMembers({ members, dataSource }: MostActiveMem
             <path d="M12 2C13.1 2 14 2.9 14 4C14 5.1 13.1 6 12 6C10.9 6 10 5.1 10 4C10 2.9 10.9 2 12 2ZM21 9V7L15 1H5C3.89 1 3 1.89 3 3V21C3 22.11 3.89 23 5 23H19C20.11 23 21 22.11 21 21V9M19 9H14V4H5V21H19V9Z"/>
           </svg>
         </div>
-        <h4 className="text-lg font-semibold text-white">Nejaktivnější členové</h4>
+        <div className="flex items-center justify-between">
+          <h4 className="text-lg font-semibold text-white">Nejaktivnější členové</h4>
+          {totalMemberCount && (
+            <span className="text-sm text-gray-400">
+              {Math.min(showCount, members.length)} z {members.length} aktivních ({totalMemberCount} celkem)
+            </span>
+          )}
+        </div>
       </div>
 
       <div className="space-y-2 max-h-96 overflow-y-auto pr-2" style={{
         scrollbarWidth: 'thin',
         scrollbarColor: '#4B5563 #1F2937'
       }}>
-        {members.map((member, index) => {
+        {members.slice(0, showCount).map((member, index) => {
           const activityLevel = getActivityLevel(member.dailyOnlineTime);
 
           return (
@@ -158,6 +186,33 @@ export default function MostActiveMembers({ members, dataSource }: MostActiveMem
           );
         })}
       </div>
+
+      {/* Show More/Less Button */}
+      {members.length > 20 && (
+        <div className="mt-3 text-center">
+          {!isExpanded ? (
+            <button
+              onClick={handleShowMore}
+              className="text-sm text-purple-400 hover:text-purple-300 transition-colors flex items-center justify-center mx-auto"
+            >
+              <span>Zobrazit více ({members.length - 20} dalších)</span>
+              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+              </svg>
+            </button>
+          ) : (
+            <button
+              onClick={handleShowLess}
+              className="text-sm text-purple-400 hover:text-purple-300 transition-colors flex items-center justify-center mx-auto"
+            >
+              <span>Zobrazit méně</span>
+              <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+              </svg>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Footer info */}
       <div className="text-xs text-gray-500 mt-3 pt-2 border-t border-gray-600/30">
