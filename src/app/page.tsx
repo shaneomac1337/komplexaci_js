@@ -7,6 +7,7 @@ import Header from './components/Header';
 import ServerStatus from './components/ServerStatus';
 import DiscordServerStats from './components/DiscordServerStats';
 import MostActiveMembers from './components/MostActiveMembers';
+import DailyAwards from './components/DailyAwards';
 
 import PerformanceStatus from '../components/PerformanceStatus';
 
@@ -1660,6 +1661,9 @@ export default function Home() {
               <div className="space-y-6">
                 {/* Discord Server - Live Members */}
                 <DiscordServerStats />
+
+                {/* Daily Awards */}
+                <DailyAwards />
 
                 {/* Activity Times */}
                 <div className="bg-gray-700/30 rounded-xl p-4 border border-green-500/20">
