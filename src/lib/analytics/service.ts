@@ -499,6 +499,9 @@ class AnalyticsService {
 
         this.db.updateVoiceSession(user.voiceSessionId, endTime.toISOString(), Math.max(0, durationMinutes), screenShareMinutes);
         console.log(`🎤 Ended voice session: ${user.displayName} was in voice for ${durationMinutes} minutes${screenShareMinutes > 0 ? ` (${screenShareMinutes}m screen sharing)` : ''}`);
+
+        // IMMEDIATE UPDATE: Update voice time in user_stats immediately
+        this.updateVoiceTimeImmediately(user.userId);
       }
 
       user.voiceSessionId = undefined;
@@ -767,6 +770,84 @@ class AnalyticsService {
     }
   }
 
+  // IMMEDIATE UPDATE: Update voice time in user_stats immediately when voice session progresses
+  private updateVoiceTimeImmediately(userId: string) {
+    console.log(`🔧 DEBUG: updateVoiceTimeImmediately called for user ${userId}`);
+    try {
+      // Get user's last daily reset time to only count sessions after reset
+      const initialUserStats = this.db.getUserStats(userId);
+      const resetTime = initialUserStats?.last_daily_reset || new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
+
+      // Count voice time since last daily reset (including active sessions for real-time updates)
+      // For active sessions, include them regardless of start time (they may have been recovered)
+      const voiceStats = this.db.getDatabase().prepare(`
+        SELECT
+          SUM(duration_minutes) as total_minutes,
+          SUM(screen_share_minutes) as total_streaming_minutes
+        FROM voice_sessions
+        WHERE user_id = ? AND (
+          (start_time >= ? AND status IN ('active', 'ended')) OR
+          (status = 'active')
+        )
+      `).get(userId, resetTime) as any;
+
+      const newDailyVoiceMinutes = voiceStats?.total_minutes || 0;
+      const newDailyStreamingMinutes = voiceStats?.total_streaming_minutes || 0;
+
+      // Get existing user stats or create new ones
+      let userStats = this.db.getUserStats(userId);
+
+      if (!userStats) {
+        // Create new user stats
+        const now = new Date();
+        userStats = {
+          user_id: userId,
+          daily_online_minutes: 0,
+          daily_voice_minutes: newDailyVoiceMinutes,
+          daily_games_played: 0,
+          daily_games_minutes: 0,
+          daily_spotify_minutes: 0,
+          daily_spotify_songs: 0,
+          daily_streaming_minutes: newDailyStreamingMinutes,
+          monthly_online_minutes: 0,
+          monthly_voice_minutes: newDailyVoiceMinutes,
+          monthly_games_played: 0,
+          monthly_games_minutes: 0,
+          monthly_spotify_minutes: 0,
+          monthly_spotify_songs: 0,
+          monthly_streaming_minutes: newDailyStreamingMinutes,
+          last_daily_reset: resetTime,
+          last_monthly_reset: now.toISOString().split('T')[0] + 'T00:00:00.000Z',
+          created_at: now.toISOString(),
+          updated_at: now.toISOString()
+        };
+      } else {
+        // Update existing user stats with new voice time
+        const now = new Date();
+
+        // Real-time monthly accumulation: use Math.max() to ensure monthly >= daily
+        const newMonthlyVoiceMinutes = Math.max(userStats.monthly_voice_minutes, newDailyVoiceMinutes);
+        const newMonthlyStreamingMinutes = Math.max(userStats.monthly_streaming_minutes, newDailyStreamingMinutes);
+
+        userStats = {
+          ...userStats,
+          daily_voice_minutes: newDailyVoiceMinutes,
+          daily_streaming_minutes: newDailyStreamingMinutes,
+          monthly_voice_minutes: newMonthlyVoiceMinutes,
+          monthly_streaming_minutes: newMonthlyStreamingMinutes,
+          updated_at: now.toISOString()
+        };
+      }
+
+      // Save updated stats to database
+      this.db.upsertUserStats(userStats);
+
+      console.log(`🎤 IMMEDIATE UPDATE: Updated voice time for user ${userId}: ${newDailyVoiceMinutes} daily voice minutes, ${newDailyStreamingMinutes} daily streaming minutes`);
+    } catch (error) {
+      console.error(`❌ Error updating voice time immediately for ${userId}:`, error);
+    }
+  }
+
   private endAllUserSessions(user: UserActivity, endTime: Date) {
     if (user.gameSessionId) {
       this.endGameSession(user, endTime);
@@ -1021,6 +1102,11 @@ class AnalyticsService {
             updatedSessions++;
 
             console.log(`📊 Updated voice session: ${user.displayName} - ${durationMinutes}m total (${totalScreenShareMinutes}m streaming)`);
+
+            // IMMEDIATE UPDATE: Update voice time in user_stats immediately
+            console.log(`🔧 DEBUG: About to call updateVoiceTimeImmediately for user ${userId}`);
+            this.updateVoiceTimeImmediately(userId);
+            console.log(`🔧 DEBUG: Finished calling updateVoiceTimeImmediately for user ${userId}`);
           } else {
             console.warn(`⚠️ Voice session not found for ${user.displayName} (ID: ${user.voiceSessionId})`);
           }
