@@ -109,15 +109,18 @@ export async function GET(
       console.log(`  Using reset time: ${resetTime}`);
       
       gameSessions = db.getDatabase().prepare(`
-        SELECT 
+        SELECT
           game_name,
           COUNT(*) as session_count,
           SUM(duration_minutes) as total_minutes,
           AVG(duration_minutes) as avg_minutes,
           MIN(start_time) as first_played,
           MAX(start_time) as last_played
-        FROM game_sessions 
-        WHERE user_id = ? AND start_time >= ?
+        FROM game_sessions
+        WHERE user_id = ? AND (
+          (start_time >= ? AND status IN ('active', 'ended')) OR
+          (status = 'active')
+        )
         GROUP BY game_name
         ORDER BY total_minutes DESC
       `).all(userId, resetTime);
