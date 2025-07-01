@@ -1104,9 +1104,10 @@ class AnalyticsService {
             console.log(`📊 Updated voice session: ${user.displayName} - ${durationMinutes}m total (${totalScreenShareMinutes}m streaming)`);
 
             // IMMEDIATE UPDATE: Update voice time in user_stats immediately
-            console.log(`🔧 DEBUG: About to call updateVoiceTimeImmediately for user ${userId}`);
+            console.log(`🔧 SIMPLE DEBUG: userId = ${userId}`);
+            console.log(`🔧 SIMPLE DEBUG: About to call updateVoiceTimeImmediately`);
             this.updateVoiceTimeImmediately(userId);
-            console.log(`🔧 DEBUG: Finished calling updateVoiceTimeImmediately for user ${userId}`);
+            console.log(`🔧 SIMPLE DEBUG: Finished calling updateVoiceTimeImmediately`);
           } else {
             console.warn(`⚠️ Voice session not found for ${user.displayName} (ID: ${user.voiceSessionId})`);
           }
