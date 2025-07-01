@@ -160,6 +160,8 @@ class AnalyticsService {
 
           this.startVoiceSession(user, member.voice.channel.id, member.voice.channel.name, estimatedStartTime);
 
+
+
           if (user.isStreaming) {
             user.streamingStartTime = estimatedStartTime;
             console.log(`📺 User ${displayName} is currently streaming`);
@@ -772,7 +774,6 @@ class AnalyticsService {
 
   // IMMEDIATE UPDATE: Update voice time in user_stats immediately when voice session progresses
   private updateVoiceTimeImmediately(userId: string) {
-    console.log(`🔧 DEBUG: updateVoiceTimeImmediately called for user ${userId}`);
     try {
       // Get user's last daily reset time to only count sessions after reset
       const initialUserStats = this.db.getUserStats(userId);
@@ -1104,10 +1105,7 @@ class AnalyticsService {
             console.log(`📊 Updated voice session: ${user.displayName} - ${durationMinutes}m total (${totalScreenShareMinutes}m streaming)`);
 
             // IMMEDIATE UPDATE: Update voice time in user_stats immediately
-            console.log(`🔧 SIMPLE DEBUG: userId = ${userId}`);
-            console.log(`🔧 SIMPLE DEBUG: About to call updateVoiceTimeImmediately`);
             this.updateVoiceTimeImmediately(userId);
-            console.log(`🔧 SIMPLE DEBUG: Finished calling updateVoiceTimeImmediately`);
           } else {
             console.warn(`⚠️ Voice session not found for ${user.displayName} (ID: ${user.voiceSessionId})`);
           }
