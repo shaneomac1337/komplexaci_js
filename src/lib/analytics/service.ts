@@ -169,8 +169,19 @@ class AnalyticsService {
         }
       });
 
+      // Count session types for detailed logging
+      let gameSessionsRecovered = 0;
+      let voiceSessionsRecovered = 0;
+      let spotifySessionsRecovered = 0;
+
+      this.activeUsers.forEach(user => {
+        if (user.gameSessionId) gameSessionsRecovered++;
+        if (user.voiceSessionId) voiceSessionsRecovered++;
+        if (user.spotifySessionId) spotifySessionsRecovered++;
+      });
+
       if (recoveredSessions > 0) {
-        console.log(`✅ Created ${recoveredSessions} fresh sessions based on Discord real-time state (${this.activeUsers.size} active users)`);
+        console.log(`✅ Created ${recoveredSessions} fresh sessions: ${gameSessionsRecovered} games, ${voiceSessionsRecovered} voice, ${spotifySessionsRecovered} Spotify (${this.activeUsers.size} active users)`);
       } else {
         console.log(`✅ No active sessions found in Discord real-time state`);
       }
