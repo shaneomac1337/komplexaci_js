@@ -427,7 +427,7 @@ class AnalyticsService {
         console.log(`🎮 Ended game session: ${user.displayName} played ${user.currentGame} for ${durationMinutes} minutes (Session ID: ${user.gameSessionId})`);
 
         // Update user stats immediately
-        this.updateGameTimeImmediately(user.userId, durationMinutes);
+        this.updateGameTimeImmediately(user.userId);
       }
 
       user.gameSessionId = undefined;
@@ -676,12 +676,16 @@ class AnalyticsService {
       const resetTime = initialUserStats?.last_daily_reset || new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
       
       // Count game time since last daily reset (including active sessions for real-time updates)
+      // For active sessions, include them regardless of start time (they may have been recovered)
       const gameStats = this.db.getDatabase().prepare(`
         SELECT
           SUM(duration_minutes) as total_minutes,
           COUNT(DISTINCT game_name) as games_played
         FROM game_sessions
-        WHERE user_id = ? AND start_time >= ? AND status IN ('active', 'ended')
+        WHERE user_id = ? AND (
+          (start_time >= ? AND status IN ('active', 'ended')) OR
+          (status = 'active')
+        )
       `).get(userId, resetTime) as any;
 
       const newDailyGameMinutes = gameStats?.total_minutes || 0;
@@ -691,6 +695,18 @@ class AnalyticsService {
       console.log(`🔍 Game time calculation for ${userId}:`);
       console.log(`  Reset time: ${resetTime}`);
       console.log(`  Sessions found: ${newDailyGamesPlayed} games, ${newDailyGameMinutes} minutes`);
+
+      // Additional debug: Show all sessions for this user since reset
+      const allSessions = this.db.getDatabase().prepare(`
+        SELECT id, game_name, start_time, end_time, duration_minutes, status
+        FROM game_sessions
+        WHERE user_id = ? AND (
+          (start_time >= ? AND status IN ('active', 'ended')) OR
+          (status = 'active')
+        )
+        ORDER BY start_time DESC
+      `).all(userId, resetTime);
+      console.log(`  All sessions being counted:`, allSessions);
 
       // Get current user stats
       let userStats = this.db.getUserStats(userId);
