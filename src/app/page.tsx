@@ -1692,6 +1692,7 @@ export default function Home() {
                 <MostActiveMembers
                   members={discordStats?.mostActiveMembers || []}
                   dataSource={discordStats?.dataSource}
+                  totalMemberCount={discordStats?.memberCount}
                 />
 
                 {/* Basic Rules */}

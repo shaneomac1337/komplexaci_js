@@ -50,7 +50,7 @@ export async function GET() {
         const mostActiveMembers = membersWithRealTimeData
           .filter(member => member.dailyOnlineTime > 0)
           .sort((a, b) => b.dailyOnlineTime - a.dailyOnlineTime)
-          .slice(0, 10);
+          .slice(0, 50);
 
         // Format for frontend compatibility
         const onlineMembersWithDetails = membersWithRealTimeData.map(member => {
