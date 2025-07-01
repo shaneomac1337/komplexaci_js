@@ -189,13 +189,14 @@ class DiscordGatewayService {
           // Initialize analytics for existing members
           const presence = member.presence;
           if (presence) {
-
-            
+            // Use a consistent timestamp for initialization
+            const initTime = new Date();
             this.analyticsService.updateUserPresence(
               member.id,
               member.nickname || member.user.globalName || member.user.username,
               presence.status as 'online' | 'idle' | 'dnd' | 'offline',
-              presence.activities
+              presence.activities,
+              initTime
             );
           }
         }
@@ -335,12 +336,13 @@ class DiscordGatewayService {
 
 
 
-      // Update analytics service with presence change
+      // Update analytics service with presence change using the same timestamp
       this.analyticsService.updateUserPresence(
         presence.userId,
         member.displayName,
         newStatus as 'online' | 'idle' | 'dnd' | 'offline',
-        presence.activities
+        presence.activities,
+        currentTime  // Pass the same timestamp used for online session tracking
       );
 
       // Update server stats to refresh lastUpdated timestamp

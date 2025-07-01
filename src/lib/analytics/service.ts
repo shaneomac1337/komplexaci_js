@@ -69,17 +69,11 @@ class AnalyticsService {
     console.log('🧹 Cleaning up existing active sessions before recovery...');
     this.endAllActiveSessions(currentTime);
 
-    // Check if this is a fresh daily reset (within 10 minutes of midnight Czech time)
-    const czechTime = new Date(currentTime.toLocaleString("en-US", {timeZone: "Europe/Prague"}));
-    const minutesSinceMidnight = czechTime.getHours() * 60 + czechTime.getMinutes();
-    const isFreshDailyReset = minutesSinceMidnight <= 10; // Within 10 minutes of midnight
+    // No backdate estimation to ensure accurate timing
+    // Gaming sessions will start from the exact recovery time to match online time tracking
+    const estimatedStartTime = currentTime;
 
-    // Use minimal backdate estimation to avoid inflated gaming minutes
-    // If it's a fresh daily reset, don't backdate at all
-    const estimatedBackdateMinutes = isFreshDailyReset ? 0 : 1; // No backdate on fresh reset, minimal otherwise
-    const estimatedStartTime = new Date(currentTime.getTime() - (estimatedBackdateMinutes * 60 * 1000));
-
-    console.log(`🕐 Session recovery: ${isFreshDailyReset ? 'Fresh daily reset detected' : 'Normal recovery'}, backdate: ${estimatedBackdateMinutes}m`);
+    console.log(`🕐 Session recovery: No backdate, accurate timing from ${currentTime.toISOString()}`);
 
     try {
       if (!discordGuild) {
@@ -187,8 +181,8 @@ class AnalyticsService {
 
   // === USER ACTIVITY TRACKING ===
 
-  public updateUserPresence(userId: string, displayName: string, status: 'online' | 'idle' | 'dnd' | 'offline', activities: any[]) {
-    const currentTime = new Date();
+  public updateUserPresence(userId: string, displayName: string, status: 'online' | 'idle' | 'dnd' | 'offline', activities: any[], timestamp?: Date) {
+    const currentTime = timestamp || new Date();
     let user = this.activeUsers.get(userId);
 
     if (!user) {
