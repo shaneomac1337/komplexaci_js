@@ -616,14 +616,19 @@ class AnalyticsService {
   // IMMEDIATE UPDATE: Update Spotify song count in user_stats immediately when a new song starts
   private updateSpotifySongCountImmediately(userId: string) {
     try {
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-      
-      // Count today's Spotify songs (including active sessions for real-time updates)
+      // Count Spotify songs since the user's last daily reset (not just calendar date)
+      // This ensures proper reset behavior - only count sessions after the last reset
       const spotifyStats = this.db.getDatabase().prepare(`
         SELECT COUNT(*) as songs_played
-        FROM spotify_sessions
-        WHERE user_id = ? AND date(start_time) = ? AND status IN ('active', 'ended')
-      `).get(userId, today) as any;
+        FROM spotify_sessions s
+        WHERE s.user_id = ?
+          AND s.start_time > (
+            SELECT COALESCE(last_daily_reset, '1970-01-01')
+            FROM user_stats
+            WHERE user_id = ?
+          )
+          AND s.status IN ('active', 'ended')
+      `).get(userId, userId) as any;
 
       const newDailySpotifySongs = spotifyStats?.songs_played || 0;
 
