@@ -218,31 +218,36 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
                 <div className="space-y-4">
                   {/* Daily Overview */}
                   <div className="bg-gray-700/30 rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-purple-300 mb-3">📊 Dnešní přehled</h4>
+                    <h4 className="text-sm font-semibold text-purple-300 mb-3">📊 Dnešní přehled (celkem)</h4>
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
-                        <div className="text-gray-400">Online čas</div>
+                        <div className="text-gray-400">Online čas celkem</div>
                         <div className="text-green-400 font-semibold">
                           {formatOnlineTime(stats.data.totals.totalOnlineTime)}
                         </div>
                       </div>
                       <div>
-                        <div className="text-gray-400">Spotify písně</div>
+                        <div className="text-gray-400">Spotify písně celkem</div>
                         <div className="text-purple-400 font-semibold">
                           {stats.data.totals.totalSongsPlayed}
                         </div>
                       </div>
                       <div>
-                        <div className="text-gray-400">Herní čas</div>
+                        <div className="text-gray-400">Herní čas celkem</div>
                         <div className="text-blue-400 font-semibold">
                           {formatOnlineTime(stats.data.totals.totalGameTime)}
                         </div>
                       </div>
                       <div>
-                        <div className="text-gray-400">Voice čas</div>
+                        <div className="text-gray-400">Voice čas celkem</div>
                         <div className="text-yellow-400 font-semibold">
                           {formatOnlineTime(stats.data.totals.totalVoiceTime)}
                         </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-2 border-t border-gray-600/30">
+                      <div className="text-xs text-gray-500">
+                        💡 Celkové časy zahrnují aktivní i dokončené session
                       </div>
                     </div>
                   </div>
@@ -280,10 +285,10 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
                 <div className="space-y-4">
                   {/* Spotify Stats */}
                   <div className="bg-gray-700/30 rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-purple-300 mb-3">🎵 Spotify statistiky</h4>
+                    <h4 className="text-sm font-semibold text-purple-300 mb-3">🎵 Spotify statistiky (celkem)</h4>
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
-                        <div className="text-gray-400">Celkem písní</div>
+                        <div className="text-gray-400">Celkem písní dnes</div>
                         <div className="text-purple-400 font-semibold">
                           {stats.data.totals.totalSongsPlayed}
                         </div>
@@ -295,12 +300,17 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
                         </div>
                       </div>
                     </div>
+                    <div className="mt-3 pt-2 border-t border-gray-600/30">
+                      <div className="text-xs text-gray-500">
+                        💡 Celkový počet zahrnuje aktivní i dokončené session
+                      </div>
+                    </div>
                   </div>
 
                   {/* Top Artists */}
                   {stats.data.spotifyActivity && stats.data.spotifyActivity.length > 0 && (
                     <div className="bg-gray-700/30 rounded-lg p-4">
-                      <h4 className="text-sm font-semibold text-purple-300 mb-3">🎤 Nejposlouchanější interpreti</h4>
+                      <h4 className="text-sm font-semibold text-purple-300 mb-3">🎤 Interpreti (kumulované počty)</h4>
                       <div className="space-y-2">
                         {stats.data.spotifyActivity.map((artist, index) => (
                           <div key={artist.artist} className="flex items-center justify-between text-sm">
@@ -312,12 +322,14 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
                               <div className="text-purple-400 font-semibold">
                                 {artist.plays_count} {artist.plays_count === 1 ? 'píseň' : 'písní'}
                               </div>
-                              <div className="text-gray-500 text-xs">
-                                {artist.unique_tracks} {artist.unique_tracks === 1 ? 'track' : 'tracků'}
-                              </div>
                             </div>
                           </div>
                         ))}
+                      </div>
+                      <div className="mt-3 pt-2 border-t border-gray-600/30">
+                        <div className="text-xs text-gray-500">
+                          🎵 Počty jsou kumulované ze všech poslechů během dne
+                        </div>
                       </div>
                     </div>
                   )}
@@ -325,7 +337,7 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
                   {/* Top Tracks */}
                   {stats.data.topTracks && stats.data.topTracks.length > 0 && (
                     <div className="bg-gray-700/30 rounded-lg p-4">
-                      <h4 className="text-sm font-semibold text-purple-300 mb-3">🎶 Nejposlouchanější písně</h4>
+                      <h4 className="text-sm font-semibold text-purple-300 mb-3">🎶 Nejposlouchanější písně (kumulované)</h4>
                       <div className="space-y-2">
                         {stats.data.topTracks.map((track, index) => (
                           <div key={`${track.track_name}-${track.artist}`} className="text-sm">
@@ -343,6 +355,11 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
                             </div>
                           </div>
                         ))}
+                      </div>
+                      <div className="mt-3 pt-2 border-t border-gray-600/30">
+                        <div className="text-xs text-gray-500">
+                          🔄 Počty přehrání jsou kumulované za celý den
+                        </div>
                       </div>
                     </div>
                   )}
@@ -363,10 +380,10 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
                 <div className="space-y-4">
                   {/* Gaming Stats */}
                   <div className="bg-gray-700/30 rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-blue-300 mb-3">🎮 Herní statistiky</h4>
+                    <h4 className="text-sm font-semibold text-blue-300 mb-3">🎮 Herní statistiky (celkem)</h4>
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
-                        <div className="text-gray-400">Celkový čas</div>
+                        <div className="text-gray-400">Celkový čas dnes</div>
                         <div className="text-blue-400 font-semibold">
                           {formatOnlineTime(stats.data.totals.totalGameTime)}
                         </div>
@@ -378,12 +395,17 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
                         </div>
                       </div>
                     </div>
+                    <div className="mt-3 pt-2 border-t border-gray-600/30">
+                      <div className="text-xs text-gray-500">
+                        💡 Celkový čas zahrnuje aktivní i dokončené session
+                      </div>
+                    </div>
                   </div>
 
                   {/* Game Sessions */}
                   {stats.data.gameSessions && stats.data.gameSessions.length > 0 && (
                     <div className="bg-gray-700/30 rounded-lg p-4">
-                      <h4 className="text-sm font-semibold text-blue-300 mb-3">🏆 Nejhranější hry</h4>
+                      <h4 className="text-sm font-semibold text-blue-300 mb-3">🏆 Jednotlivé hry (kumulované časy)</h4>
                       <div className="space-y-2">
                         {stats.data.gameSessions.map((game, index) => (
                           <div key={game.game_name} className="flex items-center justify-between text-sm">
@@ -401,6 +423,11 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
                             </div>
                           </div>
                         ))}
+                      </div>
+                      <div className="mt-3 pt-2 border-t border-gray-600/30">
+                        <div className="text-xs text-gray-500">
+                          📊 Časy jsou kumulované ze všech dokončených session pro každou hru
+                        </div>
                       </div>
                     </div>
                   )}
@@ -421,19 +448,24 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
                 <div className="space-y-4">
                   {/* Voice Stats */}
                   <div className="bg-gray-700/30 rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-yellow-300 mb-3">🎤 Voice statistiky</h4>
+                    <h4 className="text-sm font-semibold text-yellow-300 mb-3">🎤 Voice statistiky (celkem)</h4>
                     <div className="grid grid-cols-2 gap-3 text-sm">
                       <div>
-                        <div className="text-gray-400">Celkový čas</div>
+                        <div className="text-gray-400">Celkový čas dnes</div>
                         <div className="text-yellow-400 font-semibold">
                           {formatOnlineTime(stats.data.totals.totalVoiceTime)}
                         </div>
                       </div>
                       <div>
-                        <div className="text-gray-400">Screen share</div>
+                        <div className="text-gray-400">Screen share celkem</div>
                         <div className="text-yellow-400 font-semibold">
                           {formatOnlineTime(stats.data.totals.totalScreenShareTime || 0)}
                         </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-2 border-t border-gray-600/30">
+                      <div className="text-xs text-gray-500">
+                        💡 Celkový čas zahrnuje aktivní i dokončené session
                       </div>
                     </div>
                   </div>
@@ -441,7 +473,7 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
                   {/* Voice Channels */}
                   {stats.data.voiceActivity && stats.data.voiceActivity.length > 0 && (
                     <div className="bg-gray-700/30 rounded-lg p-4">
-                      <h4 className="text-sm font-semibold text-yellow-300 mb-3">📢 Nejpoužívanější kanály</h4>
+                      <h4 className="text-sm font-semibold text-yellow-300 mb-3">📢 Kanály (kumulované časy)</h4>
                       <div className="space-y-2">
                         {stats.data.voiceActivity.map((voice, index) => (
                           <div key={voice.channel_name} className="flex items-center justify-between text-sm">
@@ -462,6 +494,11 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
                             </div>
                           </div>
                         ))}
+                      </div>
+                      <div className="mt-3 pt-2 border-t border-gray-600/30">
+                        <div className="text-xs text-gray-500">
+                          🎙️ Časy jsou kumulované ze všech dokončených session v každém kanálu
+                        </div>
                       </div>
                     </div>
                   )}
