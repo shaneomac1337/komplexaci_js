@@ -141,18 +141,40 @@ export async function GET(
     }
     
     // Get user's voice activity
-    const voiceActivity = db.getDatabase().prepare(`
-      SELECT 
-        channel_name,
-        COUNT(*) as session_count,
-        SUM(duration_minutes) as total_minutes,
-        SUM(screen_share_minutes) as screen_share_minutes,
-        AVG(duration_minutes) as avg_minutes
-      FROM voice_sessions 
-      WHERE user_id = ? AND start_time >= ? AND start_time <= ?
-      GROUP BY channel_name
-      ORDER BY total_minutes DESC
-    `).all(userId, sessionStartTime, sessionEndTime);
+    let voiceActivity;
+    if (timeRange === 'monthly') {
+      voiceActivity = db.getDatabase().prepare(`
+        SELECT
+          channel_name,
+          COUNT(*) as session_count,
+          SUM(duration_minutes) as total_minutes,
+          SUM(screen_share_minutes) as screen_share_minutes,
+          AVG(duration_minutes) as avg_minutes
+        FROM voice_sessions
+        WHERE user_id = ? AND (
+          (start_time >= ? AND status IN ('active', 'ended')) OR
+          (status = 'active')
+        )
+        GROUP BY channel_name
+        ORDER BY total_minutes DESC
+      `).all(userId, resetTime);
+    } else {
+      voiceActivity = db.getDatabase().prepare(`
+        SELECT
+          channel_name,
+          COUNT(*) as session_count,
+          SUM(duration_minutes) as total_minutes,
+          SUM(screen_share_minutes) as screen_share_minutes,
+          AVG(duration_minutes) as avg_minutes
+        FROM voice_sessions
+        WHERE user_id = ? AND (
+          (start_time >= ? AND start_time <= ?) OR
+          (status = 'active')
+        )
+        GROUP BY channel_name
+        ORDER BY total_minutes DESC
+      `).all(userId, sessionStartTime, sessionEndTime);
+    }
     
     // Get user's Spotify activity (focus on plays, not time) - using same time filtering as other sessions
     const spotifyActivity = db.getDatabase().prepare(`
@@ -183,21 +205,39 @@ export async function GET(
     // Get recent sessions
     const recentSessions = [];
     
-    // Add recent game sessions
+    // Add recent game sessions - cumulated by game name
     const recentGames = db.getDatabase().prepare(`
-      SELECT 'game' as type, game_name as name, start_time, end_time, duration_minutes
-      FROM game_sessions 
-      WHERE user_id = ? AND date(start_time) >= ? AND date(start_time) <= ?
-      ORDER BY start_time DESC
+      SELECT
+        'game' as type,
+        game_name as name,
+        MAX(start_time) as start_time,
+        MAX(end_time) as end_time,
+        SUM(duration_minutes) as duration_minutes
+      FROM game_sessions
+      WHERE user_id = ? AND (
+        (date(start_time) >= ? AND date(start_time) <= ? AND duration_minutes > 0) OR
+        (status = 'active')
+      )
+      GROUP BY game_name
+      ORDER BY MAX(start_time) DESC
       LIMIT 5
     `).all(userId, startDateStr, endDateStr);
     
-    // Add recent voice sessions
+    // Add recent voice sessions - cumulated by channel name
     const recentVoice = db.getDatabase().prepare(`
-      SELECT 'voice' as type, channel_name as name, start_time, end_time, duration_minutes
-      FROM voice_sessions 
-      WHERE user_id = ? AND date(start_time) >= ? AND date(start_time) <= ?
-      ORDER BY start_time DESC
+      SELECT
+        'voice' as type,
+        channel_name as name,
+        MAX(start_time) as start_time,
+        MAX(end_time) as end_time,
+        SUM(duration_minutes) as duration_minutes
+      FROM voice_sessions
+      WHERE user_id = ? AND (
+        (date(start_time) >= ? AND date(start_time) <= ? AND duration_minutes > 0) OR
+        (status = 'active')
+      )
+      GROUP BY channel_name
+      ORDER BY MAX(start_time) DESC
       LIMIT 5
     `).all(userId, startDateStr, endDateStr);
     

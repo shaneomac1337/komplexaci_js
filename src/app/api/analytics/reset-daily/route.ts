@@ -91,6 +91,27 @@ export async function POST(request: NextRequest) {
 
     console.log(`🔄 Ended ${endedGameSessions.changes} game sessions, ${endedVoiceSessions.changes} voice sessions, and ${endedSpotifySessions.changes} Spotify sessions`);
 
+    // 🧹 CLEAR TODAY'S SESSION HISTORY (Recent Activities)
+    console.log(`🧹 Clearing today's session history for fresh start...`);
+
+    // Delete all of today's completed sessions (this clears Recent Activities)
+    const deletedGameSessions = db.getDatabase().prepare(`
+      DELETE FROM game_sessions
+      WHERE date(start_time) = ? AND status = 'ended'
+    `).run(today);
+
+    const deletedVoiceSessions = db.getDatabase().prepare(`
+      DELETE FROM voice_sessions
+      WHERE date(start_time) = ? AND status = 'ended'
+    `).run(today);
+
+    const deletedSpotifySessions = db.getDatabase().prepare(`
+      DELETE FROM spotify_sessions
+      WHERE date(start_time) = ? AND status = 'ended'
+    `).run(today);
+
+    console.log(`🧹 Cleared today's session history: ${deletedGameSessions.changes} game, ${deletedVoiceSessions.changes} voice, ${deletedSpotifySessions.changes} Spotify sessions deleted`);
+
     // Restart active sessions for users who are currently active (playing games, in voice, listening to Spotify)
     console.log(`🔄 Checking if Discord Gateway is ready for session recovery... Ready: ${gateway.isReady()}`);
     if (gateway.isReady()) {
@@ -119,6 +140,11 @@ export async function POST(request: NextRequest) {
         game: endedGameSessions.changes,
         voice: endedVoiceSessions.changes,
         spotify: endedSpotifySessions.changes
+      },
+      sessionHistoryCleared: {
+        game: deletedGameSessions.changes,
+        voice: deletedVoiceSessions.changes,
+        spotify: deletedSpotifySessions.changes
       },
       sessionRecoveryAttempted: gateway.isReady(),
       historicalSnapshotsCreated: currentUserStats.filter(s =>
