@@ -12,10 +12,13 @@ export async function GET(
     
     const db = getAnalyticsDatabase();
     
-    // Get user's reset dates and monthly counters to respect monthly reset
+    // Get user's reset dates and counters to respect daily/monthly reset
     const userStats = db.getDatabase().prepare(`
-      SELECT last_monthly_reset, last_daily_reset, monthly_online_minutes, monthly_voice_minutes,
-             monthly_games_played, monthly_games_minutes, monthly_spotify_minutes, monthly_spotify_songs
+      SELECT last_monthly_reset, last_daily_reset,
+             daily_online_minutes, daily_voice_minutes, daily_games_played, daily_games_minutes,
+             daily_spotify_minutes, daily_spotify_songs, daily_streaming_minutes,
+             monthly_online_minutes, monthly_voice_minutes, monthly_games_played, monthly_games_minutes,
+             monthly_spotify_minutes, monthly_spotify_songs
       FROM user_stats
       WHERE user_id = ?
     `).get(userId) as any;
@@ -142,7 +145,11 @@ export async function GET(
     
     // Get user's voice activity
     let voiceActivity;
-    if (timeRange === 'monthly') {
+    if (timeRange === '1d') {
+      // Get user's last daily reset time to only count sessions after reset
+      const userStatsForVoice = db.getUserStats(userId);
+      const resetTime = userStatsForVoice?.last_daily_reset || sessionStartTime;
+
       voiceActivity = db.getDatabase().prepare(`
         SELECT
           channel_name,
@@ -158,6 +165,25 @@ export async function GET(
         GROUP BY channel_name
         ORDER BY total_minutes DESC
       `).all(userId, resetTime);
+    } else if (timeRange === 'monthly') {
+      // Use monthly reset time
+      const monthlyResetTime = userStats?.last_monthly_reset || sessionStartTime;
+
+      voiceActivity = db.getDatabase().prepare(`
+        SELECT
+          channel_name,
+          COUNT(*) as session_count,
+          SUM(duration_minutes) as total_minutes,
+          SUM(screen_share_minutes) as screen_share_minutes,
+          AVG(duration_minutes) as avg_minutes
+        FROM voice_sessions
+        WHERE user_id = ? AND (
+          (start_time >= ? AND status IN ('active', 'ended')) OR
+          (status = 'active')
+        )
+        GROUP BY channel_name
+        ORDER BY total_minutes DESC
+      `).all(userId, monthlyResetTime);
     } else {
       voiceActivity = db.getDatabase().prepare(`
         SELECT
@@ -245,11 +271,18 @@ export async function GET(
     recentSessions.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
     
     // Calculate totals from actual session data
+    // For 1d (daily) view, use real-time counters from user_stats (includes active sessions)
     // For 30d (monthly) view, use accumulated counters from user_stats (like daily reset system)
     // For other time ranges, use session-based calculations
     let totalGameTime, totalVoiceTime, totalSongsPlayed, totalScreenShareTime;
-    
-    if (timeRange === 'monthly') {
+
+    if (timeRange === '1d') {
+      // Use daily counters from user_stats (real-time tracking, includes active sessions)
+      totalGameTime = userStats?.daily_games_minutes || 0;
+      totalVoiceTime = userStats?.daily_voice_minutes || 0;
+      totalSongsPlayed = userStats?.daily_spotify_songs || 0;
+      totalScreenShareTime = userStats?.daily_streaming_minutes || 0;
+    } else if (timeRange === 'monthly') {
       // Use monthly counters from user_stats (reset to 0 by monthly reset)
       totalGameTime = userStats?.monthly_games_minutes || 0; // Now we have proper monthly game time tracking!
       totalVoiceTime = userStats?.monthly_voice_minutes || 0;
