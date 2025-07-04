@@ -101,8 +101,8 @@ export default function DailyAwards() {
   useEffect(() => {
     fetchAwards();
 
-    // Refresh every 5 minutes
-    const interval = setInterval(fetchAwards, 5 * 60 * 1000);
+    // 🔄 REAL-TIME UPDATES: Refresh every minute for live competition tracking
+    const interval = setInterval(fetchAwards, 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
