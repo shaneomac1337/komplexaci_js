@@ -251,8 +251,22 @@ class DiscordGatewayService {
 
     // Initialize daily tracking variables
     let dailyOnlineTime = existingMember?.dailyOnlineTime || 0;
-    let lastDailyReset = existingMember?.lastDailyReset || currentTime;
+    let lastDailyReset = existingMember?.lastDailyReset;
     let sessionStartTime = existingMember?.sessionStartTime || null;
+
+    // For new members (not in cache), check database for last reset time
+    if (!lastDailyReset) {
+      const analyticsDb = getAnalyticsDatabase();
+      const userStats = analyticsDb.getUserStats(member.id);
+      if (userStats?.last_daily_reset) {
+        lastDailyReset = new Date(userStats.last_daily_reset);
+        console.log(`🔄 Synced database reset time for ${member.displayName || member.user.username}: ${lastDailyReset.toISOString()}`);
+      } else {
+        // Truly new user - set to current time
+        lastDailyReset = currentTime;
+        console.log(`👋 New user ${member.displayName || member.user.username} - initializing reset time`);
+      }
+    }
 
     // Check for daily reset at midnight Czech time
     const czechTime = new Date(currentTime.toLocaleString("en-US", {timeZone: "Europe/Prague"}));
