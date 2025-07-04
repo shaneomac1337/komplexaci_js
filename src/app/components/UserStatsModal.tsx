@@ -76,6 +76,13 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
   useEffect(() => {
     if (isOpen && userId) {
       fetchUserStats();
+
+      // 🔄 REAL-TIME UPDATES: Refresh every 30 seconds while modal is open
+      const interval = setInterval(() => {
+        fetchUserStats();
+      }, 30000);
+
+      return () => clearInterval(interval);
     }
   }, [isOpen, userId]);
 
