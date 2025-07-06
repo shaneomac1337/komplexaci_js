@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAnalyticsDatabase } from '@/lib/analytics/database';
 import { getDiscordGateway } from '@/lib/discord-gateway';
+import { getBestDiscordAvatarUrl } from '@/lib/discord-avatar-utils';
 
 export interface DailyAward {
   id: string;
@@ -30,10 +31,20 @@ export async function GET(request: NextRequest) {
       const guild = gateway.getGuild();
       if (guild) {
         guild.members.cache.forEach(member => {
-          memberMap.set(member.id, {
-            displayName: member.displayName,
-            avatar: member.displayAvatarURL({ size: 64 })
-          });
+          try {
+            const avatarUrl = getBestDiscordAvatarUrl(member.id, member.user.avatar, member.user.discriminator, 64);
+            memberMap.set(member.id, {
+              displayName: member.displayName,
+              avatar: avatarUrl
+            });
+            console.log(`✅ Member ${member.displayName} avatar: ${avatarUrl}`);
+          } catch (error) {
+            console.error(`❌ Error getting avatar for ${member.displayName}:`, error);
+            memberMap.set(member.id, {
+              displayName: member.displayName,
+              avatar: null
+            });
+          }
         });
       }
     }
@@ -46,10 +57,18 @@ export async function GET(request: NextRequest) {
       }
 
       const member = memberMap.get(result.user_id);
+      
+      // Validate avatar URL
+      let avatarUrl = member?.avatar || null;
+      if (avatarUrl && (!avatarUrl.startsWith('https://') || !avatarUrl.includes('cdn.discordapp.com'))) {
+        console.warn(`⚠️  Invalid avatar URL for ${member?.displayName}: ${avatarUrl}`);
+        avatarUrl = null;
+      }
+      
       return {
         userId: result.user_id,
         displayName: member?.displayName || 'Unknown User',
-        avatar: member?.avatar || null,
+        avatar: avatarUrl,
         value: result[valueField],
         unit
       };

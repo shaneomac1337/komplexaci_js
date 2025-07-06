@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Image from 'next/image';
+import SafeImage from './SafeImage';
 
 interface DailyAward {
   id: string;
@@ -178,21 +178,20 @@ export default function DailyAwards() {
             <div className="flex items-center gap-2 flex-shrink-0">
               {award.winner ? (
                 <>
-                  {award.winner.avatar ? (
-                    <Image
-                      src={award.winner.avatar}
-                      alt={award.winner.displayName}
-                      width={32}
-                      height={32}
-                      className="rounded-full border border-gray-600"
-                    />
-                  ) : (
-                    <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center border border-gray-600">
-                      <span className="text-white text-xs font-bold">
-                        {award.winner.displayName.charAt(0).toUpperCase()}
-                      </span>
-                    </div>
-                  )}
+                  <SafeImage
+                    src={award.winner.avatar}
+                    alt={award.winner.displayName}
+                    width={32}
+                    height={32}
+                    className="rounded-full border border-gray-600"
+                    fallback={
+                      <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center border border-gray-600">
+                        <span className="text-white text-xs font-bold">
+                          {award.winner.displayName.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                    }
+                  />
                   <div className="text-right">
                     <div className="text-white text-sm font-medium max-w-24 truncate">
                       {award.winner.displayName}
@@ -309,21 +308,20 @@ export default function DailyAwards() {
                       </div>
 
                       {/* Avatar */}
-                      {entry.avatar ? (
-                        <Image
-                          src={entry.avatar}
-                          alt={entry.displayName}
-                          width={32}
-                          height={32}
-                          className="rounded-full border border-gray-600"
-                        />
-                      ) : (
-                        <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center border border-gray-600">
-                          <span className="text-white text-xs font-bold">
-                            {entry.displayName.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                      )}
+                      <SafeImage
+                        src={entry.avatar}
+                        alt={entry.displayName}
+                        width={32}
+                        height={32}
+                        className="rounded-full border border-gray-600"
+                        fallback={
+                          <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center border border-gray-600">
+                            <span className="text-white text-xs font-bold">
+                              {entry.displayName.charAt(0).toUpperCase()}
+                            </span>
+                          </div>
+                        }
+                      />
 
                       {/* Name and Value */}
                       <div className="flex-1 min-w-0">

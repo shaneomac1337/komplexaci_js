@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { getDiscordGateway } from '@/lib/discord-gateway';
 import { getAnalyticsDatabase } from '@/lib/analytics/database';
 import { initializeDiscordGateway } from '@/lib/discord-startup';
+import { getBestDiscordAvatarUrl } from '@/lib/discord-avatar-utils';
 
 export async function GET() {
   try {
@@ -313,9 +314,7 @@ export async function GET() {
           id: member.user.id,
           username: member.user.username,
           displayName: member.nick || member.user.global_name || member.user.username,
-          avatar: member.user.avatar
-            ? `https://cdn.discordapp.com/avatars/${member.user.id}/${member.user.avatar}.png?size=64`
-            : null,
+          avatar: getBestDiscordAvatarUrl(member.user.id, member.user.avatar, member.user.discriminator, 64),
           status: 'unknown', // Not displaying status
           activity: null, // Not displaying activity
           roles: member.roles || [],

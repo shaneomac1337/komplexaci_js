@@ -4,6 +4,7 @@ import { Client, GatewayIntentBits, Presence, GuildMember, Activity } from 'disc
 import { getAnalyticsService } from './analytics/service';
 import { getAnalyticsDatabase } from './analytics/database';
 import { initializeAnalytics } from './analytics';
+import { getBestDiscordAvatarUrl } from './discord-avatar-utils';
 
 interface CachedMember {
   id: string;
@@ -312,9 +313,7 @@ class DiscordGatewayService {
       id: member.id,
       username: member.user.username,
       displayName: member.nickname || member.user.globalName || member.user.username,
-      avatar: member.user.avatar
-        ? `https://cdn.discordapp.com/avatars/${member.id}/${member.user.avatar}.png?size=64`
-        : null,
+      avatar: getBestDiscordAvatarUrl(member.id, member.user.avatar, member.user.discriminator, 64),
       status: currentStatus,
       activities: member.presence?.activities || [],
       voice: member.voice ? {
