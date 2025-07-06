@@ -6,6 +6,7 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const riotId = searchParams.get('riotId');
     const region = searchParams.get('region') || 'euw1';
+    const refresh = searchParams.get('refresh') === 'true';
 
     // Validate required parameters
     if (!riotId) {
@@ -40,9 +41,14 @@ export async function GET(request: NextRequest) {
       region
     );
 
+    // Use different cache headers based on refresh parameter
+    const cacheControl = refresh 
+      ? 'no-cache, no-store, must-revalidate'
+      : 'public, s-maxage=300, stale-while-revalidate=600';
+
     return NextResponse.json(profile, {
       headers: {
-        'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600',
+        'Cache-Control': cacheControl,
       },
     });
 

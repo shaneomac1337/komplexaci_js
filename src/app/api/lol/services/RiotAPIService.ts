@@ -24,6 +24,10 @@ import { enrichMatchWithChampionData, enrichMasteryWithChampionData } from '../u
 
 export class RiotAPIService {
   private apiKey: string;
+  private static failedPuuidCache = new Map<string, number>(); // Cache failed PUUIDs with timestamp
+  private static FAILED_PUUID_CACHE_TTL = 300000; // 5 minutes in milliseconds
+  private static DEBUG_MODE = process.env.RIOT_API_DEBUG === 'true'; // Debug flag for development
+  
   private baseUrls = {
     // Regional routing for account-v1 and match-v5
     americas: 'https://americas.api.riotgames.com',
@@ -86,7 +90,38 @@ export class RiotAPIService {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Riot API Error: ${response.status} - ${errorData.status?.message || response.statusText}`);
+      
+      // Handle rate limiting more gracefully - suppress logs unless in debug mode
+      if (response.status === 429) {
+        const retryAfter = response.headers.get('Retry-After') || '60';
+        const errorMessage = `Riot API Error: ${response.status} - rate limit exceeded - retry after ${retryAfter}s`;
+        
+        if (RiotAPIService.DEBUG_MODE) {
+          console.warn('⚠️ Rate limit hit:', errorMessage);
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      // Handle decryption errors (often due to expired PUUIDs) - suppress logs unless in debug mode
+      if (response.status === 400 && errorData.status?.message?.includes('decrypting')) {
+        const errorMessage = `Riot API Error: ${response.status} - data decryption failed (possibly expired/invalid PUUID)`;
+        
+        if (RiotAPIService.DEBUG_MODE) {
+          console.warn('⚠️ PUUID decryption error:', errorMessage);
+        }
+        
+        throw new Error(errorMessage);
+      }
+      
+      // For other errors, still log them as they may be more serious
+      const errorMessage = `Riot API Error: ${response.status} - ${errorData.status?.message || response.statusText}`;
+      
+      if (RiotAPIService.DEBUG_MODE) {
+        console.error('❌ Riot API Error:', errorMessage);
+      }
+      
+      throw new Error(errorMessage);
     }
 
     return response.json();
@@ -108,22 +143,30 @@ export class RiotAPIService {
       const { name, tag } = variations[i];
       const url = `${regionalUrl}/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(name)}/${encodeURIComponent(tag)}`;
 
-      console.log(`🔍 Riot API Debug - Attempt ${i + 1}:`, {
-        originalGameName: gameName,
-        originalTagLine: tagLine,
-        tryingGameName: name,
-        tryingTagLine: tag,
-        region,
-        regionalUrl,
-        fullUrl: url
-      });
+      if (RiotAPIService.DEBUG_MODE) {
+        console.log(`🔍 Riot API Debug - Attempt ${i + 1}:`, {
+          originalGameName: gameName,
+          originalTagLine: tagLine,
+          tryingGameName: name,
+          tryingTagLine: tag,
+          region,
+          regionalUrl,
+          fullUrl: url
+        });
+      }
 
       try {
         const result = await this.makeRequest<RiotAccount>(url);
-        console.log(`✅ Success on attempt ${i + 1}:`, result);
+        
+        if (RiotAPIService.DEBUG_MODE) {
+          console.log(`✅ Success on attempt ${i + 1}:`, result);
+        }
+        
         return result;
       } catch (error) {
-        console.log(`❌ Attempt ${i + 1} failed:`, error instanceof Error ? error.message : error);
+        if (RiotAPIService.DEBUG_MODE) {
+          console.log(`❌ Attempt ${i + 1} failed:`, error instanceof Error ? error.message : error);
+        }
 
         // If this is the last attempt, provide helpful error message
         if (i === variations.length - 1) {
@@ -175,11 +218,53 @@ export class RiotAPIService {
     return enrichedMastery;
   }
 
+  // Helper method to check if PUUID is known to be invalid
+  private isFailedPuuid(puuid: string): boolean {
+    const cached = RiotAPIService.failedPuuidCache.get(puuid);
+    if (!cached) return false;
+    
+    // Check if cache is still valid (5 minutes)
+    if (Date.now() - cached > RiotAPIService.FAILED_PUUID_CACHE_TTL) {
+      RiotAPIService.failedPuuidCache.delete(puuid);
+      return false;
+    }
+    
+    return true;
+  }
+
+  // Helper method to mark PUUID as failed
+  private markPuuidAsFailed(puuid: string): void {
+    RiotAPIService.failedPuuidCache.set(puuid, Date.now());
+  }
+
+  // Static method to clean up expired entries from failed PUUID cache
+  static cleanupFailedPuuidCache(): void {
+    const now = Date.now();
+    for (const [puuid, timestamp] of RiotAPIService.failedPuuidCache.entries()) {
+      if (now - timestamp > RiotAPIService.FAILED_PUUID_CACHE_TTL) {
+        RiotAPIService.failedPuuidCache.delete(puuid);
+      }
+    }
+  }
+
   // Get match IDs by PUUID
   async getMatchIds(puuid: string, region: string = 'euw1', start: number = 0, count: number = 20): Promise<string[]> {
-    const regionalUrl = this.getRegionalUrl(region);
-    const url = `${regionalUrl}/lol/match/v5/matches/by-puuid/${puuid}/ids?start=${start}&count=${count}`;
-    return this.makeRequest<string[]>(url);
+    // Check if this PUUID is known to be invalid
+    if (this.isFailedPuuid(puuid)) {
+      throw new Error('Riot API Error: 400 - data decryption failed (cached as invalid PUUID)');
+    }
+
+    try {
+      const regionalUrl = this.getRegionalUrl(region);
+      const url = `${regionalUrl}/lol/match/v5/matches/by-puuid/${puuid}/ids?start=${start}&count=${count}`;
+      return this.makeRequest<string[]>(url);
+    } catch (error) {
+      // If it's a decryption error, cache this PUUID as failed
+      if (error instanceof Error && error.message.includes('decrypting')) {
+        this.markPuuidAsFailed(puuid);
+      }
+      throw error;
+    }
   }
 
   // Get match details by match ID
@@ -210,7 +295,9 @@ export class RiotAPIService {
                   summonerName: account.gameName && account.tagLine ? `${account.gameName}#${account.tagLine}` : `Player${participant.puuid.slice(-4)}`
                 };
               } catch (error) {
-                console.warn(`Failed to fetch summoner name for PUUID ${participant.puuid}:`, error);
+                if (RiotAPIService.DEBUG_MODE) {
+                  console.warn(`Failed to fetch summoner name for PUUID ${participant.puuid}:`, error);
+                }
                 return participant;
               }
             }
@@ -329,11 +416,13 @@ export class RiotAPIService {
     }
 
     if (parts.length !== 2 || !parts[0] || !parts[1]) {
-      console.warn('🔍 Failed to parse Riot ID:', {
-        original: riotId,
-        decoded: decodedRiotId,
-        parts: parts
-      });
+      if (RiotAPIService.DEBUG_MODE) {
+        console.warn('🔍 Failed to parse Riot ID:', {
+          original: riotId,
+          decoded: decodedRiotId,
+          parts: parts
+        });
+      }
       return null;
     }
 
@@ -342,11 +431,13 @@ export class RiotAPIService {
       tagLine: parts[1].trim()
     };
 
-    console.log('🔍 Parsed Riot ID:', {
-      original: riotId,
-      decoded: decodedRiotId,
-      result: result
-    });
+    if (RiotAPIService.DEBUG_MODE) {
+      console.log('🔍 Parsed Riot ID:', {
+        original: riotId,
+        decoded: decodedRiotId,
+        result: result
+      });
+    }
 
     return result;
   }
