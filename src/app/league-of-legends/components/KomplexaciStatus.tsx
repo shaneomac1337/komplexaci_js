@@ -24,10 +24,10 @@ interface MemberStatus {
   error?: string;
 }
 
-// Constants for game validation - reduced for better real-time detection
+// Constants for game validation - optimized for all game types including ARAM
 const MAX_REASONABLE_GAME_DURATION_MINUTES = 90; // 1.5 hours - maximum reasonable game duration
-const STALE_DATA_THRESHOLD_MINUTES = 60; // 1 hour - when to start suspecting stale data
-const FORCE_REFRESH_THRESHOLD_MINUTES = 45; // 45 minutes - force API refresh for long games
+const STALE_DATA_THRESHOLD_MINUTES = 25; // 25 minutes - when to start suspecting stale data (covers most ARAM games)
+const FORCE_REFRESH_THRESHOLD_MINUTES = 20; // 20 minutes - force API refresh for potentially ended games
 
 const KOMPLEXACI_MEMBERS: KomplexaciMember[] = [
   {
@@ -324,18 +324,48 @@ const isGameDataStale = (gameStartTime: number): boolean => {
   return durationMinutes > MAX_REASONABLE_GAME_DURATION_MINUTES;
 };
 
-// Helper function to check if game duration is suspicious (but not necessarily stale)
-const isGameDurationSuspicious = (gameStartTime: number): boolean => {
-  const now = Date.now();
-  const durationMinutes = Math.floor((now - gameStartTime) / 1000 / 60);
-  return durationMinutes > STALE_DATA_THRESHOLD_MINUTES;
+// Helper function to get expected game duration based on queue type
+const getExpectedGameDuration = (queueId?: number): { min: number; max: number; suspicious: number } => {
+  switch (queueId) {
+    case 450: // ARAM
+      return { min: 8, max: 35, suspicious: 25 };
+    case 900: // URF
+    case 1900: // URF
+      return { min: 8, max: 25, suspicious: 20 };
+    case 1700: // Arena
+      return { min: 5, max: 20, suspicious: 15 };
+    case 1020: // One for All
+      return { min: 10, max: 40, suspicious: 30 };
+    case 420: // Ranked Solo/Duo
+    case 440: // Ranked Flex
+    case 400: // Normal Draft
+    case 430: // Normal Blind
+    default:
+      return { min: 15, max: 60, suspicious: 45 }; // Standard Summoner's Rift
+  }
 };
 
-// Helper function to check if we should force refresh for long games
-const shouldForceRefresh = (gameStartTime: number): boolean => {
+// Helper function to check if game duration is suspicious based on game type
+const isGameDurationSuspicious = (gameStartTime: number, queueId?: number): boolean => {
   const now = Date.now();
   const durationMinutes = Math.floor((now - gameStartTime) / 1000 / 60);
-  return durationMinutes > FORCE_REFRESH_THRESHOLD_MINUTES;
+  const expectedDuration = getExpectedGameDuration(queueId);
+  
+  // Use queue-specific suspicious threshold or fall back to general threshold
+  const suspiciousThreshold = expectedDuration.suspicious;
+  return durationMinutes > suspiciousThreshold;
+};
+
+// Helper function to check if we should force refresh for potentially ended games
+const shouldForceRefresh = (gameStartTime: number, queueId?: number): boolean => {
+  const now = Date.now();
+  const durationMinutes = Math.floor((now - gameStartTime) / 1000 / 60);
+  const expectedDuration = getExpectedGameDuration(queueId);
+  
+  // Start checking for game completion after minimum expected duration + some buffer
+  // For short games like ARAM, use shorter thresholds
+  const refreshThreshold = expectedDuration.min + 5; // min + 5 minutes (no artificial 15 min minimum)
+  return durationMinutes > refreshThreshold;
 };
 
 export default function KomplexaciStatus() {
@@ -372,190 +402,25 @@ export default function KomplexaciStatus() {
     loadChampionData();
     checkAllMembersStatusOptimized();
 
-    // Set up periodic refresh every 30 seconds for better real-time game end detection
-    const interval = setInterval(checkAllMembersStatusOptimized, 30 * 1000);
+    // Set up periodic refresh every 2 minutes for live game detection
+    const interval = setInterval(checkAllMembersStatusOptimized, 2 * 60 * 1000); // Changed from 15s to 2 minutes - much more reasonable!
 
     return () => clearInterval(interval);
   }, []);
 
-  // Function to check status for a single member
-  const checkMemberStatus = async (member: KomplexaciMember): Promise<MemberStatus> => {
-      try {
-        // Check if player exists and get basic info
-        const summonerResponse = await fetch(
-          `/api/lol/summoner?riotId=${encodeURIComponent(member.riotId)}&region=${member.region}`
-        );
-
-        if (!summonerResponse.ok) {
-          return {
-            member,
-            isInGame: false,
-            loading: false,
-            error: 'Player not found'
-          };
-        }
-
-        const summonerData = await summonerResponse.json();
-        
-        // Check live game status with cache busting for suspicious cases
-        const cacheBuster = Date.now();
-        const liveGameResponse = await fetch(
-          `/api/lol/live-game?puuid=${summonerData.account.puuid}&region=${member.region}&_cb=${cacheBuster}`,
-          {
-            headers: {
-              'Cache-Control': 'no-cache, no-store, must-revalidate',
-              'Pragma': 'no-cache'
-            }
-          }
-        );
-
-        let isInGame = false;
-        let currentGame = null;
-
-        if (liveGameResponse.ok) {
-          const liveGameData = await liveGameResponse.json();
-
-          // Check if the API says player is in game
-          if (liveGameData.inGame && liveGameData.gameInfo) {
-            // Validate game duration to detect stale data
-            const gameStartTime = liveGameData.gameInfo.gameStartTime;
-
-            if (isGameDataStale(gameStartTime)) {
-              // Game duration is unrealistic - treat as stale data
-              console.warn(`🚨 Stale game data detected for ${member.name}: Game duration exceeds ${MAX_REASONABLE_GAME_DURATION_MINUTES} minutes`);
-              isInGame = false;
-              currentGame = null;
-            } else if (isGameDurationSuspicious(gameStartTime)) {
-              // Game duration is suspicious - cross-reference with match history
-              const durationMinutes = Math.floor((Date.now() - gameStartTime) / 1000 / 60);
-              console.warn(`⚠️ Suspicious game duration for ${member.name}: ${durationMinutes} minutes. Verifying with match history...`);
-
-              try {
-                // Check if player has completed any games after the supposed current game start time
-                const matchHistoryResponse = await fetch(
-                  `/api/lol/matches?puuid=${summonerData.account.puuid}&region=${member.region}&count=3`
-                );
-
-                if (matchHistoryResponse.ok) {
-                  const matchData = await matchHistoryResponse.json();
-                  if (matchData.matches && matchData.matches.length > 0) {
-                    // Check if any recent match ended after the supposed current game started
-                    const hasRecentCompletedGame = matchData.matches.some((match: any) =>
-                      match.info.gameEndTimestamp > gameStartTime
-                    );
-
-                    if (hasRecentCompletedGame) {
-                      console.warn(`🚨 Confirmed stale data for ${member.name}: Found completed games after supposed current game start`);
-                      isInGame = false;
-                      currentGame = null;
-                    } else {
-                      // No recent completed games - might be a very long game, trust the API but mark as suspicious
-                      isInGame = true;
-                      currentGame = liveGameData.gameInfo;
-                    }
-                  } else {
-                    // No match history available - trust the API
-                    isInGame = true;
-                    currentGame = liveGameData.gameInfo;
-                  }
-                } else {
-                  // Match history API failed - trust the live game API
-                  isInGame = true;
-                  currentGame = liveGameData.gameInfo;
-                }
-              } catch (error) {
-                console.error(`Error verifying game data for ${member.name}:`, error);
-                // On error, trust the live game API
-                isInGame = true;
-                currentGame = liveGameData.gameInfo;
-              }
-            } else {
-              // Game duration is reasonable - trust the API
-              isInGame = true;
-              currentGame = liveGameData.gameInfo;
-            }
-          }
-        }
-
-        // If not in game, fetch last match info
-        let lastGameTime = undefined;
-        let lastGameResult = undefined;
-
-        if (!isInGame) {
-          try {
-            const matchHistoryResponse = await fetch(
-              `/api/lol/matches?puuid=${summonerData.account.puuid}&region=${member.region}&count=1`
-            );
-
-            if (matchHistoryResponse.ok) {
-              const matchData = await matchHistoryResponse.json();
-              if (matchData.matches && matchData.matches.length > 0) {
-                const lastMatch = matchData.matches[0];
-                lastGameTime = lastMatch.info.gameEndTimestamp;
-
-                // Find the player's result in the match
-                const playerParticipant = lastMatch.info.participants.find(
-                  (p: any) => p.puuid === summonerData.account.puuid
-                );
-                if (playerParticipant) {
-                  lastGameResult = playerParticipant.win ? 'win' as const : 'loss' as const;
-                }
-              }
-            }
-          } catch (error) {
-            console.error(`Error fetching last match for ${member.name}:`, error);
-          }
-        }
-
-        return {
-          member,
-          isInGame,
-          currentGame: currentGame ? {
-            ...currentGame,
-            playerPuuid: summonerData.account.puuid
-          } : undefined,
-          loading: false,
-          lastSeen: new Date().toISOString(),
-          lastGameTime,
-          lastGameResult
-        };
-
-      } catch (error) {
-        console.error(`Error checking status for ${member.name}:`, error);
-        return {
-          member,
-          isInGame: false,
-          loading: false,
-          error: 'Connection error',
-          lastSeen: new Date().toISOString()
-        };
-      }
-  };
-
-  const checkAllMembersStatus = async () => {
-    setIsLoading(true);
-
-    const statusPromises = KOMPLEXACI_MEMBERS.map(checkMemberStatus);
-    const statuses = await Promise.all(statusPromises);
-    setMemberStatuses(statuses);
-    setIsLoading(false);
-  };
-
   // Optimized version with rate limiting protection and prioritized live game checks
   const checkAllMembersStatusOptimized = async () => {
     setIsLoading(true);
-    console.log('🎮 Starting optimized Komplexáci status check...');
 
     const statuses: MemberStatus[] = [];
 
-    // Process members in batches of 3 to avoid rate limiting
-    const BATCH_SIZE = 3;
-    const DELAY_BETWEEN_BATCHES = 1000; // 1 second delay between batches
-    const DELAY_BETWEEN_CALLS = 200; // 200ms delay between individual calls
+    // Process members in batches of 2 to avoid rate limiting (reduced from 3)
+    const BATCH_SIZE = 2;
+    const DELAY_BETWEEN_BATCHES = 1500; // Increased from 1000ms to 1500ms delay between batches
+    const DELAY_BETWEEN_CALLS = 300; // Increased from 200ms to 300ms delay between individual calls
 
     for (let i = 0; i < KOMPLEXACI_MEMBERS.length; i += BATCH_SIZE) {
       const batch = KOMPLEXACI_MEMBERS.slice(i, i + BATCH_SIZE);
-      console.log(`📦 Processing batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(KOMPLEXACI_MEMBERS.length / BATCH_SIZE)}`);
 
       // Process batch members sequentially with delays
       for (const member of batch) {
@@ -580,32 +445,27 @@ export default function KomplexaciStatus() {
             await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_CALLS));
           }
         } catch (error) {
-          console.error(`Error checking ${member.name}:`, error);
           statuses.push({
             member,
             isInGame: false,
             loading: false,
-            error: 'Rate limit or connection error'
+            error: 'Connection error'
           });
         }
       }
 
       // Delay between batches (except for the last batch)
       if (i + BATCH_SIZE < KOMPLEXACI_MEMBERS.length) {
-        console.log(`⏳ Waiting ${DELAY_BETWEEN_BATCHES}ms before next batch...`);
         await new Promise(resolve => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
       }
     }
 
     setIsLoading(false);
-    console.log('✅ Optimized status check completed');
   };
 
   // Optimized member status check - prioritizes live game status with minimal API calls
   const checkMemberStatusOptimized = async (member: KomplexaciMember): Promise<MemberStatus> => {
     try {
-      console.log(`🔍 Checking ${member.name}...`);
-
       // Step 1: Try to get cached PUUID first (if we have it from previous calls)
       let puuid: string | null = null;
 
@@ -613,7 +473,6 @@ export default function KomplexaciStatus() {
       const cacheKey = `${member.riotId}-${member.region}`;
       if (puuidCache.has(cacheKey)) {
         puuid = puuidCache.get(cacheKey)!;
-        console.log(`📋 Using locally cached PUUID for ${member.name}`);
       } else {
         // Check if we can get PUUID from previous status
         const cachedStatus = memberStatuses.find(s => s.member.name === member.name);
@@ -621,13 +480,11 @@ export default function KomplexaciStatus() {
           puuid = cachedStatus.currentGame.playerPuuid;
           // Store in local cache for future use
           setPuuidCache(prev => new Map(prev).set(cacheKey, puuid!));
-          console.log(`📋 Using status cached PUUID for ${member.name}`);
         }
       }
 
       // If no cached PUUID, get it with minimal API call
       if (!puuid) {
-        console.log(`🔍 Fetching PUUID for ${member.name}...`);
         const puuidResponse = await fetch(
           `/api/lol/puuid-only?riotId=${encodeURIComponent(member.riotId)}&region=${member.region}`,
           {
@@ -657,12 +514,10 @@ export default function KomplexaciStatus() {
       }
 
       // Step 2: Check live game status (PRIORITY - this is what we care about most)
-      console.log(`🎮 Checking live game for ${member.name}...`);
-
       // Check if we should force refresh based on previous game data
       const cachedStatus = memberStatuses.find(s => s.member.name === member.name);
       const shouldBypassCache = cachedStatus?.currentGame?.gameStartTime &&
-                               shouldForceRefresh(cachedStatus.currentGame.gameStartTime);
+                               shouldForceRefresh(cachedStatus.currentGame.gameStartTime, cachedStatus.currentGame.gameQueueConfigId);
 
       const liveGameResponse = await fetch(
         `/api/lol/live-game-optimized?puuid=${puuid}&region=${member.region}&memberName=${encodeURIComponent(member.name)}`,
@@ -689,21 +544,17 @@ export default function KomplexaciStatus() {
               ...liveGameData.gameInfo,
               playerPuuid: puuid
             };
-            console.log(`🎯 ${member.name} is IN GAME!`);
-          } else {
-            console.log(`⚠️ Stale game data detected for ${member.name}`);
           }
         }
       } else if (liveGameResponse.status === 429) {
         throw new Error('Rate limit exceeded');
       }
 
-      // Step 3: Only fetch additional data if NOT in game and we have time/quota
+      // Step 3: Only fetch last match data if NOT in game (simplified - no error handling for match history)
       let lastGameTime = undefined;
       let lastGameResult = undefined;
 
       if (!isInGame) {
-        console.log(`📊 ${member.name} not in game, checking last match...`);
         try {
           const matchHistoryResponse = await fetch(
             `/api/lol/matches?puuid=${puuid}&region=${member.region}&count=1`,
@@ -727,11 +578,10 @@ export default function KomplexaciStatus() {
                 lastGameResult = playerParticipant.win ? 'win' as const : 'loss' as const;
               }
             }
-          } else if (matchHistoryResponse.status === 429) {
-            console.log(`⚠️ Rate limit hit for match history of ${member.name}, skipping...`);
           }
+          // If match history fails, just ignore it - no logging, no error handling
         } catch (error) {
-          console.log(`⚠️ Skipping match history for ${member.name} due to error:`, error);
+          // Silently ignore match history errors
         }
       }
 
@@ -746,8 +596,6 @@ export default function KomplexaciStatus() {
       };
 
     } catch (error) {
-      console.error(`❌ Error checking ${member.name}:`, error);
-
       if (error instanceof Error && error.message.includes('Rate limit')) {
         return {
           member,
@@ -777,7 +625,7 @@ export default function KomplexaciStatus() {
     ));
 
     try {
-      const newStatus = await checkMemberStatus(member);
+      const newStatus = await checkMemberStatusOptimized(member);
 
       // Update only this member's status
       setMemberStatuses(prev => prev.map((status, index) =>
@@ -800,7 +648,6 @@ export default function KomplexaciStatus() {
   // Force immediate refresh for a member (bypasses all caching for real-time game end detection)
   const forceRefreshMemberStatus = async (memberIndex: number) => {
     const member = KOMPLEXACI_MEMBERS[memberIndex];
-    console.log(`🔴 Force refreshing ${member.name} (immediate check)...`);
 
     // Set loading state
     setMemberStatuses(prev => prev.map((status, index) =>
@@ -846,8 +693,6 @@ export default function KomplexaciStatus() {
           setMemberStatuses(prev => prev.map((status, index) =>
             index === memberIndex ? updatedStatus : status
           ));
-
-          console.log(`🔴 Force refresh complete for ${member.name}: ${immediateData.inGame ? 'IN GAME' : 'NOT IN GAME'}`);
         } else {
           throw new Error('Failed to fetch immediate status');
         }
@@ -855,7 +700,6 @@ export default function KomplexaciStatus() {
         throw new Error('Failed to get PUUID');
       }
     } catch (error) {
-      console.error(`Error force refreshing ${member.name}:`, error);
       setMemberStatuses(prev => prev.map((status, index) =>
         index === memberIndex ? {
           ...status,
@@ -866,6 +710,30 @@ export default function KomplexaciStatus() {
     }
   };
 
+  // Simplified PUUID refresh function
+  const refreshMemberPuuid = async (member: KomplexaciMember): Promise<string | null> => {
+    try {
+      const summonerResponse = await fetch(
+        `/api/lol/summoner?riotId=${encodeURIComponent(member.riotId)}&region=${member.region}&refresh=true`
+      );
+
+      if (!summonerResponse.ok) {
+        return null;
+      }
+
+      const summonerData = await summonerResponse.json();
+      const newPuuid = summonerData.account.puuid;
+      
+      // Update cache
+      puuidCache.set(member.name, newPuuid);
+      
+      return newPuuid;
+    } catch (error) {
+      return null;
+    }
+  };
+
+  // Simplified game mode formatting
   const formatGameMode = (gameMode: string, gameInfo?: any) => {
     // Use queue type name if available (from our new validation)
     if (gameInfo?.queueTypeName) {
@@ -885,12 +753,12 @@ export default function KomplexaciStatus() {
     return modes[gameMode] || gameMode;
   };
 
-  const formatGameDuration = (gameStartTime: number) => {
+  const formatGameDuration = (gameStartTime: number, queueId?: number) => {
     const now = Date.now();
     const duration = Math.floor((now - gameStartTime) / 1000 / 60);
 
     // Add warning indicator for suspicious durations
-    if (isGameDurationSuspicious(gameStartTime)) {
+    if (isGameDurationSuspicious(gameStartTime, queueId)) {
       return `${duration} min ⚠️`;
     }
 
@@ -924,22 +792,18 @@ export default function KomplexaciStatus() {
   // Helper functions for game details (similar to LiveGame component)
   const getChampionImageUrl = (championId: number): string => {
     const champion = championData.get(championId);
-    console.log(`Getting image for champion ${championId}:`, champion);
 
     if (champion && champion.id) {
       const url = `https://ddragon.leagueoflegends.com/cdn/15.10.1/img/champion/${champion.id}.png`;
-      console.log(`Champion ${championId} URL:`, url);
       return url;
     }
 
     // Fallback: try to load champion data if not available
     if (championData.size === 0) {
-      console.log('Champion data not loaded yet, using fallback');
       return `https://ddragon.leagueoflegends.com/cdn/15.10.1/img/champion/Aatrox.png`;
     }
 
     // If champion data is loaded but this specific champion isn't found, use a placeholder
-    console.log(`Champion ${championId} not found in data, using fallback`);
     return `https://ddragon.leagueoflegends.com/cdn/15.10.1/img/champion/Aatrox.png`;
   };
 
@@ -1148,7 +1012,7 @@ export default function KomplexaciStatus() {
                       🎯 {formatGameMode(status.currentGame.gameMode, status.currentGame)}
                     </span>
                     <span className={styles.gameDuration}>
-                      ⏱️ {formatGameDuration(status.currentGame.gameStartTime)}
+                      ⏱️ {formatGameDuration(status.currentGame.gameStartTime, status.currentGame.gameQueueConfigId)}
                     </span>
                   </div>
                   <div className={styles.gameDetails}>
