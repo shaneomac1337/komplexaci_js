@@ -1,6 +1,7 @@
 import NextAuth from 'next-auth';
 import DiscordProvider from 'next-auth/providers/discord';
 import { supabaseAdmin } from '@/lib/supabase';
+import { getBestDiscordAvatarUrl } from '@/lib/discord-avatar-utils';
 
 const handler = NextAuth({
   providers: [
@@ -32,9 +33,7 @@ const handler = NextAuth({
             const updateData: any = {
               last_login_at: new Date().toISOString(),
               username: discordProfile.username,
-              avatar_url: discordProfile.avatar
-                ? `https://cdn.discordapp.com/avatars/${discordProfile.id}/${discordProfile.avatar}.png`
-                : null
+              avatar_url: getBestDiscordAvatarUrl(discordProfile.id, discordProfile.avatar, discordProfile.discriminator, 128)
             };
 
             // Only add email if column exists
@@ -51,9 +50,7 @@ const handler = NextAuth({
             const insertData: any = {
               discord_id: discordProfile.id,
               username: discordProfile.username,
-              avatar_url: discordProfile.avatar
-                ? `https://cdn.discordapp.com/avatars/${discordProfile.id}/${discordProfile.avatar}.png`
-                : null,
+              avatar_url: getBestDiscordAvatarUrl(discordProfile.id, discordProfile.avatar, discordProfile.discriminator, 128),
               role: 'member', // Default role
               is_active: true
             };

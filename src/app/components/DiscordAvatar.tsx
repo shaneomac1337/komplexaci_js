@@ -2,11 +2,13 @@
 
 import { useState } from 'react';
 import Image from 'next/image';
+import { getBestDiscordAvatarUrl } from '@/lib/discord-avatar-utils';
 
 interface DiscordAvatarProps {
   userId: string;
   avatar: string | null;
   displayName: string;
+  discriminator?: string;
   size?: number;
   className?: string;
 }
@@ -15,6 +17,7 @@ export default function DiscordAvatar({
   userId, 
   avatar, 
   displayName, 
+  discriminator,
   size = 32, 
   className = '' 
 }: DiscordAvatarProps) {
@@ -37,8 +40,8 @@ export default function DiscordAvatar({
     );
   }
 
-  // Construct Discord CDN URL
-  const avatarUrl = `https://cdn.discordapp.com/avatars/${userId}/${avatar}.png?size=${Math.min(512, size * 2)}`;
+  // Construct Discord CDN URL with proper format detection
+  const avatarUrl = getBestDiscordAvatarUrl(userId, avatar, discriminator, Math.min(512, size * 2));
 
   return (
     <div 

@@ -35,6 +35,18 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
+        hostname: 'cdn.discordapp.com',
+        port: '',
+        pathname: '/embed/avatars/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.discordapp.com',
+        port: '',
+        pathname: '/attachments/**',
+      },
+      {
+        protocol: 'https',
         hostname: 'steamcdn-a.akamaihd.net',
         port: '',
         pathname: '/**',
