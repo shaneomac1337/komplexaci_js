@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import DiscordAvatar from './DiscordAvatar';
+import SafeImage from './SafeImage';
 import UserStatsModal from './UserStatsModal';
 
 interface ActiveMember {
@@ -18,15 +18,6 @@ interface MostActiveMembersProps {
   members: ActiveMember[];
   dataSource?: 'GATEWAY' | 'REST_API' | 'FALLBACK';
   totalMemberCount?: number;
-}
-
-// Helper function to extract avatar hash from Discord CDN URL
-function extractAvatarHash(avatarUrl: string): string | null {
-  if (!avatarUrl) return null;
-
-  // Extract hash from Discord CDN URL: https://cdn.discordapp.com/avatars/USER_ID/HASH.png?size=64
-  const match = avatarUrl.match(/\/avatars\/\d+\/([a-f0-9]+)\.png/);
-  return match ? match[1] : null;
 }
 
 export default function MostActiveMembers({ members, dataSource, totalMemberCount }: MostActiveMembersProps) {
@@ -159,11 +150,19 @@ export default function MostActiveMembers({ members, dataSource, totalMemberCoun
 
               {/* Avatar */}
               <div className="relative flex-shrink-0">
-                <DiscordAvatar
-                  userId={member.id}
-                  avatar={member.avatar ? extractAvatarHash(member.avatar) : null}
-                  displayName={member.displayName}
-                  size={32}
+                <SafeImage
+                  src={member.avatar}
+                  alt={member.displayName}
+                  width={32}
+                  height={32}
+                  className="rounded-full"
+                  fallback={
+                    <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-xs font-bold">
+                        {member.displayName.charAt(0).toUpperCase()}
+                      </span>
+                    </div>
+                  }
                 />
                 {/* Status indicator */}
                 <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-gray-700 ${getStatusColor(member.status)}`}></div>

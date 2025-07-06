@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DiscordAvatar from './DiscordAvatar';
+import SafeImage from './SafeImage';
 
 interface UserStatsModalProps {
   isOpen: boolean;
@@ -58,13 +58,6 @@ interface UserStats {
       details?: string;
     }>;
   };
-}
-
-// Helper function to extract avatar hash from Discord CDN URL
-function extractAvatarHash(avatarUrl: string): string | null {
-  if (!avatarUrl) return null;
-  const match = avatarUrl.match(/\/avatars\/\d+\/([a-f0-9]+)\.png/);
-  return match ? match[1] : null;
 }
 
 export default function UserStatsModal({ isOpen, onClose, userId, displayName, avatar }: UserStatsModalProps) {
@@ -147,11 +140,19 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <div className="flex items-center space-x-3">
-            <DiscordAvatar
-              userId={userId}
-              avatar={avatar ? extractAvatarHash(avatar) : null}
-              displayName={displayName}
-              size={40}
+            <SafeImage
+              src={avatar}
+              alt={displayName}
+              width={40}
+              height={40}
+              className="rounded-full"
+              fallback={
+                <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+                  <span className="text-white text-sm font-bold">
+                    {displayName.charAt(0).toUpperCase()}
+                  </span>
+                </div>
+              }
             />
             <div>
               <h3 className="text-lg font-semibold text-white">{displayName}</h3>

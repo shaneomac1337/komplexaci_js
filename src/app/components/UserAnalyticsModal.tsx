@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import DiscordAvatar from './DiscordAvatar';
+import SafeImage from './SafeImage';
 
 interface UserAnalyticsModalProps {
   isOpen: boolean;
@@ -128,12 +128,19 @@ export default function UserAnalyticsModal({ isOpen, onClose, userId, displayNam
         <div className="bg-[#36393f] p-4 sm:p-6 border-b border-[#40444b]">
           <div className="flex justify-between items-center">
             <div className="flex items-center space-x-3 sm:space-x-4">
-              <DiscordAvatar
-                userId={userId}
-                avatar={avatar}
-                displayName={displayName}
-                size={40}
-                className="sm:w-12 sm:h-12"
+              <SafeImage
+                src={avatar}
+                alt={displayName}
+                width={40}
+                height={40}
+                className="rounded-full sm:w-12 sm:h-12"
+                fallback={
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 bg-gray-600 rounded-full flex items-center justify-center">
+                    <span className="text-white text-sm font-bold">
+                      {displayName.charAt(0).toUpperCase()}
+                    </span>
+                  </div>
+                }
               />
               <div>
                 <h2 className="text-lg sm:text-xl font-semibold text-white">{displayName}</h2>
