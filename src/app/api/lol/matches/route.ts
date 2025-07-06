@@ -43,10 +43,22 @@ export async function GET(request: NextRequest) {
     });
 
   } catch (error) {
-    console.error('Match History API Error:', error);
-
     // Handle specific Riot API errors
     if (error instanceof Error) {
+      // Handle decryption errors (invalid/expired PUUIDs) - don't spam logs
+      if (error.message.includes('decrypting')) {
+        console.log(`⚠️ PUUID decryption failed - returning empty match history`);
+        return NextResponse.json(
+          { matches: [] }, // Return empty matches instead of error
+          { 
+            status: 200,
+            headers: {
+              'Cache-Control': 'public, s-maxage=300, stale-while-revalidate=600', // Cache longer for invalid PUUIDs
+            },
+          }
+        );
+      }
+
       if (error.message.includes('404')) {
         return NextResponse.json(
           { error: 'No match history found for this summoner' },
@@ -76,6 +88,7 @@ export async function GET(request: NextRequest) {
       }
     }
 
+    console.error('Match History API Error:', error);
     return NextResponse.json(
       { error: 'Failed to fetch match history' },
       { status: 500 }
