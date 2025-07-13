@@ -1,8 +1,8 @@
-# Komplexáci Gaming Clan Website
+# 🎮 Komplexáci Gaming Clan Website
 
-> **🎮 Modern Gaming Community Hub** - Czech gaming clan specializing in League of Legends and Counter-Strike 2
+> **Modern Gaming Community Hub** - Czech gaming clan specializing in League of Legends and Counter-Strike 2
 
-A fully modernized Next.js 15 website for the Komplexáci gaming community, featuring interactive member profiles, game databases, live status tracking, and immersive audio experiences.
+A fully modernized Next.js 15 website for the Komplexáci gaming community, featuring interactive member profiles, game databases, live status tracking, immersive audio experiences, and real-time Discord integration.
 
 ## 🚀 Live Features
 
@@ -49,9 +49,10 @@ A fully modernized Next.js 15 website for the Komplexáci gaming community, feat
 ## 🚀 Quick Start
 
 ### Prerequisites
-- Node.js 18+
-- npm or yarn
-- Git
+- **Node.js 18+** with npm
+- **Git** for version control
+- **Discord Bot Token** for server integration
+- **Riot API Key** for League of Legends features
 
 ### Installation
 ```bash
@@ -64,11 +65,13 @@ npm install
 
 # Set up environment variables
 cp .env.example .env.local
-# Edit .env.local with your API keys
+# Edit .env.local with your API keys (see Environment Variables below)
 
 # Start development server
 npm run dev
 ```
+
+**Visit:** http://localhost:3000
 
 ### Environment Variables
 ```bash
@@ -158,18 +161,19 @@ npm run lint         # Run ESLint checks
 - **CSS Modules** - Scoped styling for components
 - **Performance First** - React.memo, useMemo, useCallback where needed
 
+### Testing
+Run `npm run lint` before committing to ensure code quality.
+
+### Database
+Analytics data is stored in SQLite (`data/analytics.db`). The database auto-initializes on first run.
+
 ## 🚀 Deployment
 
-### Vercel (Recommended)
-1. Connect your GitHub repository to Vercel
-2. Configure environment variables in Vercel dashboard
-3. Deploy automatically on push to main branch
-
-### Manual Deployment
-```bash
-npm run build
-npm run start
-```
+See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for detailed deployment instructions including:
+- Vercel deployment setup
+- Nginx configuration
+- Maintenance mode setup
+- Environment configuration
 
 ## 🤝 Contributing
 
@@ -178,6 +182,12 @@ npm run start
 3. Commit your changes (`git commit -m 'Add amazing feature'`)
 4. Push to the branch (`git push origin feature/amazing-feature`)
 5. Open a Pull Request
+
+## 📚 Documentation
+
+- **[API.md](./API.md)** - Discord API integration and streaming status
+- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Deployment and maintenance setup
+- **[data/README.md](./data/README.md)** - Analytics database information
 
 ## 📄 License
 
