@@ -277,6 +277,15 @@ const Header = () => {
               </button>
             </li>
             <li>
+              <Link 
+                href="/videotvorba" 
+                className={`nav-link ${pathname === '/videotvorba' ? 'active' : ''}`}
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                🎬 Videotvorba
+              </Link>
+            </li>
+            <li>
               <button
                 className={`nav-link ${isActive('kontakt') ? 'active' : ''}`}
                 onClick={(e) => {
