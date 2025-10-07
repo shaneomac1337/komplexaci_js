@@ -1190,8 +1190,27 @@ export default function Home() {
     }
   };
 
-  // Card flip functionality
+  // Card flip functionality with page turn sound
   const handleCardFlip = (memberId: string) => {
+    // Play page turn sound effect - skip to the impactful part for immediate effect!
+    try {
+      const pageTurnSound = new Audio('/komplexaci/audio/page-turn.mp3');
+      pageTurnSound.volume = 0.7; // 70% volume for strong presence
+      pageTurnSound.playbackRate = 1.5; // Play 1.5x faster to match the 0.3s flip animation
+      
+      // Skip the quiet beginning and jump straight to the peak "swoosh" part
+      // This creates an immediate, punchy effect that matches the instant card flip
+      pageTurnSound.currentTime = 0.18; // Start 180ms into the sound for maximum impact
+      
+      pageTurnSound.play().catch(err => {
+        // Silently fail if audio can't play (user hasn't interacted yet)
+        console.log('Page turn sound blocked:', err);
+      });
+    } catch (error) {
+      // Silently fail if audio file doesn't exist
+      console.log('Page turn sound error:', error);
+    }
+
     setFlippedCards(prev => {
       const newSet = new Set(prev);
       if (newSet.has(memberId)) {
