@@ -254,7 +254,7 @@ export default function VideotvorbaPage() {
                     {video.description && (
                       <p className="text-sm text-gray-400">{video.description}</p>
                     )}
-                    <div className="mt-3 flex items-center justify-between">
+                    <div className="mt-3">
                       <a
                         href={`https://youtu.be/${video.id}`}
                         target="_blank"
@@ -265,14 +265,6 @@ export default function VideotvorbaPage() {
                         <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 3h7m0 0v7m0-7L10 14" />
                         </svg>
-                      </a>
-                      <a
-                        href={`https://www.youtube.com/watch?v=${video.id}&list=UU${video.id}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-gray-400 hover:text-gray-300 text-xs"
-                      >
-                        Sdílet
                       </a>
                     </div>
                   </div>
