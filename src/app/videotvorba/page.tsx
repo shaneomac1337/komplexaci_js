@@ -11,39 +11,37 @@ export default function VideotvorbaPage() {
     setIsLoaded(true);
   }, []);
 
-  // Featured videos from the channel - replace with your actual video IDs
-  // To get video IDs: Go to your video on YouTube, the ID is in the URL after "v="
-  // Example: https://www.youtube.com/watch?v=dQw4w9WgXcQ -> ID is "dQw4w9WgXcQ"
+  // Featured videos from the Komplexáci Gaming YouTube channel
   const featuredVideos = [
     {
-      id: 'YOUR_VIDEO_ID_1', // Replace with actual video ID
-      title: 'Latest Gaming Session',
-      description: 'Watch our latest gaming adventures'
+      id: 'i3KL5t-EXPw',
+      title: 'Komplexáci Gaming Intro (2025)',
+      description: 'Nové intro našeho herního klanu pro rok 2025'
     },
     {
-      id: 'YOUR_VIDEO_ID_2', // Replace with actual video ID
-      title: 'Epic Moments Compilation',
-      description: 'The best moments from our streams'
+      id: '5UwzVCNvFvE',
+      title: 'WWF Smackdown! Just Bring It - Royal Rumble',
+      description: 'Retro wrestling gameplay v 1440p - epický Royal Rumble match'
     },
     {
-      id: 'YOUR_VIDEO_ID_3', // Replace with actual video ID
-      title: 'Retro Gaming Special',
-      description: 'Nostalgia trip through classic games'
+      id: 'C4oJaAkDE4U',
+      title: 'WWF Smackdown! 2 Know Your Role - Royal Rumble',
+      description: 'PSX retro klasika s 3.2K views - Royal Rumble v 1440p'
     },
     {
-      id: 'YOUR_VIDEO_ID_4', // Replace with actual video ID
-      title: 'Team Highlights',
-      description: 'Amazing plays from the crew'
+      id: 'danDl9fUwAM',
+      title: 'Trackmania Epic Battle',
+      description: 'Napínavé závodní souboje v Trackmania'
     },
     {
-      id: 'YOUR_VIDEO_ID_5', // Replace with actual video ID
-      title: 'Funny Moments',
-      description: 'Laugh with us at these hilarious clips'
+      id: '2l-ZlM1rixM',
+      title: 'KompG - Rocket League 2023',
+      description: 'Rocket League highlights našeho klanu v 1440p'
     },
     {
-      id: 'YOUR_VIDEO_ID_6', // Replace with actual video ID
-      title: 'Community Events',
-      description: 'Special events with the community'
+      id: 'yQCLwKLRGWg',
+      title: 'KompG - U.R.F Montage',
+      description: 'League of Legends montáž s nejlepšími momenty'
     }
   ];
 
@@ -183,16 +181,20 @@ export default function VideotvorbaPage() {
               Podívejte se na naši nejnovější tvorbu!
             </p>
             
-            {/* Main Featured Video - Replace with your latest video ID */}
+            {/* Main Featured Video - Latest Upload */}
             <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-6 border border-red-500/30 hover:border-red-400/50 transition-all duration-500 mb-16">
               <div className="aspect-video rounded-xl overflow-hidden shadow-2xl shadow-red-500/20">
                 <iframe
-                  src="https://www.youtube.com/embed/YOUR_LATEST_VIDEO_ID" // Replace with your latest video ID
+                  src="https://www.youtube.com/embed/5CnFK-7bRQc"
                   className="w-full h-full"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
-                  title="Latest Video"
+                  title="Best way to play Retro Wrestling Games on Windows"
                 ></iframe>
+              </div>
+              <div className="mt-4 px-2">
+                <h3 className="text-2xl font-bold text-white mb-2">Best way to play Retro Wrestling Games on Windows</h3>
+                <p className="text-gray-400">Návod jak hrát retro wrestlingové hry na Windows - 118 views</p>
               </div>
               <div className="mt-6 text-center">
                 <a
