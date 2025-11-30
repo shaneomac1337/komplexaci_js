@@ -1,0 +1,140 @@
+KOMPLEXACI API ENDPOINTS SUMMARY
+================================
+
+This file provides a quick reference of all 50+ API endpoints organized by category.
+For detailed documentation, see API.md
+
+HEALTH & STATUS ENDPOINTS (5)
+=============================
+1. GET /api/hello                    - Basic connectivity test (supports POST)
+2. GET /api/health                   - Comprehensive system health check
+3. GET /api/health-check             - URL probing service
+4. GET /api/probe                    - Minimal health probe
+5. (Implicit: Liveness probes)       - Various health monitoring endpoints
+
+DISCORD INTEGRATION (3)
+======================
+1. GET /api/discord/server-stats     - Complete server statistics with members
+2. GET /api/discord/streaming-status - Real-time streaming and voice activity
+3. GET /api/debug-avatars            - Debug member avatars (first 10)
+
+LEAGUE OF LEGENDS API (8)
+=========================
+1. GET /api/lol/regions              - List supported regions
+2. GET /api/lol/champions            - Get all champions with details
+3. GET /api/lol/summoner             - Get summoner by Riot ID
+4. GET /api/lol/puuid-only           - Fast PUUID lookup (24h cache)
+5. GET /api/lol/summoner-by-puuid    - Get summoner from PUUID
+6. GET /api/lol/live-game            - Current live game info
+7. GET /api/lol/live-game-immediate  - Optimized live game endpoint
+8. GET /api/lol/live-game-optimized  - Performance-enhanced live game
+9. GET /api/lol/mastery              - Champion mastery information
+10. GET /api/lol/matches             - Match history
+
+COUNTER-STRIKE 2 (3)
+====================
+1. GET /api/cs2/game-info            - CS2 game information
+2. GET /api/cs2/maps                 - CS2 maps with filtering
+3. GET /api/cs2/weapons              - CS2 weapons by category
+
+WWE GAMES (2)
+=============
+1. GET /api/wwe/game-info            - WWE games general info
+2. GET /api/wwe/games                - WWE games collection with filtering
+
+MUSIC MANAGEMENT (3)
+====================
+1. GET /api/music/playlist           - Retrieve current playlist
+2. POST /api/music/playlist          - Add track to playlist
+3. POST /api/music/upload            - Upload audio file (requires auth)
+4. GET /api/music/track/[id]         - Get specific track details
+
+ANALYTICS (18)
+==============
+1. GET /api/analytics/status         - System status overview
+2. GET /api/analytics/user/[userId]  - User analytics with time filtering
+3. GET /api/analytics/data-info      - Database statistics
+4. POST /api/analytics/export        - Export analytics data
+5. POST /api/analytics/populate-today - Save daily statistics
+6. POST /api/analytics/cleanup       - Remove old data
+7. GET /api/analytics/debug          - Debug analytics data
+8. GET /api/analytics/debug-sessions - Debug session tracking
+9. GET /api/analytics/debug-user-stats/[userId] - Debug user stats
+10. POST /api/analytics/reset-daily  - Reset daily counters
+11. POST /api/analytics/reset-monthly - Reset monthly counters
+12. POST /api/analytics/cleanup-sessions - Clean old sessions
+13. POST /api/analytics/fix-duplicates - Fix duplicate records
+14. POST /api/analytics/recover-sessions - Recover lost sessions
+15. GET /api/analytics/session-health - Check session health
+16. POST /api/analytics/test-daily-reset - Test reset mechanism
+17. POST /api/analytics/reset        - Legacy reset endpoint (deprecated)
+18. POST /api/analytics/admin/reset-database - Emergency reset (admin only)
+
+DAILY AWARDS (2)
+================
+1. GET /api/daily-awards             - Today's awards with winners
+2. GET /api/daily-awards/standings   - Category-specific standings
+
+DEBUG ENDPOINTS (3)
+===================
+1. GET /api/debug/activities         - Members with active activities
+2. GET /api/debug/voice              - Voice channel activity
+3. GET /api/debug/voice-states       - Detailed voice states
+
+AUTHENTICATION (1)
+==================
+1. GET /api/auth/[...nextauth]       - NextAuth endpoints (Discord OAuth)
+   - /api/auth/signin
+   - /api/auth/callback/discord
+   - /api/auth/session
+   - /api/auth/signout
+
+TOTAL ENDPOINTS: 50+
+
+AUTHENTICATION REQUIREMENTS
+============================
+- Discord OAuth required for: /api/music/upload
+- Admin auth required for: /api/analytics/admin/reset-database
+- No auth required for: All read-only endpoints
+- NextAuth session-based for: Music uploads, admin operations
+
+RATE LIMITING
+=============
+- Riot API: 20 requests/second (Riot limits)
+- General: 60 requests/minute per IP
+- PUUID lookup: 24-hour cache, 48-hour stale
+- Live Game: 30-second cache
+
+KEY FEATURES
+============
+- Discord Integration: Real-time member stats, streaming detection
+- League of Legends: Champion database, summoner lookup, live games, match history
+- Counter-Strike 2: Game info, maps, weapons database
+- WWE Games: Comprehensive game collection (50+ games)
+- Music: Playlist management with file uploads
+- Analytics: User activity tracking, gaming, voice, music data
+- Daily Awards: Gamified daily leaderboards
+- Health Monitoring: Comprehensive system status checks
+
+CACHING STRATEGY
+================
+- Champions: 1 hour (24h stale)
+- Regions: 24 hours (48h stale)
+- Summoner: 5 minutes (10m stale)
+- Live Game: 30 seconds (1m stale)
+- PUUID: 24 hours (48h stale)
+- Mastery: 10 minutes (20m stale)
+- Matches: 3 minutes (6m stale)
+
+ERROR CODES
+===========
+200 - Success
+400 - Bad Request (missing parameters)
+401 - Unauthorized (auth required)
+403 - Forbidden (insufficient permissions)
+404 - Not Found
+429 - Rate Limited
+500 - Server Error
+503 - Service Unavailable
+
+For detailed API documentation, refer to: API.md

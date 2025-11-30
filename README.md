@@ -1,204 +1,274 @@
-# 🎮 Komplexáci Gaming Clan Website
+# Komplexaci
 
-> **Modern Gaming Community Hub** - Czech gaming clan specializing in League of Legends and Counter-Strike 2
+Next.js 15 gaming community website with real-time Discord integration, Riot Games API, and analytics tracking.
 
-A fully modernized Next.js 15 website for the Komplexáci gaming community, featuring interactive member profiles, game databases, live status tracking, immersive audio experiences, and real-time Discord integration.
+**Live:** [komplexaci.cz](https://komplexaci.cz)
 
-## 🚀 Live Features
+## Technology Stack
 
-### 🏠 **Homepage**
-- **3D Member Cards** - Interactive flip animations with unique colors for each member
-- **Komplexáci Trax** - Full-featured audio player with 13 custom tracks
-- **Discord Integration** - Live server stats and member activity
-- **Performance Optimized** - GPU acceleration and responsive design
+| Component | Technology | Version |
+|-----------|------------|---------|
+| Framework | Next.js (App Router) | 15.3.3 |
+| Runtime | React | 19.0.0 |
+| Language | TypeScript (strict) | 5.x |
+| Styling | Tailwind CSS | 4.x |
+| Database | SQLite (better-sqlite3) | 12.1.1 |
+| Discord | discord.js | 14.20.0 |
+| Auth | NextAuth.js | 4.24.11 |
 
-### 🎯 **Counter-Strike 2 (/cs2)**
-- **Weapon Database** - Interactive categories (Pistols, Rifles, SMGs, Snipers)
-- **Detailed Statistics** - Damage, accuracy, range for each weapon
-- **Map Gallery** - CS2 maps with hover effects and information
-- **API-Driven** - Dynamic content loading with caching
-
-### 🏆 **League of Legends (/league-of-legends)**
-- **Champion Database** - Complete champion roster with search and filters
-- **Summoner Search** - Real-time player lookup with Riot API integration
-- **Live Game Status** - Track Komplexáci members' current games
-- **Champion Mastery** - Player statistics and champion proficiency
-
-### 🎵 **WWE Games (/wwe-games)**
-- **Game Collection** - Wrestling games database with filters
-- **Industrial Design** - SmackDown 2 inspired aesthetic
-- **Music Player** - WWE-themed audio experience
-
-### 🔐 **Admin Panel (/admin)**
-- **Content Management** - Track and music administration
-- **Analytics Dashboard** - Usage statistics and monitoring
-- **Member Management** - Clan member data administration
-
-## 🛠️ Tech Stack
-
-- **Framework**: Next.js 15.3.3 with App Router
-- **Language**: TypeScript 5 (Strict mode)
-- **Styling**: Tailwind CSS 4 + CSS Modules
-- **UI Library**: React 19.0.0
-- **Performance**: Turbopack for development
-- **APIs**: Riot Games API, Discord API
-- **Authentication**: NextAuth.js with Discord provider
-- **Database**: Supabase (PostgreSQL)
-- **Deployment**: Vercel
-
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
-- **Node.js 18+** with npm
-- **Git** for version control
-- **Discord Bot Token** for server integration
-- **Riot API Key** for League of Legends features
+
+- Node.js 18+
+- Discord Bot Token (with Gateway Intents: Guilds, Members, Presence, Voice)
+- Riot Games API Key
 
 ### Installation
+
 ```bash
-# Clone the repository
 git clone https://github.com/shaneomac1337/komplexaci_js.git
 cd komplexaci_js
-
-# Install dependencies
 npm install
-
-# Set up environment variables
 cp .env.example .env.local
-# Edit .env.local with your API keys (see Environment Variables below)
-
-# Start development server
-npm run dev
 ```
 
-**Visit:** http://localhost:3000
+### Environment Configuration
 
-### Environment Variables
 ```bash
-# Required for League of Legends features
-RIOT_API_KEY=your_riot_api_key
+# Required - Riot Games API
+RIOT_API_KEY=RGAPI-xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
 
-# Required for Discord integration
-DISCORD_BOT_TOKEN=your_discord_bot_token
+# Required - Discord Bot
+DISCORD_BOT_TOKEN=your_bot_token
 DISCORD_SERVER_ID=your_server_id
 
-# Required for authentication
-NEXTAUTH_SECRET=your_nextauth_secret
+# Required - NextAuth
+NEXTAUTH_SECRET=random_32_char_string
 NEXTAUTH_URL=http://localhost:3000
 
-# Required for database
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
+# Optional - Supabase
+SUPABASE_URL=https://xxx.supabase.co
+SUPABASE_ANON_KEY=your_anon_key
+
+# Optional - Debug
+RIOT_API_DEBUG=true
+ENABLE_DISCORD_GATEWAY=true
 ```
 
-## 📁 Project Structure
+### Development
 
-```
-src/app/
-├── page.tsx                    # Homepage with member cards & Trax player
-├── cs2/                        # Counter-Strike 2 section
-│   ├── page.tsx               # Weapons & maps database
-│   └── cs2.module.css         # CS2-specific styling
-├── league-of-legends/          # League of Legends section
-│   ├── page.tsx               # Champions & summoner search
-│   ├── components/            # LoL-specific components
-│   └── lol.module.css         # LoL-specific styling
-├── wwe-games/                  # WWE Games section
-│   ├── page.tsx               # Games collection
-│   └── wwe.module.css         # WWE-specific styling
-├── admin/                      # Admin panel
-├── api/                        # API routes
-│   ├── cs2/                   # CS2 data endpoints
-│   ├── lol/                   # League of Legends API integration
-│   ├── discord/               # Discord server stats
-│   └── music/                 # Audio management
-├── components/                 # Shared UI components
-├── hooks/                      # Custom React hooks
-├── types/                      # TypeScript definitions
-└── globals.css                # Global styles
-
-public/
-├── komplexaci/                 # Gaming assets
-│   ├── audio/                 # Trax music files
-│   ├── img/                   # Member images & backgrounds
-│   └── backgrounds/           # Section backgrounds
-├── cs2/                       # CS2 weapon images
-└── league-of-legends/         # LoL champion assets
-```
-
-## 🎮 Key Features
-
-### Audio System
-- **Smart Playback** - Auto-advance with shuffle mode
-- **Loading States** - Prevents rapid clicking issues
-- **Demo Mode** - Fallback for missing audio files
-- **Mobile Optimized** - Touch-friendly controls
-
-### Performance
-- **GPU Acceleration** - Smooth animations and transitions
-- **Lazy Loading** - Images and components load on demand
-- **API Caching** - Optimized data fetching with appropriate cache headers
-- **Responsive Design** - Perfect on mobile, tablet, and desktop
-
-### Real-time Features
-- **Live Game Status** - Track members' current League of Legends games
-- **Discord Integration** - Live server statistics and member activity
-- **Dynamic Content** - API-driven data that updates automatically
-
-## 🔧 Development
-
-### Available Scripts
 ```bash
-npm run dev          # Start development server with Turbopack
-npm run build        # Create production build
-npm run start        # Start production server
-npm run lint         # Run ESLint checks
+npm run dev      # Start with Turbopack (port 3000)
+npm run build    # Production build
+npm run start    # Production server
+npm run lint     # ESLint check
 ```
 
-### Code Standards
-- **TypeScript Strict Mode** - Full type safety
-- **ESLint + Prettier** - Consistent code formatting
-- **CSS Modules** - Scoped styling for components
-- **Performance First** - React.memo, useMemo, useCallback where needed
+## Project Structure
 
-### Testing
-Run `npm run lint` before committing to ensure code quality.
+```
+komplexaci_js/
+├── src/                     # Application source code
+│   ├── app/                 # Next.js App Router (pages, API, components)
+│   └── lib/                 # Server-side libraries
+│
+├── docs/                    # Documentation
+│   ├── DOCS.md             # Documentation index
+│   ├── ARCHITECTURE.md     # System architecture
+│   ├── API.md              # API reference
+│   ├── DEPLOYMENT.md       # Deployment guide
+│   └── CONTRIBUTING.md     # Contribution guidelines
+│
+├── scripts/                 # Utility scripts
+│   ├── setup-dev.js        # Development setup
+│   └── maintenance.sh      # Server maintenance
+│
+├── config/                  # Configuration files
+│   ├── nginx/              # Nginx server config
+│   └── maintenance.html    # Maintenance page
+│
+├── data/                    # Runtime data (SQLite database)
+├── docker/                  # Docker configuration
+├── tests/                   # Test scripts
+├── public/                  # Static assets
+└── .assets/                 # Reference images
+```
 
-### Database
-Analytics data is stored in SQLite (`data/analytics.db`). The database auto-initializes on first run.
+See [src/README.md](./src/README.md) for detailed source code organization.
 
-## 🚀 Deployment
+## Core Systems
 
-See **[DEPLOYMENT.md](./DEPLOYMENT.md)** for detailed deployment instructions including:
-- Vercel deployment setup
+### Discord Gateway
+
+Real-time WebSocket connection tracking member presence, voice states, and activities.
+
+```typescript
+// Singleton access
+import { getDiscordGateway } from '@/lib/discord-gateway';
+
+const gateway = getDiscordGateway();
+const stats = gateway.getServerStats();
+const online = gateway.getOnlineMembers();
+```
+
+**Events tracked:**
+- Presence updates (online/idle/dnd/offline)
+- Voice channel joins/leaves
+- Screen sharing/streaming
+- Game activity
+- Spotify listening
+
+### Analytics System
+
+SQLite-based tracking with daily/monthly aggregation.
+
+**Tables:**
+- `user_stats` - Cumulative statistics per user
+- `game_sessions` - Individual game sessions
+- `voice_sessions` - Voice channel sessions
+- `spotify_sessions` - Spotify listening sessions
+- `daily_snapshots` - Historical daily data
+
+**Session states:** `active` | `ended` | `stale`
+
+Sessions inactive >5 minutes are marked as `stale`.
+
+### Riot Games API
+
+PUUID-based API integration for League of Legends data.
+
+```typescript
+import { RiotAPIService } from '@/app/api/lol/services/RiotAPIService';
+
+const api = new RiotAPIService();
+const profile = await api.getSummonerProfile('GameName', 'TAG', 'euw1');
+```
+
+**Supported regions:** euw1, eun1, na1, kr, jp1, br1, la1, la2, oc1, tr1, ru
+
+## API Endpoints
+
+### Discord
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/discord/server-stats` | GET | Server statistics and online members |
+| `/api/discord/streaming-status` | GET | Streaming member detection |
+
+### League of Legends
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/lol/summoner` | GET | Summoner lookup by Riot ID |
+| `/api/lol/champions` | GET | Champion database |
+| `/api/lol/mastery` | GET | Champion mastery data |
+| `/api/lol/matches` | GET | Match history |
+| `/api/lol/live-game` | GET | Current game info |
+
+### Analytics
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/api/analytics/status` | GET | Analytics system status |
+| `/api/analytics/user/[userId]` | GET | User statistics |
+| `/api/analytics/reset-daily` | POST | Trigger daily reset |
+| `/api/analytics/reset-monthly` | POST | Trigger monthly reset |
+
+See [docs/API.md](./docs/API.md) for complete endpoint documentation.
+
+## Database
+
+Analytics data stored in `data/analytics.db` (SQLite with WAL mode).
+
+```bash
+# Database auto-initializes on first run
+# Location can be customized with ANALYTICS_DATA_DIR env var
+```
+
+**Performance settings:**
+- WAL journal mode
+- Synchronous: NORMAL
+- Cache size: 10000 pages
+- Temp store: MEMORY
+
+## Authentication
+
+Discord OAuth via NextAuth.js.
+
+**Protected routes:**
+- `/admin` - Requires Discord authentication
+
+## Build Configuration
+
+```typescript
+// next.config.ts
+serverExternalPackages: [
+  'discord.js',
+  'better-sqlite3',
+  'zlib-sync',
+  // ... native modules excluded from client bundle
+]
+```
+
+**Note:** ESLint and TypeScript errors are ignored during production builds (development convenience).
+
+## Deployment
+
+See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for:
+- Vercel deployment
+- Manual server deployment
 - Nginx configuration
 - Maintenance mode setup
-- Environment configuration
 
-## 🤝 Contributing
+## Documentation
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+**[View Full Documentation Index](./docs/DOCS.md)** - Central hub for all 17 documentation files.
 
-## 📚 Documentation
+### Quick Links
 
-- **[API.md](./API.md)** - Discord API integration and streaming status
-- **[DEPLOYMENT.md](./DEPLOYMENT.md)** - Deployment and maintenance setup
-- **[data/README.md](./data/README.md)** - Analytics database information
+| Category | Documents |
+|----------|-----------|
+| **Getting Started** | [ARCHITECTURE](./docs/ARCHITECTURE.md), [CONTRIBUTING](./docs/CONTRIBUTING.md) |
+| **API Reference** | [API.md](./docs/API.md), [src/app/api/README](./src/app/api/README.md) |
+| **Features** | [LoL](./src/app/league-of-legends/README.md), [CS2](./src/app/cs2/README.md), [WWE](./src/app/wwe-games/README.md), [Admin](./src/app/admin/README.md) |
+| **Infrastructure** | [DEPLOYMENT](./docs/DEPLOYMENT.md), [data/README](./data/README.md), [docker/README](./docker/README.md) |
+| **Source Code** | [src/README](./src/README.md), [src/lib/README](./src/lib/README.md), [Analytics](./src/lib/analytics/README.md) |
 
-## 📄 License
+## Development Notes
 
-This project is private and proprietary to the Komplexáci gaming clan.
+### Client vs Server Components
 
-## 🎯 Contact
+Default to Server Components. Add `"use client"` only when needed for:
+- React hooks (useState, useEffect, etc.)
+- Browser APIs (window, document)
+- Event handlers
+- Client-side state
 
-- **Website**: [komplexaci.cz](https://komplexaci.cz)
-- **Discord**: Join our gaming community
-- **GitHub**: [@shaneomac1337](https://github.com/shaneomac1337)
+### Import Aliases
 
----
+```typescript
+import { Component } from '@/app/components/Component';
+import { getAnalyticsDatabase } from '@/lib/analytics/database';
+```
 
-**Built with ❤️ by the Komplexáci community**
+### Type Definitions
+
+Located in `src/app/types/`:
+- `cs2.ts` - CS2 weapon/map types
+- `wwe.ts` - WWE game types
+
+Located in `src/app/api/lol/types/`:
+- `summoner.ts` - Riot API response types
+
+Located in `src/app/league-of-legends/types/`:
+- `lol.ts` - Champion types
+
+## License
+
+Private and proprietary to the Komplexaci gaming clan.
+
+## Contact
+
+- Website: [komplexaci.cz](https://komplexaci.cz)
+- GitHub: [@shaneomac1337](https://github.com/shaneomac1337)
