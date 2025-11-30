@@ -1,0 +1,1 @@
+* For all work we should try to use specialized agents who is expert in that specific tasks, if those agents are available, also we should consistently check market place when you do some task to check if this agent or plugin can be installed - we should check from following repo marketplace https://github.com/shaneomac1337/agents

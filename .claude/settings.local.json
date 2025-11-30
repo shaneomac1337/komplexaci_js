@@ -1,7 +1,25 @@
 {
   "permissions": {
     "allow": [
-      "Bash(rm:*)"
+      "Bash(rm:*)",
+      "Bash(echo:*)",
+      "Bash(find:*)",
+      "Bash(dir:*)",
+      "WebFetch(domain:github.com)",
+      "Bash(npm run build:*)",
+      "Bash(npx next build)",
+      "Bash(npx tsc:*)",
+      "Bash(npx eslint:*)",
+      "Bash(./node_modules/.bin/tsc:*)",
+      "Bash(node node_modules/typescript/bin/tsc:*)",
+      "Bash(reg query \"HKLM\\SOFTWARE\\Microsoft\\VisualStudio\")",
+      "Bash(\"/c/Program Files/Microsoft Visual Studio/18/Community/VC/Auxiliary/Build/vcvars64.bat\")",
+      "Bash(npm config set:*)",
+      "Bash(npm config list:*)",
+      "Bash(cat:*)",
+      "Bash(node --version:*)",
+      "Bash(npm --version)",
+      "Bash(GYP_MSVS_VERSION=2022 npm install:*)"
     ],
     "deny": []
   }
