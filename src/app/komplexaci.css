@@ -974,7 +974,15 @@
 .hero-exact {
     height: 100vh;
     min-height: 100vh;
-    background: linear-gradient(180deg, #0a0a0f 0%, #121218 50%, #0a0a0f 100%);
+    background:
+        linear-gradient(180deg,
+            rgba(10, 10, 15, 0.92) 0%,
+            rgba(15, 10, 30, 0.88) 50%,
+            rgba(10, 10, 15, 0.95) 100%
+        ),
+        url('/komplexaci/img/neon.jpg');
+    background-size: cover;
+    background-position: center;
     display: flex;
     align-items: center;
     text-align: center;
@@ -1017,14 +1025,17 @@
     width: 280px;
     height: 280px;
     object-fit: contain;
-    filter: drop-shadow(0 4px 20px rgba(0, 0, 0, 0.5));
-    transition: all 0.3s ease;
+    filter: drop-shadow(0 0 30px rgba(110, 79, 246, 0.4))
+            drop-shadow(0 4px 20px rgba(0, 0, 0, 0.5));
+    transition: all 0.4s ease;
     image-rendering: auto;
 }
 
 .hero-logo:hover {
-    filter: drop-shadow(0 8px 30px rgba(110, 79, 246, 0.3));
-    transform: scale(1.02);
+    filter: drop-shadow(0 0 40px rgba(110, 79, 246, 0.6))
+            drop-shadow(0 0 60px rgba(0, 210, 255, 0.3))
+            drop-shadow(0 8px 30px rgba(0, 0, 0, 0.5));
+    transform: scale(1.03);
 }
 
 /* Mobile responsive breakpoints for hero logo */
@@ -1135,7 +1146,7 @@
     }
 }
 
-/* Subtle gradient overlay for depth */
+/* Cyberpunk overlay with subtle glow accents */
 .hero-exact::before {
     content: '';
     position: absolute;
@@ -1143,7 +1154,29 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background: radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.3) 100%);
+    background:
+        radial-gradient(ellipse at 20% 80%, rgba(110, 79, 246, 0.15) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 20%, rgba(0, 210, 255, 0.1) 0%, transparent 50%),
+        radial-gradient(ellipse at center, transparent 0%, rgba(0, 0, 0, 0.4) 100%);
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Subtle scan line effect */
+.hero-exact::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.03) 2px,
+        rgba(0, 0, 0, 0.03) 4px
+    );
     pointer-events: none;
     z-index: 1;
 }
@@ -1196,7 +1229,10 @@
     letter-spacing: 3px;
     font-weight: 800;
     color: #ffffff;
-    text-shadow: 0 2px 20px rgba(0, 0, 0, 0.5);
+    text-shadow:
+        0 0 10px rgba(110, 79, 246, 0.5),
+        0 0 30px rgba(110, 79, 246, 0.3),
+        0 2px 20px rgba(0, 0, 0, 0.5);
 }
 
 /* Mobile responsive breakpoints for hero title */
