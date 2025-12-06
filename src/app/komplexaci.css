@@ -12,16 +12,19 @@
     --discord-color: #5865F2;
     --transition: all 0.3s ease;
 
-    /* Cyberpunk Color Palette */
-    --cyber-cyan: #00FFFF;
-    --cyber-magenta: #FF00FF;
-    --cyber-blue: #0080FF;
-    --cyber-purple: #8A2BE2;
+    /* Logo-Matched Color Palette - Shark Teal + Gaming Orange */
+    --shark-teal: #0B7A8F;
+    --shark-teal-light: #14A3BD;
+    --shark-teal-bright: #00D4E8;
+    --gaming-orange: #FF8C00;
+    --gaming-orange-light: #FFA500;
+    --castle-stone: #6B7280;
     --cyber-green: #00FF41;
     --cyber-dark: #0a0a0f;
     --cyber-darker: #050508;
     --cyber-accent: #1a0a1f;
-    --cyber-glow: rgba(0, 255, 255, 0.5);
+    --shark-glow: rgba(20, 163, 189, 0.4);
+    --orange-glow: rgba(255, 140, 0, 0.3);
     --cyber-glow-pink: rgba(255, 0, 255, 0.5);
     --cyber-glow-blue: rgba(0, 128, 255, 0.5);
 }
@@ -34,76 +37,45 @@
     width: 100%;
     z-index: 1002;
     background: linear-gradient(135deg,
-        rgba(10, 10, 15, 0.65) 0%,
-        rgba(26, 10, 31, 0.65) 30%,
-        rgba(5, 5, 8, 0.65) 70%,
-        rgba(10, 10, 15, 0.65) 100%
+        rgba(10, 10, 15, 0.92) 0%,
+        rgba(11, 30, 35, 0.92) 50%,
+        rgba(10, 10, 15, 0.92) 100%
     );
     backdrop-filter: blur(5px) saturate(120%);
     border-bottom: 2px solid transparent;
     border-image: linear-gradient(90deg,
         transparent 0%,
-        var(--cyber-cyan) 25%,
-        var(--cyber-magenta) 50%,
-        var(--cyber-blue) 75%,
+        var(--shark-teal-light) 25%,
+        var(--shark-teal-bright) 50%,
+        var(--shark-teal-light) 75%,
         transparent 100%
     ) 1;
     box-shadow:
         0 4px 32px rgba(0, 0, 0, 0.4),
-        0 0 20px var(--cyber-glow),
-        0 0 40px rgba(0, 255, 255, 0.1),
-        inset 0 1px 0 rgba(0, 255, 255, 0.2);
+        0 0 20px var(--shark-glow);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     overflow: visible;
 }
 
-/* Cyberpunk animated background pattern */
-.header::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 200%;
-    height: 100%;
-    background: linear-gradient(90deg,
-        transparent 0%,
-        rgba(0, 255, 255, 0.03) 25%,
-        rgba(255, 0, 255, 0.03) 50%,
-        rgba(0, 128, 255, 0.03) 75%,
-        transparent 100%
-    );
-    animation: cyber-scan 8s linear infinite;
-    z-index: 1;
-}
-
-@keyframes cyber-scan {
-    0% { left: -100%; }
-    100% { left: 100%; }
-}
 
 /* Cyberpunk Header scroll effect */
 .header.scrolled {
     background: linear-gradient(135deg,
-        rgba(5, 5, 8, 0.75) 0%,
-        rgba(26, 10, 31, 0.75) 30%,
-        rgba(5, 5, 8, 0.75) 70%,
-        rgba(5, 5, 8, 0.75) 100%
+        rgba(5, 5, 8, 0.95) 0%,
+        rgba(11, 30, 35, 0.95) 50%,
+        rgba(5, 5, 8, 0.95) 100%
     );
     backdrop-filter: blur(8px) saturate(130%);
     border-image: linear-gradient(90deg,
         transparent 0%,
-        var(--cyber-cyan) 20%,
-        var(--cyber-magenta) 40%,
-        var(--cyber-blue) 60%,
-        var(--cyber-purple) 80%,
+        var(--shark-teal-light) 25%,
+        var(--shark-teal-bright) 50%,
+        var(--shark-teal-light) 75%,
         transparent 100%
     ) 1;
     box-shadow:
         0 8px 40px rgba(0, 0, 0, 0.5),
-        0 0 30px var(--cyber-glow),
-        0 0 60px rgba(0, 255, 255, 0.15),
-        0 0 100px rgba(255, 0, 255, 0.1),
-        inset 0 1px 0 rgba(0, 255, 255, 0.3);
+        0 0 30px var(--shark-glow);
 }
 
 .header .container {
@@ -154,60 +126,24 @@
     position: relative;
     border-radius: 10px;
     background: linear-gradient(135deg,
-        var(--cyber-cyan) 0%,
-        var(--cyber-blue) 50%,
-        var(--cyber-magenta) 100%
+        var(--shark-teal) 0%,
+        var(--shark-teal-light) 100%
     );
     backdrop-filter: blur(15px);
-    border: 1px solid rgba(0, 255, 255, 0.5);
+    border: 1px solid var(--shark-teal-light);
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow:
-        0 4px 15px rgba(0, 255, 255, 0.3),
-        0 0 20px rgba(0, 255, 255, 0.2),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+    box-shadow: 0 4px 15px var(--shark-glow);
     overflow: hidden;
-}
-
-.site-logo-placeholder::before {
-    content: '';
-    position: absolute;
-    top: -50%;
-    left: -50%;
-    width: 200%;
-    height: 200%;
-    background: linear-gradient(45deg,
-        transparent,
-        rgba(255, 255, 255, 0.2),
-        transparent
-    );
-    transform: rotate(45deg);
-    transition: all 0.6s ease;
-    animation: cyber-shimmer 3s ease-in-out infinite;
-}
-
-@keyframes cyber-shimmer {
-    0%, 100% { opacity: 0; }
-    50% { opacity: 1; }
 }
 
 .site-logo-placeholder:hover {
     background: linear-gradient(135deg,
-        var(--cyber-magenta) 0%,
-        var(--cyber-cyan) 50%,
-        var(--cyber-blue) 100%
+        var(--shark-teal-light) 0%,
+        var(--gaming-orange) 100%
     );
-    border-color: var(--cyber-cyan);
+    border-color: var(--gaming-orange);
     transform: scale(1.05);
-    box-shadow:
-        0 6px 20px rgba(0, 255, 255, 0.4),
-        0 0 25px rgba(0, 255, 255, 0.3),
-        inset 0 1px 0 rgba(255, 255, 255, 0.3);
-}
-
-.site-logo-placeholder:hover::before {
-    transform: rotate(45deg) translate(50%, 50%);
-    animation: none;
-    opacity: 1;
+    box-shadow: 0 6px 20px var(--orange-glow);
 }
 
 .logo-image {
@@ -215,7 +151,7 @@
     height: 32px;
     object-fit: contain;
     /* Minimal filters for crisp quality */
-    filter: drop-shadow(0 0 4px rgba(0, 255, 255, 0.4));
+    filter: drop-shadow(0 0 4px var(--shark-glow));
     transition: all 0.3s ease;
     z-index: 2;
     position: relative;
@@ -226,7 +162,7 @@
 
 .logo:hover .logo-image {
     /* Minimal hover effect to maintain quality */
-    filter: drop-shadow(0 0 6px rgba(0, 255, 255, 0.8));
+    filter: drop-shadow(0 0 8px var(--orange-glow));
     transform: scale(1.05);
 }
 
@@ -237,35 +173,14 @@
     font-size: 1.4rem;
     font-weight: 700;
     margin: 0;
-    background: linear-gradient(135deg,
-        var(--cyber-cyan) 0%,
-        var(--cyber-blue) 30%,
-        var(--cyber-magenta) 70%,
-        var(--cyber-cyan) 100%
-    );
-    background-size: 300% 300%;
-    -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
-    background-clip: text;
-    color: var(--cyber-cyan);
+    color: #ffffff;
     letter-spacing: 0.8px;
     transition: all 0.4s ease;
-    text-shadow: 0 0 10px var(--cyber-glow);
-    animation: cyber-text-flow 4s ease-in-out infinite;
-}
-
-@keyframes cyber-text-flow {
-    0%, 100% { background-position: 0% 50%; }
-    50% { background-position: 100% 50%; }
+    text-shadow: 0 0 10px var(--shark-glow);
 }
 
 .logo:hover h1 {
-    background-position: 100% 0%;
-    text-shadow:
-        0 0 20px var(--cyber-glow),
-        0 0 30px rgba(255, 0, 255, 0.5),
-        0 0 40px rgba(0, 128, 255, 0.3);
-    animation-duration: 1s;
+    text-shadow: 0 0 20px var(--orange-glow);
 }
 
 .main-nav {
@@ -303,42 +218,14 @@
     overflow: hidden;
 }
 
-.nav-link::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg,
-        transparent,
-        rgba(0, 255, 255, 0.1),
-        transparent
-    );
-    transition: left 0.5s ease;
-}
-
 .nav-link:hover,
 .nav-link.active {
-    color: var(--cyber-cyan);
-    background: linear-gradient(135deg,
-        rgba(0, 255, 255, 0.1) 0%,
-        rgba(255, 0, 255, 0.05) 50%,
-        rgba(0, 128, 255, 0.1) 100%
-    );
-    border: 1px solid rgba(0, 255, 255, 0.5);
-    text-shadow:
-        0 0 10px var(--cyber-glow),
-        0 0 20px rgba(0, 255, 255, 0.3);
+    color: var(--shark-teal-bright);
+    background: rgba(20, 163, 189, 0.15);
+    border: 1px solid var(--shark-teal-light);
+    text-shadow: 0 0 10px var(--shark-glow);
     transform: translateY(-2px);
-    box-shadow:
-        0 4px 20px rgba(0, 255, 255, 0.3),
-        0 0 30px rgba(0, 255, 255, 0.1),
-        inset 0 1px 0 rgba(255, 255, 255, 0.2);
-}
-
-.nav-link:hover::before {
-    left: 100%;
+    box-shadow: 0 4px 20px var(--shark-glow);
 }
 
 .nav-link::after {
@@ -349,14 +236,12 @@
     width: 0;
     height: 2px;
     background: linear-gradient(90deg,
-        var(--cyber-cyan),
-        var(--cyber-magenta),
-        var(--cyber-blue)
+        var(--shark-teal-light),
+        var(--gaming-orange)
     );
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
     transform: translateX(-50%);
     opacity: 0;
-    box-shadow: 0 0 10px var(--cyber-glow);
     z-index: 5;
 }
 
@@ -385,7 +270,7 @@
     height: 0;
     border-left: 4px solid transparent;
     border-right: 4px solid transparent;
-    border-top: 4px solid var(--cyber-cyan);
+    border-top: 4px solid var(--shark-teal-bright);
     opacity: 0.7;
     transition: all 0.3s ease;
 }
@@ -400,21 +285,15 @@
     position: absolute;
     top: calc(100% + 8px);
     left: 0;
-    background: linear-gradient(135deg,
-        var(--cyber-dark) 0%,
-        var(--cyber-accent) 50%,
-        var(--cyber-darker) 100%
-    );
-    backdrop-filter: blur(25px) saturate(200%);
+    background: rgba(10, 10, 15, 0.95);
+    backdrop-filter: blur(15px) saturate(200%);
     min-width: 220px;
     width: auto;
     height: auto;
     max-height: 400px;
     box-shadow:
         0 8px 32px rgba(0, 0, 0, 0.5),
-        0 0 20px var(--cyber-glow),
-        0 0 40px rgba(0, 255, 255, 0.2),
-        inset 0 1px 0 rgba(0, 255, 255, 0.3);
+        0 0 20px var(--shark-glow);
     border-radius: 12px;
     opacity: 0;
     visibility: hidden;
@@ -423,32 +302,13 @@
     list-style: none;
     padding: 12px 0;
     margin: 0;
-    border: 1px solid rgba(0, 255, 255, 0.5);
+    border: 1px solid var(--shark-teal-light);
     overflow: visible;
     z-index: 1003;
     pointer-events: none;
     white-space: nowrap;
 }
 
-.submenu::before {
-    content: '';
-    position: absolute;
-    top: 0;
-    left: -100%;
-    width: 100%;
-    height: 100%;
-    background: linear-gradient(90deg,
-        transparent,
-        rgba(0, 255, 255, 0.05),
-        transparent
-    );
-    animation: cyber-submenu-scan 3s linear infinite;
-}
-
-@keyframes cyber-submenu-scan {
-    0% { left: -100%; }
-    100% { left: 100%; }
-}
 
 .has-submenu:hover .submenu {
     opacity: 1;
@@ -476,17 +336,15 @@
     margin-left: 8px;
     font-size: 0.75rem;
     transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    color: var(--cyber-cyan);
-    text-shadow: 0 0 8px var(--cyber-glow);
+    color: var(--shark-teal-bright);
     display: inline-block;
     opacity: 0.8;
 }
 
 .has-submenu:hover .submenu-arrow {
     transform: none;
-    opacity: 0.8;
-    color: var(--cyber-cyan);
-    text-shadow: none;
+    opacity: 1;
+    color: var(--gaming-orange);
 }
 
 /* Mobile menu toggle */
