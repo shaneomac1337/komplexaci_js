@@ -14,12 +14,11 @@
     "@supabase/supabase-js": "^2.50.0",
     "better-sqlite3": "^12.1.1",
     "discord.js": "^14.20.0",
-    "next": "15.3.3",
+    "next": "^15.5.7",
     "next-auth": "^4.24.11",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "sqlite3": "^5.1.7",
-    "zlib-sync": "^0.1.10"
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
