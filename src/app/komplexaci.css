@@ -846,25 +846,26 @@
 /* Mobile responsive breakpoints for hero section */
 @media (max-width: 768px) {
     .hero-exact {
-        height: 80vh;
-        min-height: 600px;
+        height: auto;
+        min-height: 100vh;
+        padding-top: 80px; /* Account for fixed header height */
         background-attachment: scroll;
     }
 }
 
 @media (max-width: 480px) {
     .hero-exact {
-        height: 70vh;
-        min-height: 500px;
-        padding: 20px 0;
+        height: auto;
+        min-height: 100vh;
+        padding: 80px 0 20px 0; /* Top padding for header, bottom padding for content */
     }
 }
 
 @media (max-width: 360px) {
     .hero-exact {
-        height: 65vh;
-        min-height: 450px;
-        padding: 15px 0;
+        height: auto;
+        min-height: 100vh;
+        padding: 70px 0 15px 0; /* Slightly smaller top padding for very small screens */
     }
 }
 
