@@ -65,15 +65,27 @@ class AnalyticsService {
     let recoveredSessions = 0;
     const currentTime = new Date();
 
-    // FIRST: Clean up any existing active sessions to prevent duplicates
-    console.log('🧹 Cleaning up existing active sessions before recovery...');
-    this.endAllActiveSessions(currentTime);
+    // Check if we already have active sessions to prevent duplicates
+    const existingActiveSessions = {
+      game: this.db.getActiveGameSessions().length,
+      voice: this.db.getActiveVoiceSessions().length,
+      spotify: this.db.getActiveSpotifySessions().length
+    };
+
+    if (existingActiveSessions.game > 0 || existingActiveSessions.voice > 0 || existingActiveSessions.spotify > 0) {
+      console.log(`⚠️ Found existing active sessions (${existingActiveSessions.game} game, ${existingActiveSessions.voice} voice, ${existingActiveSessions.spotify} spotify)`);
+      console.log('🧹 Cleaning up existing active sessions before recovery...');
+      this.endAllActiveSessions(currentTime);
+    }
+
+    // Clear in-memory state to ensure clean slate
+    this.activeUsers.clear();
 
     // No backdate estimation to ensure accurate timing
     // Gaming sessions will start from the exact recovery time to match online time tracking
     const estimatedStartTime = currentTime;
 
-    console.log(`🕐 Session recovery: No backdate, accurate timing from ${currentTime.toISOString()}`);
+    console.log(`🕐 Session recovery: Starting fresh from ${currentTime.toISOString()}`);
 
     try {
       if (!discordGuild) {
@@ -279,6 +291,9 @@ class AnalyticsService {
     if (newStatus === 'offline') {
       // End all active sessions when user goes offline
       this.endAllUserSessions(user, currentTime);
+      // Remove user from activeUsers map to prevent memory leak
+      this.activeUsers.delete(user.userId);
+      console.log(`👋 User ${user.displayName} went offline, removed from active tracking`);
     } else if (user.currentStatus === 'offline') {
       // User came online, start tracking session
       user.sessionStartTime = currentTime;

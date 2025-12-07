@@ -781,8 +781,8 @@ class AnalyticsDatabase {
 
   public resetDailyStats(userId?: string) {
     const now = new Date();
-    // Set reset time to 2 minutes before actual reset to ensure recovered sessions are counted
-    const resetTime = new Date(now.getTime() - 2 * 60 * 1000).toISOString();
+    // Use actual reset time for consistency
+    const resetTime = now.toISOString();
 
     if (userId) {
       // Reset specific user
@@ -820,7 +820,7 @@ class AnalyticsDatabase {
 
   public resetMonthlyStats(userId?: string) {
     const now = new Date().toISOString();
-    
+
     if (userId) {
       // Reset specific user
       const stmt = this.db.prepare(`
@@ -831,6 +831,7 @@ class AnalyticsDatabase {
           monthly_games_minutes = 0,
           monthly_spotify_minutes = 0,
           monthly_spotify_songs = 0,
+          monthly_streaming_minutes = 0,
           last_monthly_reset = ?,
           updated_at = CURRENT_TIMESTAMP
         WHERE user_id = ?
@@ -846,6 +847,7 @@ class AnalyticsDatabase {
           monthly_games_minutes = 0,
           monthly_spotify_minutes = 0,
           monthly_spotify_songs = 0,
+          monthly_streaming_minutes = 0,
           last_monthly_reset = ?,
           updated_at = CURRENT_TIMESTAMP
       `);
@@ -877,6 +879,29 @@ class AnalyticsDatabase {
     } catch (error) {
       console.error('❌ Error closing database:', error);
     }
+  }
+
+  // === TRANSACTION HELPERS ===
+
+  // Run a function within a transaction for atomicity
+  public runInTransaction<T>(fn: () => T): T {
+    const transaction = this.db.transaction(fn);
+    return transaction();
+  }
+
+  // Begin a manual transaction (for complex multi-step operations)
+  public beginTransaction() {
+    this.db.exec('BEGIN IMMEDIATE');
+  }
+
+  // Commit a manual transaction
+  public commitTransaction() {
+    this.db.exec('COMMIT');
+  }
+
+  // Rollback a manual transaction
+  public rollbackTransaction() {
+    this.db.exec('ROLLBACK');
   }
 }
 

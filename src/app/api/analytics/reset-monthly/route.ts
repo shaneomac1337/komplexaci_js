@@ -42,13 +42,13 @@ export async function POST(request: NextRequest) {
     `);
 
     // Calculate monthly snapshots using session-based method (same as UI)
-    // Calculate date range for the previous month (30 days from now)
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const startDateStr = thirtyDaysAgo.toISOString().split('T')[0];
-    const endDateStr = now.toISOString().split('T')[0];
-    
-    console.log(`📊 Calculating monthly stats from ${startDateStr} to ${endDateStr} using session-based method`);
+    // Use actual calendar month boundaries for accuracy
+    const firstDayOfPrevMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastDayOfPrevMonth = new Date(now.getFullYear(), now.getMonth(), 0); // Day 0 of current month = last day of prev month
+    const startDateStr = firstDayOfPrevMonth.toISOString().split('T')[0];
+    const endDateStr = lastDayOfPrevMonth.toISOString().split('T')[0];
+
+    console.log(`📊 Calculating monthly stats for ${previousMonth} (${startDateStr} to ${endDateStr}) using session-based method`);
     
     let monthlySnapshotsCreated = 0;
     for (const userStat of currentUserStats) {
@@ -176,10 +176,10 @@ export async function GET(request: NextRequest) {
     const currentMonth = now.toISOString().substring(0, 7);
     
     // Get current monthly data using session-based calculations (same as UI and POST method)
+    // Use current month boundaries for the status check
     const currentUserStats = db.getAllUserStats();
-    const thirtyDaysAgo = new Date();
-    thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-    const startDateStr = thirtyDaysAgo.toISOString().split('T')[0];
+    const firstDayOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startDateStr = firstDayOfMonth.toISOString().split('T')[0];
     const endDateStr = now.toISOString().split('T')[0];
 
     const activeUserStats = [];
