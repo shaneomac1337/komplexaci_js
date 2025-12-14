@@ -122,7 +122,7 @@ html {
     font-size: 1.5rem;
     font-weight: bold;
     color: #fff;
-    background: linear-gradient(135deg, #00FFFF, #0080FF, #FF00FF, #00FFFF);
+    background: linear-gradient(135deg, #00FFFF, #ff6ec7, #FF8C00, #00FFFF);
     background-size: 400% 400%;
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -197,11 +197,11 @@ html {
     }
     33% {
         background-position: 50% 50%;
-        filter: drop-shadow(0 0 12px rgba(0, 128, 255, 0.8));
+        filter: drop-shadow(0 0 12px rgba(255, 110, 199, 0.8));
     }
     66% {
         background-position: 100% 50%;
-        filter: drop-shadow(0 0 10px rgba(255, 0, 255, 0.7));
+        filter: drop-shadow(0 0 10px rgba(255, 140, 0, 0.7));
     }
 }
 
@@ -214,8 +214,8 @@ html {
         transform: translateY(-3px) scale(1.05);
         text-shadow:
             0 0 20px rgba(0, 255, 255, 0.8),
-            0 0 30px rgba(0, 128, 255, 0.6),
-            0 0 40px rgba(255, 0, 255, 0.4);
+            0 0 30px rgba(255, 110, 199, 0.6),
+            0 0 40px rgba(255, 140, 0, 0.4);
         filter: drop-shadow(0 0 15px rgba(0, 255, 255, 0.9));
     }
 }
