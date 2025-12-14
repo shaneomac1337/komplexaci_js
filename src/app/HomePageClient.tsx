@@ -1089,6 +1089,17 @@ export default function HomePageClient({
 
       {/* Hero Section - EXACT Recreation */}
       <section id="hero" className="hero-exact">
+        {/* Video Background */}
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          className="hero-video-bg"
+          poster="/komplexaci/img/neon.jpg"
+        >
+          <source src="/hero_video.mp4" type="video/mp4" />
+        </video>
         <div className="hero-content-exact">
           {/* Large Logo Display */}
           <div className="hero-logo-container mb-8">
@@ -1114,7 +1125,7 @@ export default function HomePageClient({
           </p>
           <a
             href="#discord"
-            className="inline-block bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/25"
+            className="inline-block bg-gradient-to-r from-orange-500 via-pink-500 to-cyan-400 hover:from-orange-600 hover:via-pink-600 hover:to-cyan-500 px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/40 border border-cyan-400/30"
           >
             Připoj se k nám
           </a>
