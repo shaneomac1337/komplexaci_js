@@ -51,14 +51,14 @@ export const metadata: Metadata = {
     siteName: "Komplexáci",
     images: [
       {
-        url: "/komplexaci/img/logo.png",
+        url: "https://cdn.komplexaci.cz/komplexaci/img/logo.png",
         width: 1200,
         height: 630,
         alt: "Komplexáci - Česká Gaming Komunita",
         type: "image/png",
       },
       {
-        url: "https://www.komplexaci.cz/komplexaci/img/discord-bg.jpg",
+        url: "https://cdn.komplexaci.cz/komplexaci/img/discord-bg.jpg",
         width: 1200,
         height: 630,
         alt: "Komplexáci Discord Server",
@@ -73,7 +73,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Komplexáci - Česká Gaming Komunita 🎮",
     description: "Gaming komunita specializující se na League of Legends, CS2, WWE hry a další. Připoj se k nám! 🚀",
-    images: ["https://www.komplexaci.cz/komplexaci/img/logo.png"],
+    images: ["https://cdn.komplexaci.cz/komplexaci/img/logo.png"],
     site: "@komplexaci",
     creator: "@mpenkava1337",
   },
@@ -100,7 +100,7 @@ export default function RootLayout({
       <head>
         {/* Enhanced Social Media Meta Tags */}
         <meta property="og:image:type" content="image/png" />
-        <meta property="og:image:secure_url" content="https://www.komplexaci.cz/komplexaci/img/logo.png" />
+        <meta property="og:image:secure_url" content="https://cdn.komplexaci.cz/komplexaci/img/logo.png" />
         <meta name="theme-color" content="#6e4ff6" />
         <meta name="msapplication-TileColor" content="#6e4ff6" />
         <meta name="apple-mobile-web-app-title" content="Komplexáci" />
@@ -130,7 +130,7 @@ export default function RootLayout({
               "name": "Komplexáci",
               "alternateName": ["Komplexaci", "KompG", "Komplex Gaming", "Komplexaci Gaming"],
               "url": "https://www.komplexaci.cz",
-              "logo": "https://www.komplexaci.cz/komplexaci/img/logo.png",
+              "logo": "https://cdn.komplexaci.cz/komplexaci/img/logo.png",
               "description": "Komplexáci (také známí jako KompG nebo Komplex Gaming) je česká herní komunita z Dobřan specializující se na League of Legends a Counter Strike 2. KompG gaming klan vzpomíná na staré dobré časy a sdílí herní obsah.",
               "address": {
                 "@type": "PostalAddress",

@@ -68,6 +68,12 @@ const nextConfig: NextConfig = {
         hostname: 'shared.cloudflare.steamstatic.com',
         port: '',
         pathname: '/**',
+      },
+      {
+        protocol: 'https',
+        hostname: 'cdn.komplexaci.cz',
+        port: '',
+        pathname: '/**',
       }
     ],
     dangerouslyAllowSVG: true,

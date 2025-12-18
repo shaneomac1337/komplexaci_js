@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     siteName: "Komplexáci",
     images: [
       {
-        url: "/komplexaci/img/wwe-main.jpg",
+        url: "https://cdn.komplexaci.cz/komplexaci/img/wwe-main.jpg",
         width: 1200,
         height: 630,
         alt: "WWE Games Collection",
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "WWE Games | Komplexáci",
     description: "Kompletní kolekce WWE/WWF wrestlingových her - od klasických arkádových her až po moderní WWE 2K série.",
-    images: ["/komplexaci/img/wwe-main.jpg"],
+    images: ["https://cdn.komplexaci.cz/komplexaci/img/wwe-main.jpg"],
   },
 };
 
@@ -48,7 +48,7 @@ export default function WWEGamesLayout({
             "name": "WWE Games Collection",
             "description": "Kompletní kolekce WWE/WWF wrestlingových her od klasických arkádových her až po moderní WWE 2K série. Objevte historii wrestlingových videoher.",
             "url": "https://www.komplexaci.cz/wwe-games",
-            "image": "https://www.komplexaci.cz/komplexaci/img/wwe-main.jpg",
+            "image": "https://cdn.komplexaci.cz/komplexaci/img/wwe-main.jpg",
             "genre": ["Sports", "Wrestling", "Fighting", "Simulation"],
             "gamePlatform": ["PlayStation", "Xbox", "PC", "Nintendo"],
             "publisher": [

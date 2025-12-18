@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     siteName: "Komplexáci",
     images: [
       {
-        url: "/komplexaci/img/lol.jpg",
+        url: "https://cdn.komplexaci.cz/komplexaci/img/lol.jpg",
         width: 1200,
         height: 630,
         alt: "League of Legends",
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "League of Legends | Komplexáci",
     description: "League of Legends - MOBA hra od Riot Games, ve které se specializuje klan Komplexáci.",
-    images: ["/komplexaci/img/lol.jpg"],
+    images: ["https://cdn.komplexaci.cz/komplexaci/img/lol.jpg"],
   },
 };
 
@@ -59,7 +59,7 @@ export default function LeagueOfLegendsLayout({
               "name": "Riot Games"
             },
             "url": "https://www.leagueoflegends.com",
-            "image": "https://www.komplexaci.cz/komplexaci/img/lol.jpg",
+            "image": "https://cdn.komplexaci.cz/komplexaci/img/lol.jpg",
             "applicationCategory": "Game",
             "operatingSystem": "Windows, macOS",
             "offers": {

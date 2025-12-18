@@ -223,12 +223,12 @@
 .nav-link {
     display: block;
     padding: 10px 18px;
-    color: rgba(255, 255, 255, 0.9);
+    color: rgba(255, 255, 255, 0.85);
     font-family: 'Exo 2', sans-serif;
-    font-weight: 600;
+    font-weight: 500;
     text-transform: uppercase;
     font-size: 0.8rem;
-    letter-spacing: 1px;
+    letter-spacing: 0.8px;
     text-decoration: none;
     position: relative;
     border-radius: 8px;
@@ -237,50 +237,243 @@
     border: 1px solid transparent;
     background: rgba(0, 0, 0, 0.2);
     overflow: hidden;
+    z-index: 1;
 }
 
-.nav-link:hover,
-.nav-link.active {
-    color: var(--synthwave-cyan);
-    background: linear-gradient(135deg,
-        rgba(0, 255, 255, 0.1) 0%,
-        rgba(255, 110, 199, 0.08) 100%
-    );
-    border: 1px solid var(--synthwave-cyan);
+/* Base hover/active styles - will be enhanced by gradient morph */
+.gradient-morph-header .nav-link:hover {
+    color: #ffffff;
+    border: 1px solid var(--theme-primary);
     text-shadow:
-        0 0 10px var(--synthwave-cyan-glow),
-        0 0 20px var(--synthwave-magenta-glow);
-    transform: translateY(-2px);
-    box-shadow:
-        0 4px 20px var(--synthwave-cyan-glow),
-        0 2px 10px var(--synthwave-magenta-glow);
+        0 0 8px var(--theme-primary-glow),
+        0 0 15px var(--theme-secondary-glow);
+    /* Removed translateY - keeping it flat and subtle */
 }
 
-.nav-link::after {
+.gradient-morph-header .nav-link.active {
+    color: #ffffff;
+    border: 1px solid var(--theme-primary);
+    text-shadow:
+        0 0 8px var(--theme-primary-glow),
+        0 0 15px var(--theme-secondary-glow);
+    /* Removed translateY - keeping it flat and subtle */
+}
+
+.gradient-morph-header .nav-link::after {
     content: '';
     position: absolute;
     bottom: -2px;
     left: 50%;
     width: 0;
-    height: 2px;
+    height: 1.5px;
     background: linear-gradient(90deg,
-        var(--synthwave-cyan),
-        var(--synthwave-magenta),
-        var(--synthwave-orange)
+        var(--theme-primary),
+        var(--theme-secondary),
+        var(--theme-primary)
     );
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
     transform: translateX(-50%);
     opacity: 0;
-    box-shadow:
-        0 0 8px var(--synthwave-cyan-glow),
-        0 0 6px var(--synthwave-magenta-glow);
+    box-shadow: 0 0 6px var(--theme-primary-glow);
     z-index: 5;
 }
 
-.nav-link:hover::after,
-.nav-link.active::after {
-    width: 80%;
-    opacity: 1;
+.gradient-morph-header .nav-link:hover::after,
+.gradient-morph-header .nav-link.active::after {
+    width: 70%;
+    opacity: 0.9;
+}
+
+/* ============================================
+   GRADIENT MORPH HEADER - Dynamic Color Shifting
+   ============================================ */
+
+/* CSS Variables for Dynamic Theme Colors */
+.gradient-morph-header {
+    --theme-primary: var(--synthwave-cyan);
+    --theme-primary-glow: var(--synthwave-cyan-glow);
+    --theme-secondary: var(--synthwave-magenta);
+    --theme-secondary-glow: var(--synthwave-magenta-glow);
+    transition:
+        --theme-primary 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+        --theme-primary-glow 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+        --theme-secondary 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+        --theme-secondary-glow 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+        border-image 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+        box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1),
+        background 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Section-Aware Theme Colors */
+.gradient-morph-header[data-theme="cyan"] {
+    --theme-primary: #00FFFF;
+    --theme-primary-glow: rgba(0, 255, 255, 0.5);
+    --theme-secondary: #0099ff;
+    --theme-secondary-glow: rgba(0, 153, 255, 0.4);
+    border-image: linear-gradient(90deg,
+        transparent 0%,
+        #00FFFF 25%,
+        #0099ff 50%,
+        #00FFFF 75%,
+        transparent 100%
+    ) 1;
+    box-shadow:
+        0 4px 32px rgba(0, 0, 0, 0.5),
+        0 0 30px rgba(0, 255, 255, 0.3),
+        0 0 15px rgba(0, 153, 255, 0.2);
+}
+
+.gradient-morph-header[data-theme="magenta"] {
+    --theme-primary: #ff6ec7;
+    --theme-primary-glow: rgba(255, 110, 199, 0.5);
+    --theme-secondary: #ff00ff;
+    --theme-secondary-glow: rgba(255, 0, 255, 0.4);
+    border-image: linear-gradient(90deg,
+        transparent 0%,
+        #ff6ec7 25%,
+        #ff00ff 50%,
+        #ff6ec7 75%,
+        transparent 100%
+    ) 1;
+    box-shadow:
+        0 4px 32px rgba(0, 0, 0, 0.5),
+        0 0 30px rgba(255, 110, 199, 0.3),
+        0 0 15px rgba(255, 0, 255, 0.2);
+}
+
+.gradient-morph-header[data-theme="orange"] {
+    --theme-primary: #FF8C00;
+    --theme-primary-glow: rgba(255, 140, 0, 0.5);
+    --theme-secondary: #ff6600;
+    --theme-secondary-glow: rgba(255, 102, 0, 0.4);
+    border-image: linear-gradient(90deg,
+        transparent 0%,
+        #FF8C00 25%,
+        #ff6600 50%,
+        #FF8C00 75%,
+        transparent 100%
+    ) 1;
+    box-shadow:
+        0 4px 32px rgba(0, 0, 0, 0.5),
+        0 0 30px rgba(255, 140, 0, 0.3),
+        0 0 15px rgba(255, 102, 0, 0.2);
+}
+
+.gradient-morph-header[data-theme="purple"] {
+    --theme-primary: #9B30FF;
+    --theme-primary-glow: rgba(155, 48, 255, 0.5);
+    --theme-secondary: #7B2FFF;
+    --theme-secondary-glow: rgba(123, 47, 255, 0.4);
+    border-image: linear-gradient(90deg,
+        transparent 0%,
+        #9B30FF 25%,
+        #7B2FFF 50%,
+        #9B30FF 75%,
+        transparent 100%
+    ) 1;
+    box-shadow:
+        0 4px 32px rgba(0, 0, 0, 0.5),
+        0 0 30px rgba(155, 48, 255, 0.3),
+        0 0 15px rgba(123, 47, 255, 0.2);
+}
+
+/* Animated Gradient Border Stroke */
+.gradient-morph-header::before {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        var(--theme-primary) 25%,
+        var(--theme-secondary) 50%,
+        var(--theme-primary) 75%,
+        transparent 100%
+    );
+    background-size: 200% 100%;
+    animation: borderFlow 3s linear infinite;
+    opacity: 0.8;
+    pointer-events: none;
+}
+
+@keyframes borderFlow {
+    0% {
+        background-position: 0% 0%;
+    }
+    100% {
+        background-position: 200% 0%;
+    }
+}
+
+/* Enhanced Logo Glow Based on Theme */
+.gradient-morph-header .logo-text {
+    background: linear-gradient(135deg,
+        var(--theme-primary),
+        var(--theme-secondary),
+        var(--theme-primary)
+    );
+    background-size: 200% 200%;
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    animation: logoMorphGlow 4s ease-in-out infinite;
+    filter: drop-shadow(0 0 10px var(--theme-primary-glow));
+    transition: filter 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes logoMorphGlow {
+    0%, 100% {
+        background-position: 0% 50%;
+    }
+    50% {
+        background-position: 100% 50%;
+    }
+}
+
+/* Liquid Hover Effects - DISABLED (was causing large box issue) */
+.gradient-morph-header .nav-link::before {
+    display: none;
+}
+
+/* Ripple effects removed - were causing visual bugs */
+
+/* Clean hover/active - no size changes, just subtle background */
+.gradient-morph-header .nav-link:hover,
+.gradient-morph-header .nav-link.active {
+    background: var(--theme-primary-glow);
+}
+
+/* Gradient Reveal on Text - subtle effect */
+.gradient-morph-header .nav-link span {
+    position: relative;
+    display: inline-block;
+    z-index: 2;
+}
+
+/* Optional: Subtle Noise Texture Overlay */
+.gradient-morph-header::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    opacity: 0.03;
+    mix-blend-mode: overlay;
+    pointer-events: none;
+}
+
+/* Performance: Reduce Motion Support */
+@media (prefers-reduced-motion: reduce) {
+    .gradient-morph-header,
+    .gradient-morph-header::before,
+    .nav-link {
+        animation: none !important;
+        transition: opacity 0.3s ease, color 0.3s ease !important;
+    }
 }
 
 /* Submenu styling */

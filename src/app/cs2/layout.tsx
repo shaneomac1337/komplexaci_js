@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     siteName: 'Komplexáci',
     images: [
       {
-        url: '/komplexaci/img/cs2.jpg',
+        url: 'https://cdn.komplexaci.cz/komplexaci/img/cs2.jpg',
         width: 1200,
         height: 630,
         alt: 'Counter-Strike 2',
@@ -27,7 +27,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Counter-Strike 2 | Komplexáci',
     description: 'Counter-Strike 2 (CS2) je taktická střílečka z pohledu prvé osoby, která je pokračováním legendárního Counter-Strike: Global Offensive.',
-    images: ['/komplexaci/img/cs2.jpg'],
+    images: ['https://cdn.komplexaci.cz/komplexaci/img/cs2.jpg'],
   },
 };
 
@@ -49,7 +49,7 @@ export default function CS2Layout({
             "alternateName": ["CS2", "Counter Strike 2"],
             "description": "Counter-Strike 2 (CS2) je taktická střílečka z pohledu prvé osoby od Valve Corporation. Hra staví proti sobě dva týmy - teroristy a protiteroristickou jednotku v kompetitivních zápasech.",
             "url": "https://store.steampowered.com/app/730/CounterStrike_2/",
-            "image": "https://www.komplexaci.cz/komplexaci/img/cs2.jpg",
+            "image": "https://cdn.komplexaci.cz/komplexaci/img/cs2.jpg",
             "genre": ["FPS", "Tactical Shooter", "Multiplayer", "Esports", "Competitive"],
             "operatingSystem": ["Windows", "macOS", "Linux"],
             "applicationCategory": "Game",

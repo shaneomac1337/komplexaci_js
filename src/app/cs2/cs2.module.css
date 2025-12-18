@@ -2,7 +2,7 @@
 
 .heroSection {
   background-image: linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
-                    url('/cs2/cs2.jpg');
+                    url('https://cdn.komplexaci.cz/cs2/cs2.jpg');
   background-size: cover;
   background-position: center;
   background-attachment: fixed;

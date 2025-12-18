@@ -22,7 +22,7 @@ export const members: Member[] = [
     name: 'Barber',
     realName: 'Lukáš Čechura',
     role: 'CS2 Expert',
-    image: '/komplexaci/img/barber.gif',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/barber.gif',
     bio: 'CS2 expert s neuvěřitelnou přesností a reflexy. Když není na serveru, trénuje své dovednosti v aim labu.',
     stats: [
       { label: 'Oblíbený interpret', value: 'Viktor Sheen' },
@@ -35,7 +35,7 @@ export const members: Member[] = [
     name: 'Zander',
     realName: 'Petr Jakša',
     role: 'Pařmen',
-    image: '/komplexaci/img/zander.gif',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/zander.gif',
     bio: 'Týpeček, co nikdy nepohrdne kvalitním hraním, má bohatou knihovnu her jak na PC tak na konzoli.',
     stats: [
       { label: 'Herní role', value: 'Pařmen' },
@@ -48,7 +48,7 @@ export const members: Member[] = [
     name: 'shaneomac',
     realName: 'Martin Pěnkava',
     role: 'WebMaster',
-    image: '/komplexaci/img/shane.gif',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/shane.gif',
     bio: 'Digitální mág zodpovědný za webové stránky klanu. Moc skillu ve hře nepobral. Má rád wrestling',
     stats: [
       { label: 'Tech stack', value: 'HTML, CSS, JavaScript, PHP, React' },
@@ -61,7 +61,7 @@ export const members: Member[] = [
     name: 'Jugyna',
     realName: 'Jan Šváb',
     role: 'Hasič',
-    image: '/komplexaci/img/jugyna.gif',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/jugyna.gif',
     bio: 'Jugec jako správný požárník hasí každou vypjatou situaci ve hře, posléze žízeň.',
     stats: [
       { label: 'Oblíbená zbraň', value: 'Proudnice typu C' },
@@ -74,7 +74,7 @@ export const members: Member[] = [
     name: 'Pípa',
     realName: 'Josef Pech',
     role: 'NPC',
-    image: '/komplexaci/img/pipa.gif',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/pipa.gif',
     bio: 'Pípa je takovej divnej pokémon ze Vstiše, kdysi generátor random hlášek.',
     stats: [
       { label: 'Status', value: 'Dead na midu na Cache' },
@@ -87,7 +87,7 @@ export const members: Member[] = [
     name: 'MartinStrix',
     realName: 'Martin Poláček',
     role: 'Strix prostě',
-    image: '/komplexaci/img/martin-strix.gif',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/martin-strix.gif',
     bio: 'Záhadný hráč s nevyzpytatelným herním stylem. Nikdy nevíte, co udělá - ani on sám.',
     stats: [
       { label: 'Herní styl', value: 'Chaotické dobro' },
@@ -100,7 +100,7 @@ export const members: Member[] = [
     name: 'Azarin',
     realName: 'Adam Soukup',
     role: 'Rapper',
-    image: '/komplexaci/img/azarin.gif',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/azarin.gif',
     bio: 'Nadějný Rapper, nejčernější běloch v KompG skupině.',
     stats: [
       { label: 'Hudební styl', value: 'Mumble rap' },
@@ -113,7 +113,7 @@ export const members: Member[] = [
     name: 'Podri',
     realName: 'David Podroužek',
     role: 'Tryharder',
-    image: '/komplexaci/img/podri.gif',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/podri.gif',
     bio: 'Největší naděje KompG skupiny za posledních 100 let.',
     stats: [
       { label: 'Oblíbená činnost', value: 'Jízda na skůtru' },
@@ -126,7 +126,7 @@ export const members: Member[] = [
     name: 'Zdravíčko',
     realName: 'Václav Průcha',
     role: 'Žolík',
-    image: '/komplexaci/img/zdravicko.gif',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/zdravicko.gif',
     bio: 'Zdravíčko je takové eso v rukávu Komplexácké komunity, do akce bývá povolán zpravidla v případě největší potřeby. Nejnovější přírůstek v KompG klanu. Milovník zlevněného zboží.',
     stats: [
       { label: 'Oblíbená činnost', value: 'Scrollovat 9gag' },
@@ -139,7 +139,7 @@ export const members: Member[] = [
     name: 'Roseck',
     realName: 'Vladimír Rathouský',
     role: 'Stratég',
-    image: '/komplexaci/img/roseck.gif',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/roseck.gif',
     bio: 'Někdejší stratég komplexácké skupiny, Roseck měl vždy plné kapsy plánů od A až do Z a dokázal predikovat, jakým směrem se hra bude ubírat, na kontě má několik strategický zářezů včetně legendárního divu na topu v Night Cupu.',
     stats: [
       { label: 'Label', value: 'TNKDLBL' },
@@ -154,19 +154,19 @@ export const games = [
   {
     title: 'League of Legends',
     description: 'MOBA hra od Riot Games, ve které se specializujeme na týmové strategie a kompetitivní hraní.',
-    image: '/komplexaci/img/lol.jpg',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/lol.jpg',
     link: '/league-of-legends'
   },
   {
     title: 'Counter Strike 2',
     description: 'FPS střílečka od Valve, ve které zdokonalujeme naše týmové taktiky, reflexy a přesnost.',
-    image: '/komplexaci/img/cs2.jpg',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/cs2.jpg',
     link: '/cs2'
   },
   {
     title: 'WWE Games',
     description: 'Kolekce wrestlingových her od legendárního SmackDown! až po moderní série. Zažijte nostalgii a epické zápasy.',
-    image: '/komplexaci/img/wwe-main.jpg',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/wwe-main.jpg',
     link: '/wwe-games'
   }
 ];
