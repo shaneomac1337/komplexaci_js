@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from 'react';
 
 // WWE/SmackDown! 2 exclusive track - only track 14 is for WWE page
 const wwePlaylist = [
-  { title: "WWF SmackDown! 2 Theme", artist: "WWF SmackDown! 2 OST", file: "/komplexaci/audio/track14.mp3" }
+  { title: "WWF SmackDown! 2 Theme", artist: "WWF SmackDown! 2 OST", file: "https://cdn.komplexaci.cz/komplexaci/audio/track14.mp3" }
 ];
 
 // ScrollingText component for long text

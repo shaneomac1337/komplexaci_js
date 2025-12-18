@@ -89,21 +89,21 @@ const maps = [
     id: 'summoners-rift',
     name: "Summoner's Rift",
     description: 'Klasická 5v5 mapa s třemi linkami a džunglí. Hlavní kompetitivní mapa League of Legends.',
-    image: '/komplexaci/img/lol-summoners-rift-artwork.jpg',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/lol-summoners-rift-artwork.jpg',
     gameMode: '5v5 Ranked'
   },
   {
     id: 'bridge-of-progress',
     name: 'Bridge of Progress',
     description: 'Nová mapa s unikátním designem a strategickými možnostmi. Moderní prostředí pro kompetitivní hru.',
-    image: '/komplexaci/img/lol-bridge-of-progress.jpg',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/lol-bridge-of-progress.jpg',
     gameMode: 'ARAM'
   },
   {
     id: 'teamfight-tactics',
     name: 'Teamfight Tactics: Convergence',
     description: 'Auto-battler herní mód s strategickým umisťováním jednotek. Sbírejte šampiony a vytvářejte mocné týmy.',
-    image: '/komplexaci/img/lol-tft-artwork.jpg',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/lol-tft-artwork.jpg',
     gameMode: 'TFT'
   }
 ];

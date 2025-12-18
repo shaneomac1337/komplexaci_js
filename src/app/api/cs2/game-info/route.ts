@@ -92,7 +92,7 @@ const gameInfo: GameInfo = {
     name: 'Counter-Strike 2',
     description: 'Counter-Strike 2 (CS2) je taktická střílečka z pohledu prvé osoby, která je pokračováním legendárního Counter-Strike: Global Offensive. Hra staví proti sobě dva týmy - teroristy a protiteroristickou jednotku - v různých herních režimech.',
     url: 'https://www.komplexaci.cz/cs2',
-    image: 'https://www.komplexaci.cz/cs2/cs2.jpg',
+    image: 'https://cdn.komplexaci.cz/cs2/cs2.jpg',
     genre: 'FPS',
     operatingSystem: 'Windows',
     applicationCategory: 'Game',

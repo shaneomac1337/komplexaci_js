@@ -1046,7 +1046,7 @@ export default function HomePageClient({
   const handleCardFlip = (memberId: string) => {
     // Play page turn sound effect - skip to the impactful part for immediate effect!
     try {
-      const pageTurnSound = new Audio('/komplexaci/audio/page-turn.mp3');
+      const pageTurnSound = new Audio('https://cdn.komplexaci.cz/komplexaci/audio/page-turn.mp3');
       pageTurnSound.volume = 0.7; // 70% volume for strong presence
       pageTurnSound.playbackRate = 1.5; // Play 1.5x faster to match the 0.3s flip animation
       
@@ -1096,15 +1096,15 @@ export default function HomePageClient({
           loop
           playsInline
           className="hero-video-bg"
-          poster="/komplexaci/img/neon.jpg"
+          poster="https://cdn.komplexaci.cz/komplexaci/img/neon.jpg"
         >
-          <source src="/hero_video.mp4" type="video/mp4" />
+          <source src="https://cdn.komplexaci.cz/hero_video.mp4" type="video/mp4" />
         </video>
         <div className="hero-content-exact">
           {/* Large Logo Display */}
           <div className="hero-logo-container mb-8">
             <Image
-              src="/komplexaci/img/logo.png"
+              src="https://cdn.komplexaci.cz/komplexaci/img/logo.png"
               alt="Komplexáci Logo"
               width={300}
               height={300}
@@ -1297,7 +1297,7 @@ export default function HomePageClient({
         style={{
           background: `
             linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
-            url('/komplexaci/img/discord-bg.jpg'),
+            url('https://cdn.komplexaci.cz/komplexaci/img/discord-bg.jpg'),
             linear-gradient(135deg,
               rgba(15, 15, 25, 0.95) 0%,
               rgba(25, 15, 35, 0.95) 25%,

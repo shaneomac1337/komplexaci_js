@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { AuthButton } from '@/components/AuthButton';
@@ -10,6 +10,8 @@ const Header = () => {
   const [isMobileSubmenuOpen, setIsMobileSubmenuOpen] = useState(false);
   const [activeSection, setActiveSection] = useState('');
   const [isScrolled, setIsScrolled] = useState(false);
+  const [sectionTheme, setSectionTheme] = useState('cyan');
+  const headerRef = useRef<HTMLElement>(null);
   const pathname = usePathname();
 
   const toggleMobileMenu = () => {
@@ -24,14 +26,33 @@ const Header = () => {
     setIsMobileSubmenuOpen(!isMobileSubmenuOpen);
   };
 
-  // Scroll effect for header
+  // Map sections to their theme colors
+  const sectionColorMap: Record<string, string> = {
+    'hero': 'cyan',
+    'o-nas': 'magenta',
+    'clenove': 'magenta',
+    'hry': 'orange',
+    'discord': 'purple',
+    'kontakt': 'purple'
+  };
+
+  // Scroll effect for header with throttling
   useEffect(() => {
+    let ticking = false;
+
     const handleScroll = () => {
       const scrollTop = window.scrollY;
-      setIsScrolled(scrollTop > 50);
+
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          setIsScrolled(scrollTop > 50);
+          ticking = false;
+        });
+        ticking = true;
+      }
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
@@ -84,9 +105,13 @@ const Header = () => {
         const mostVisible = currentIntersecting.reduce((prev, current) =>
           current.ratio > prev.ratio ? current : prev
         );
-        
+
         console.log('Active section changed to:', mostVisible.id);
         setActiveSection(mostVisible.id);
+
+        // Update section theme based on active section
+        const newTheme = sectionColorMap[mostVisible.id] || 'cyan';
+        setSectionTheme(newTheme);
       }
     }, observerOptions);
 
@@ -102,6 +127,7 @@ const Header = () => {
           if (isNearBottom || entry.intersectionRatio > 0.1) {
             console.log('Kontakt section activated (last section logic)');
             setActiveSection('kontakt');
+            setSectionTheme('purple');
           }
         }
       });
@@ -179,8 +205,14 @@ const Header = () => {
     }
   };
 
+  // Ripple effect removed - was causing visual bugs
+
   return (
-    <header className={`header ${isScrolled ? 'scrolled' : ''}`}>
+    <header
+      ref={headerRef}
+      className={`header ${isScrolled ? 'scrolled' : ''} gradient-morph-header`}
+      data-theme={sectionTheme}
+    >
       <div className="container">
         <div className="logo">
           <div className="logo-text">Komplexáci</div>

@@ -33,7 +33,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '231 (hlava s helmou), 58 (tělo s vestou)',
         accuracy: 'Vysoká u prvé ránu, následně klesá',
         team: 'CT i T',
-        image: '/cs2/weapons/desert-eagle.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/desert-eagle.jpg',
         category: 'pistole'
       },
       {
@@ -44,7 +44,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '70 (hlava s helmou), 17 (tělo s vestou)',
         accuracy: 'Vysoká přesnost, malý zpětný ráz',
         team: 'CT',
-        image: '/cs2/weapons/usp-s.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/usp-s.jpg',
         category: 'pistole'
       },
       {
@@ -55,7 +55,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '55 (hlava s helmou), 13 (tělo s vestou)',
         accuracy: 'Střední přesnost, dobrá na blízko',
         team: 'T',
-        image: '/cs2/weapons/glock-18.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/glock-18.jpg',
         category: 'pistole'
       },
       {
@@ -66,7 +66,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '96 (hlava s helmou), 24 (tělo s vestou)',
         accuracy: 'Střední přesnost, mírný zpětný ráz',
         team: 'CT i T',
-        image: '/cs2/weapons/p250.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/p250.jpg',
         category: 'pistole'
       },
       {
@@ -77,7 +77,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '115 (hlava s helmou), 28 (tělo s vestou)',
         accuracy: 'Vysoká přesnost, nízký zpětný ráz',
         team: 'CT',
-        image: '/cs2/weapons/five-seven.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/five-seven.jpg',
         category: 'pistole'
       },
       {
@@ -88,7 +88,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '119 (hlava s helmou), 29 (tělo s vestou)',
         accuracy: 'Nízká přesnost, střední zpětný ráz',
         team: 'T',
-        image: '/cs2/weapons/tec-9.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/tec-9.jpg',
         category: 'pistole'
       }
     ]
@@ -106,7 +106,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '61 (hlava s helmou), 15 (tělo s vestou)',
         accuracy: 'Přesná na blízko, střední zpětný ráz',
         team: 'CT',
-        image: '/cs2/weapons/mp9.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/mp9.jpg',
         category: 'smg'
       },
       {
@@ -117,7 +117,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '65 (hlava s helmou), 16 (tělo s vestou)',
         accuracy: 'Nízká přesnost, vysoký zpětný ráz',
         team: 'T',
-        image: '/cs2/weapons/mac-10.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/mac-10.jpg',
         category: 'smg'
       },
       {
@@ -128,7 +128,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '71 (hlava s helmou), 17 (tělo s vestou)',
         accuracy: 'Dobrá přesnost, nízký zpětný ráz',
         team: 'CT i T',
-        image: '/cs2/weapons/mp7.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/mp7.jpg',
         category: 'smg'
       },
       {
@@ -139,7 +139,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '66 (hlava s helmou), 16 (tělo s vestou)',
         accuracy: 'Dobrá přesnost, nízký zpětný ráz',
         team: 'CT i T',
-        image: '/cs2/weapons/mp5-sd.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/mp5-sd.jpg',
         category: 'smg'
       },
       {
@@ -150,7 +150,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '90 (hlava s helmou), 22 (tělo s vestou)',
         accuracy: 'Střední přesnost, střední zpětný ráz',
         team: 'CT i T',
-        image: '/cs2/weapons/ump-45.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/ump-45.jpg',
         category: 'smg'
       },
       {
@@ -161,7 +161,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '71 (hlava s helmou), 17 (tělo s vestou)',
         accuracy: 'Střední přesnost, nízký zpětný ráz',
         team: 'CT i T',
-        image: '/cs2/weapons/p90.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/p90.jpg',
         category: 'smg'
       },
       {
@@ -172,7 +172,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '61 (hlava s helmou), 15 (tělo s vestou)',
         accuracy: 'Nízká přesnost, nízký zpětný ráz',
         team: 'CT i T',
-        image: '/cs2/weapons/pp-bizon.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/pp-bizon.jpg',
         category: 'smg'
       }
     ]
@@ -190,7 +190,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '109 (hlava s helmou), 27 (tělo s vestou)',
         accuracy: 'Střední přesnost, vysoký zpětný ráz',
         team: 'T',
-        image: '/cs2/weapons/ak-47.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/ak-47.jpg',
         category: 'pusky'
       },
       {
@@ -201,7 +201,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '92 (hlava s helmou), 23 (tělo s vestou)',
         accuracy: 'Vysoká přesnost, střední zpětný ráz',
         team: 'CT',
-        image: '/cs2/weapons/m4a4.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/m4a4.jpg',
         category: 'pusky'
       },
       {
@@ -212,7 +212,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '92 (hlava s helmou), 26 (tělo s vestou)',
         accuracy: 'Velmi vysoká přesnost, nízký zpětný ráz',
         team: 'CT',
-        image: '/cs2/weapons/m4a1-s.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/m4a1-s.jpg',
         category: 'pusky'
       },
       {
@@ -223,7 +223,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '84 (hlava s helmou), 21 (tělo s vestou)',
         accuracy: 'Střední přesnost, střední zpětný ráz',
         team: 'CT',
-        image: '/cs2/weapons/famas.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/famas.jpg',
         category: 'pusky'
       },
       {
@@ -234,7 +234,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '92 (hlava s helmou), 23 (tělo s vestou)',
         accuracy: 'Nízká přesnost, vysoký zpětný ráz',
         team: 'T',
-        image: '/cs2/weapons/galil-ar.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/galil-ar.jpg',
         category: 'pusky'
       },
       {
@@ -245,7 +245,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '101 (hlava s helmou), 25 (tělo s vestou)',
         accuracy: 'Velmi vysoká přesnost s hledím, nízký zpětný ráz',
         team: 'CT',
-        image: '/cs2/weapons/aug.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/aug.jpg',
         category: 'pusky'
       },
       {
@@ -256,7 +256,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '120 (hlava s helmou), 30 (tělo s vestou)',
         accuracy: 'Vysoká přesnost s hledím, střední zpětný ráz',
         team: 'T',
-        image: '/cs2/weapons/sg-553.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/sg-553.jpg',
         category: 'pusky'
       }
     ]
@@ -274,7 +274,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '448 (hlava s helmou), 112 (tělo s vestou)',
         accuracy: 'Velmi vysoká přesnost, silný zpětný ráz',
         team: 'CT i T',
-        image: '/cs2/weapons/awp.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/awp.jpg',
         category: 'odstrelova'
       },
       {
@@ -285,7 +285,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '299 (hlava s helmou), 74 (tělo s vestou)',
         accuracy: 'Vysoká přesnost, nízký zpětný ráz',
         team: 'CT i T',
-        image: '/cs2/weapons/ssg08.png',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/ssg08.png',
         category: 'odstrelova'
       },
       {
@@ -296,7 +296,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '263 (hlava s helmou), 65 (tělo s vestou)',
         accuracy: 'Vysoká přesnost, střední zpětný ráz',
         team: 'CT',
-        image: '/cs2/weapons/scar20.png',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/scar20.png',
         category: 'odstrelova'
       },
       {
@@ -307,7 +307,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '263 (hlava s helmou), 65 (tělo s vestou)',
         accuracy: 'Vysoká přesnost, střední zpětný ráz',
         team: 'T',
-        image: '/cs2/weapons/g3sg1.png',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/g3sg1.png',
         category: 'odstrelova'
       }
     ]
@@ -325,7 +325,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '234 (hlava), 26 (tělo) na blízko',
         accuracy: 'Rozptyl kulí, účinná pouze na krátkou vzdálenost',
         team: 'CT i T',
-        image: '/cs2/weapons/nova.png',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/nova.png',
         category: 'tezke'
       },
       {
@@ -336,7 +336,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '120 (hlava), 20 (tělo) na blízko',
         accuracy: 'Větší rozptyl kulí, vysoká kadence střelby',
         team: 'CT i T',
-        image: '/cs2/weapons/xm1014.png',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/xm1014.png',
         category: 'tezke'
       },
       {
@@ -347,7 +347,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '240 (hlava), 30 (tělo) na blízko',
         accuracy: 'Malý rozptyl kulí, vysoké poškození',
         team: 'CT',
-        image: '/cs2/weapons/mag-7.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/mag-7.jpg',
         category: 'tezke'
       },
       {
@@ -358,7 +358,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '256 (hlava), 32 (tělo) na blízko',
         accuracy: 'Velmi velký rozptyl kulí, devastující na blízko',
         team: 'T',
-        image: '/cs2/weapons/sawed-off.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/sawed-off.jpg',
         category: 'tezke'
       },
       {
@@ -369,7 +369,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '102 (hlava s helmou), 25 (tělo s vestou)',
         accuracy: 'Nízká přesnost, velmi vysoký zpětný ráz',
         team: 'CT i T',
-        image: '/cs2/weapons/m249.png',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/m249.png',
         category: 'tezke'
       },
       {
@@ -380,7 +380,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: '96 (hlava s helmou), 26 (tělo s vestou)',
         accuracy: 'Zpočátku nepřesný, postupně se zlepšuje',
         team: 'CT i T',
-        image: '/cs2/weapons/negev.jpg',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/negev.jpg',
         category: 'tezke'
       }
     ]
@@ -398,7 +398,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: 'Až 98 poškození v epicentru',
         accuracy: 'Poškození klesá se vzdáleností od výbuchu',
         team: 'CT i T',
-        image: '/cs2/weapons/hegrenade.png',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/hegrenade.png',
         category: 'granaty'
       },
       {
@@ -409,7 +409,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: 'Žádné přímé poškození',
         accuracy: 'Efekt závisí na vzdálenosti a směru pohledu',
         team: 'CT i T',
-        image: '/cs2/weapons/flashbang.png',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/flashbang.png',
         category: 'granaty'
       },
       {
@@ -420,7 +420,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: 'Žádné poškození',
         accuracy: 'Pokrývá velkou oblast po dobu 18 sekund',
         team: 'CT i T',
-        image: '/cs2/weapons/smoke.png',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/smoke.png',
         category: 'granaty'
       },
       {
@@ -431,7 +431,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: 'Kontinuální poškození v oblasti ohně',
         accuracy: 'Pokrývá oblast po dobu 7 sekund',
         team: 'T',
-        image: '/cs2/weapons/molotov.png',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/molotov.png',
         category: 'granaty'
       },
       {
@@ -442,7 +442,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: 'Kontinuální poškození v oblasti ohně',
         accuracy: 'Pokrývá oblast po dobu 7 sekund',
         team: 'CT',
-        image: '/cs2/weapons/molotov.png',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/molotov.png',
         category: 'granaty'
       },
       {
@@ -453,7 +453,7 @@ const weaponCategories: WeaponCategory[] = [
         damage: 'Minimální poškození při výbuchu',
         accuracy: 'Vytváří audio a vizuální klamání',
         team: 'CT i T',
-        image: '/cs2/weapons/decoy.png',
+        image: 'https://cdn.komplexaci.cz/cs2/weapons/decoy.png',
         category: 'granaty'
       }
     ]
