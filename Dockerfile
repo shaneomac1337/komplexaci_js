@@ -1,5 +1,6 @@
 # Multi-stage build for smaller image
 # This Dockerfile is used by GitHub Actions to build and push to GHCR
+# Build trigger: 2025-12-18T18:50
 
 # Stage 1: Build
 FROM node:22-alpine AS builder
