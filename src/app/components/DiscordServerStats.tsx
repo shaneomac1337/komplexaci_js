@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 interface OnlineMember {
   id: string;
@@ -73,13 +73,14 @@ interface DiscordStats {
 
 export default function DiscordServerStats() {
   const [stats, setStats] = useState<DiscordStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const prevDataRef = useRef<string>('');
 
   useEffect(() => {
     console.log('DiscordServerStats useEffect running');
 
-    const fetchStats = async () => {
+    const fetchStats = async (isInitial = false) => {
       try {
         console.log('Fetching Discord stats...');
         const response = await fetch('/api/discord/server-stats');
@@ -113,24 +114,34 @@ export default function DiscordServerStats() {
           console.log('🎤 Members in voice:', voiceMembers);
         }
 
-        setStats(data);
-        setError(data.error || null);
-        setLoading(false);
+        // Only update state if data actually changed
+        const dataStr = JSON.stringify(data);
+        if (dataStr !== prevDataRef.current) {
+          prevDataRef.current = dataStr;
+          setStats(data);
+          setError(data.error || null);
+        }
+
+        if (isInitial) {
+          setInitialLoading(false);
+        }
       } catch (err) {
         console.error('Error fetching Discord stats:', err);
         setError(err instanceof Error ? err.message : 'Unknown error');
-        setLoading(false);
+        if (isInitial) {
+          setInitialLoading(false);
+        }
       }
     };
 
-    fetchStats();
+    fetchStats(true);
 
     // Refresh every 30 seconds
-    const interval = setInterval(fetchStats, 30000);
+    const interval = setInterval(() => fetchStats(false), 30000);
     return () => clearInterval(interval);
   }, []);
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="bg-gray-700/30 rounded-xl p-4 border border-blue-500/20">
         <div className="flex items-center mb-3">

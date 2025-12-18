@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import SafeImage from './SafeImage';
 
 interface DailyAward {
@@ -36,23 +36,31 @@ interface StandingsStatistics {
 
 export default function DailyAwards() {
   const [awards, setAwards] = useState<DailyAward[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedAward, setSelectedAward] = useState<DailyAward | null>(null);
   const [standings, setStandings] = useState<StandingsEntry[]>([]);
   const [standingsLoading, setStandingsLoading] = useState(false);
   const [statistics, setStatistics] = useState<StandingsStatistics | null>(null);
+  const prevDataRef = useRef<string>('');
 
-  const fetchAwards = async () => {
+  const fetchAwards = async (isInitial = false) => {
     try {
-      setLoading(true);
+      if (isInitial) {
+        setInitialLoading(true);
+      }
       setError(null);
 
       const response = await fetch('/api/daily-awards');
       const data = await response.json();
 
       if (data.success) {
-        setAwards(data.awards);
+        // Only update state if data actually changed
+        const dataStr = JSON.stringify(data.awards);
+        if (dataStr !== prevDataRef.current) {
+          prevDataRef.current = dataStr;
+          setAwards(data.awards);
+        }
       } else {
         setError(data.message || 'Failed to load awards');
       }
@@ -60,7 +68,9 @@ export default function DailyAwards() {
       console.error('Error fetching daily awards:', err);
       setError('Failed to load awards');
     } finally {
-      setLoading(false);
+      if (isInitial) {
+        setInitialLoading(false);
+      }
     }
   };
 
@@ -99,14 +109,14 @@ export default function DailyAwards() {
   };
 
   useEffect(() => {
-    fetchAwards();
+    fetchAwards(true);
 
     // 🔄 REAL-TIME UPDATES: Refresh every minute for live competition tracking
-    const interval = setInterval(fetchAwards, 60 * 1000);
+    const interval = setInterval(() => fetchAwards(false), 60 * 1000);
     return () => clearInterval(interval);
   }, []);
 
-  if (loading) {
+  if (initialLoading) {
     return (
       <div className="bg-gray-700/30 rounded-xl p-4 border border-yellow-500/20">
         <div className="flex items-center mb-3">
@@ -135,7 +145,7 @@ export default function DailyAwards() {
         <div className="text-center py-4">
           <div className="text-red-400 text-sm">❌ {error}</div>
           <button
-            onClick={fetchAwards}
+            onClick={() => fetchAwards(true)}
             className="mt-2 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
           >
             Zkusit znovu
@@ -158,12 +168,20 @@ export default function DailyAwards() {
         {awards.map((award) => (
           <div
             key={award.id}
+            role="button"
+            tabIndex={0}
             onClick={() => handleAwardClick(award)}
-            className="flex items-center justify-between p-3 rounded-lg bg-gray-800/30 border border-gray-600/30 cursor-pointer hover:bg-gray-700/40 hover:border-gray-500/40 transition-all duration-200"
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                handleAwardClick(award);
+              }
+            }}
+            className="flex items-center justify-between p-3 rounded-lg bg-gray-800/30 border border-gray-600/30 cursor-pointer hover:bg-gray-700/40 active:bg-gray-700/50 hover:border-gray-500/40 transition-all duration-200 min-h-[68px]"
           >
             {/* Award Info */}
             <div className="flex items-center gap-3 flex-1 min-w-0">
-              <span className="text-2xl">{award.icon}</span>
+              <span className="text-2xl sm:text-3xl">{award.icon}</span>
               <div className="min-w-0">
                 <div className="text-white text-sm font-medium">
                   {award.title}
@@ -181,12 +199,12 @@ export default function DailyAwards() {
                   <SafeImage
                     src={award.winner.avatar}
                     alt={award.winner.displayName}
-                    width={32}
-                    height={32}
+                    width={40}
+                    height={40}
                     className="rounded-full border border-gray-600"
                     fallback={
-                      <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center border border-gray-600">
-                        <span className="text-white text-xs font-bold">
+                      <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center border border-gray-600">
+                        <span className="text-white text-sm font-bold">
                           {award.winner.displayName.charAt(0).toUpperCase()}
                         </span>
                       </div>
@@ -213,25 +231,31 @@ export default function DailyAwards() {
 
       {/* Standings Modal */}
       {selectedAward && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-gray-800 rounded-xl max-w-md w-full max-h-[80vh] overflow-hidden border border-gray-600">
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+          <div className="bg-gray-800 w-full sm:max-w-md rounded-t-2xl sm:rounded-xl max-h-[90vh] sm:max-h-[80vh] overflow-hidden border-t border-x sm:border border-gray-600 animate-slide-up sm:animate-fade-in">
+            {/* Drag handle for mobile */}
+            <div className="sm:hidden flex justify-center pt-2 pb-1">
+              <div className="w-10 h-1 bg-gray-600 rounded-full"></div>
+            </div>
+
             {/* Modal Header */}
-            <div className="p-4 border-b border-gray-600">
+            <div className="p-3 sm:p-4 border-b border-gray-600">
               <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
                   <span className="text-2xl">{selectedAward.icon}</span>
-                  <div>
-                    <h3 className="text-lg font-semibold text-white">
+                  <div className="min-w-0 flex-1">
+                    <h3 className="text-base sm:text-lg font-semibold text-white">
                       {selectedAward.title}
                     </h3>
-                    <p className="text-sm text-gray-400">
+                    <p className="text-xs sm:text-sm text-gray-400 truncate">
                       {selectedAward.description}
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={closeModal}
-                  className="text-gray-400 hover:text-white transition-colors p-1"
+                  className="text-gray-400 hover:text-white transition-colors p-2 min-h-[44px] min-w-[44px] flex items-center justify-center flex-shrink-0"
+                  aria-label="Zavřít"
                 >
                   <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -277,7 +301,7 @@ export default function DailyAwards() {
             </div>
 
             {/* Modal Content */}
-            <div className="p-4 max-h-96 overflow-y-auto">
+            <div className="p-3 sm:p-4 max-h-[70vh] sm:max-h-96 overflow-y-auto overscroll-contain touch-pan-y">
               {standingsLoading ? (
                 <div className="text-center py-8">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400 mx-auto"></div>
@@ -288,7 +312,7 @@ export default function DailyAwards() {
                   {standings.map((entry, index) => (
                     <div
                       key={entry.userId}
-                      className={`flex items-center gap-3 p-3 rounded-lg ${
+                      className={`flex items-center gap-3 p-3 rounded-lg min-h-[68px] ${
                         index === 0 ? 'bg-yellow-500/20 border border-yellow-500/30' :
                         index === 1 ? 'bg-gray-400/20 border border-gray-400/30' :
                         index === 2 ? 'bg-orange-500/20 border border-orange-500/30' :
@@ -296,7 +320,7 @@ export default function DailyAwards() {
                       }`}
                     >
                       {/* Rank */}
-                      <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gray-600 flex items-center justify-center">
+                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center">
                         <span className={`text-sm font-bold ${
                           index === 0 ? 'text-yellow-400' :
                           index === 1 ? 'text-gray-300' :
@@ -311,12 +335,12 @@ export default function DailyAwards() {
                       <SafeImage
                         src={entry.avatar}
                         alt={entry.displayName}
-                        width={32}
-                        height={32}
+                        width={40}
+                        height={40}
                         className="rounded-full border border-gray-600"
                         fallback={
-                          <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center border border-gray-600">
-                            <span className="text-white text-xs font-bold">
+                          <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center border border-gray-600">
+                            <span className="text-white text-sm font-bold">
                               {entry.displayName.charAt(0).toUpperCase()}
                             </span>
                           </div>
@@ -331,7 +355,7 @@ export default function DailyAwards() {
                       </div>
 
                       {/* Score */}
-                      <div className="text-right">
+                      <div className="text-right flex-shrink-0">
                         <div className={`text-sm font-bold ${
                           index === 0 ? 'text-yellow-400' :
                           index === 1 ? 'text-gray-300' :

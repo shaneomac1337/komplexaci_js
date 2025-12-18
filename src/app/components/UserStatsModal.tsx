@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import SafeImage from './SafeImage';
 
 interface UserStatsModalProps {
@@ -57,44 +57,104 @@ interface UserStats {
       duration_minutes: number;
       details?: string;
     }>;
+    serverAverages?: {
+      avgGameTime: number;
+      avgVoiceTime: number;
+      avgSongsPlayed: number;
+      totalActiveUsers: number;
+    };
+    percentiles?: {
+      gameTimePercentile: number;
+      voiceTimePercentile: number;
+      songsPlayedPercentile: number;
+    };
   };
 }
 
+interface Achievement {
+  id: string;
+  title: string;
+  description: string;
+  icon: string;
+  threshold: number;
+  category: 'gaming' | 'voice' | 'spotify' | 'special';
+}
+
+interface Streaks {
+  gaming: { current: number; best: number };
+  voice: { current: number; best: number };
+  spotify: { current: number; best: number };
+}
+
+// Achievement definitions
+const ACHIEVEMENTS: Achievement[] = [
+  // Gaming
+  { id: 'marathon-gamer', title: 'Maratonec', description: 'Hraj 6+ hodin v jednom dni', icon: '🎮', threshold: 360, category: 'gaming' },
+  { id: 'game-variety', title: 'Všeuměl', description: 'Zahraj 5 různých her za den', icon: '🎲', threshold: 5, category: 'gaming' },
+
+  // Voice
+  { id: 'social-butterfly', title: 'Společenský', description: '10+ hodin ve voice za den', icon: '🎤', threshold: 600, category: 'voice' },
+  { id: 'streamer', title: 'Streamer', description: '2+ hodiny streamování za den', icon: '📺', threshold: 120, category: 'voice' },
+
+  // Spotify
+  { id: 'music-lover', title: 'Meloman', description: '100+ skladeb za den', icon: '🎵', threshold: 100, category: 'spotify' },
+  { id: 'dj', title: 'DJ', description: '20+ různých interpretů za den', icon: '🎧', threshold: 20, category: 'spotify' },
+
+  // Special
+  { id: 'night-owl', title: 'Noční sova', description: 'Aktivní po půlnoci', icon: '🦉', threshold: 1, category: 'special' },
+  { id: 'early-bird', title: 'Ranní ptáče', description: 'Aktivní před 6:00', icon: '🐦', threshold: 1, category: 'special' },
+];
+
 export default function UserStatsModal({ isOpen, onClose, userId, displayName, avatar }: UserStatsModalProps) {
   const [stats, setStats] = useState<UserStats | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [initialLoading, setInitialLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [activeTab, setActiveTab] = useState<'overview' | 'spotify' | 'gaming' | 'voice'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'spotify' | 'gaming' | 'voice' | 'achievements'>('overview');
+  const prevDataRef = useRef<string>('');
+
+  // Mock streaks data - in production, this would come from backend
+  const [streaks] = useState<Streaks>({
+    gaming: { current: 3, best: 7 },
+    voice: { current: 5, best: 12 },
+    spotify: { current: 8, best: 15 },
+  });
 
   useEffect(() => {
     if (isOpen && userId) {
-      fetchUserStats();
+      fetchUserStats(true);
 
       // 🔄 REAL-TIME UPDATES: Refresh every 30 seconds while modal is open
       const interval = setInterval(() => {
-        fetchUserStats();
+        fetchUserStats(false);
       }, 30000);
 
       return () => clearInterval(interval);
     }
   }, [isOpen, userId]);
 
-  const fetchUserStats = async () => {
-    setLoading(true);
+  const fetchUserStats = async (isInitial = false) => {
+    if (isInitial) {
+      setInitialLoading(true);
+    }
     setError(null);
-    
+
     try {
       // Fetch today's stats (1d timeRange for daily data)
       const response = await fetch(`/api/analytics/user/${userId}?timeRange=1d`);
-      
+
       if (!response.ok) {
         throw new Error('Failed to fetch user stats');
       }
-      
+
       const data = await response.json();
-      
+
       if (data.success) {
-        setStats(data);
+        // Only update state if data actually changed
+        const dataStr = JSON.stringify(data);
+        if (dataStr !== prevDataRef.current) {
+          prevDataRef.current = dataStr;
+          setStats(data);
+        }
       } else {
         throw new Error(data.message || 'Failed to load stats');
       }
@@ -102,7 +162,9 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
       console.error('Error fetching user stats:', err);
       setError(err instanceof Error ? err.message : 'Unknown error');
     } finally {
-      setLoading(false);
+      if (isInitial) {
+        setInitialLoading(false);
+      }
     }
   };
 
@@ -132,11 +194,132 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
     }
   };
 
+  const getPercentileBadgeClass = (percentile: number): string => {
+    if (percentile >= 90) return 'bg-yellow-500/20 text-yellow-400';
+    if (percentile >= 75) return 'bg-purple-500/20 text-purple-400';
+    if (percentile >= 50) return 'bg-blue-500/20 text-blue-400';
+    return 'bg-gray-500/20 text-gray-400';
+  };
+
+  const renderComparisonStat = (
+    label: string,
+    value: number | string,
+    valueColor: string,
+    vsAverage?: number,
+    percentile?: number,
+    isTimeValue: boolean = true
+  ) => {
+    return (
+      <div className="bg-gray-700/30 rounded-lg p-3 min-h-[80px] flex flex-col justify-center">
+        <div className="text-sm text-gray-400">{label}</div>
+        <div className={`text-lg sm:text-xl font-bold ${valueColor}`}>{value}</div>
+
+        {vsAverage !== undefined && (
+          <div className="flex items-center gap-2 mt-1">
+            {vsAverage > 0 ? (
+              <span className="text-green-400 text-sm">
+                ↑ +{isTimeValue ? formatOnlineTime(vsAverage) : Math.round(vsAverage)} vs průměr
+              </span>
+            ) : vsAverage < 0 ? (
+              <span className="text-red-400 text-sm">
+                ↓ {isTimeValue ? formatOnlineTime(Math.abs(vsAverage)) : Math.round(Math.abs(vsAverage))} vs průměr
+              </span>
+            ) : (
+              <span className="text-gray-400 text-sm">= průměr</span>
+            )}
+          </div>
+        )}
+
+        {percentile !== undefined && (
+          <div className="mt-2">
+            <span className={`text-xs px-2 py-0.5 rounded-full ${getPercentileBadgeClass(percentile)}`}>
+              Top {100 - percentile}%
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Calculate achievement progress
+  const calculateAchievementProgress = (achievement: Achievement): { current: number; unlocked: boolean; progress: number } => {
+    if (!stats) return { current: 0, unlocked: false, progress: 0 };
+
+    let current = 0;
+
+    switch (achievement.id) {
+      case 'marathon-gamer':
+        current = stats.data.totals.totalGameTime;
+        break;
+      case 'game-variety':
+        current = stats.data.totals.gamesPlayed || stats.data.gameSessions?.length || 0;
+        break;
+      case 'social-butterfly':
+        current = stats.data.totals.totalVoiceTime;
+        break;
+      case 'streamer':
+        current = stats.data.totals.totalScreenShareTime || 0;
+        break;
+      case 'music-lover':
+        current = stats.data.totals.totalSongsPlayed;
+        break;
+      case 'dj':
+        current = stats.data.totals.artistsListened || stats.data.spotifyActivity?.length || 0;
+        break;
+      case 'night-owl':
+        // Check if any session was after midnight
+        current = stats.data.recentSessions?.some(session => {
+          const hour = new Date(session.start_time).getHours();
+          return hour >= 0 && hour < 6;
+        }) ? 1 : 0;
+        break;
+      case 'early-bird':
+        // Check if any session was before 6 AM
+        current = stats.data.recentSessions?.some(session => {
+          const hour = new Date(session.start_time).getHours();
+          return hour >= 4 && hour < 6;
+        }) ? 1 : 0;
+        break;
+      default:
+        current = 0;
+    }
+
+    const unlocked = current >= achievement.threshold;
+    const progress = Math.min((current / achievement.threshold) * 100, 100);
+
+    return { current, unlocked, progress };
+  };
+
+  // Get unlocked achievements
+  const getUnlockedAchievements = () => {
+    return ACHIEVEMENTS.filter(achievement => {
+      const { unlocked } = calculateAchievementProgress(achievement);
+      return unlocked;
+    });
+  };
+
+  // Get in-progress achievements
+  const getInProgressAchievements = () => {
+    return ACHIEVEMENTS.filter(achievement => {
+      const { unlocked } = calculateAchievementProgress(achievement);
+      return !unlocked;
+    }).sort((a, b) => {
+      const progressA = calculateAchievementProgress(a).progress;
+      const progressB = calculateAchievementProgress(b).progress;
+      return progressB - progressA;
+    });
+  };
+
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-gray-800 rounded-xl max-w-2xl w-full max-h-[85vh] overflow-hidden border border-purple-500/20">
+    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
+      <div className="bg-gray-800 w-full sm:max-w-2xl rounded-t-2xl sm:rounded-xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden border-t border-x sm:border border-purple-500/20 animate-slide-up sm:animate-fade-in">
+        {/* Drag handle for mobile */}
+        <div className="sm:hidden flex justify-center pt-2 pb-1">
+          <div className="w-10 h-1 bg-gray-600 rounded-full"></div>
+        </div>
+
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b border-gray-700">
           <div className="flex items-center space-x-3">
@@ -155,13 +338,19 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
               }
             />
             <div>
-              <h3 className="text-lg font-semibold text-white">{displayName}</h3>
-              <p className="text-sm text-gray-400">Denní statistiky</p>
+              <h3 className="text-base sm:text-lg font-semibold text-white">{displayName}</h3>
+              <div className="space-y-0.5">
+                <p className="text-xs sm:text-sm font-semibold text-purple-300">Dnešní aktivita</p>
+                <p className="text-xs text-gray-400 hidden sm:block">
+                  {new Date().toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' })} • Reset v 00:00
+                </p>
+              </div>
             </div>
           </div>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors"
+            className="text-gray-400 hover:text-white transition-colors p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
+            aria-label="Zavřít"
           >
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -170,30 +359,32 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex border-b border-gray-700 bg-gray-750">
+        <div className="flex overflow-x-auto scrollbar-hide gap-1 border-b border-gray-700 bg-gray-750 pb-0.5">
           {[
-            { id: 'overview', label: '📊 Přehled', icon: '📊' },
-            { id: 'spotify', label: '🎵 Spotify', icon: '🎵' },
-            { id: 'gaming', label: '🎮 Hry', icon: '🎮' },
-            { id: 'voice', label: '🎤 Voice', icon: '🎤' }
+            { id: 'overview', label: 'Přehled', icon: '📊' },
+            { id: 'spotify', label: 'Spotify', icon: '🎵' },
+            { id: 'gaming', label: 'Hry', icon: '🎮' },
+            { id: 'voice', label: 'Voice', icon: '🎤' },
+            { id: 'achievements', label: 'Úspěchy', icon: '🏆' }
           ].map((tab) => (
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-1 px-4 py-3 text-sm font-medium transition-colors ${
+              className={`flex-shrink-0 min-h-[44px] px-3 sm:px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap rounded-t-lg ${
                 activeTab === tab.id
                   ? 'text-purple-300 border-b-2 border-purple-500 bg-gray-700/50'
                   : 'text-gray-400 hover:text-gray-300'
               }`}
             >
-              {tab.label}
+              <span className="mr-1.5">{tab.icon}</span>
+              <span className="hidden sm:inline">{tab.label}</span>
             </button>
           ))}
         </div>
 
         {/* Content */}
-        <div className="p-4 max-h-[calc(85vh-140px)] overflow-y-auto">
-          {loading && (
+        <div className="p-3 sm:p-4 max-h-[calc(90vh-180px)] sm:max-h-[calc(85vh-140px)] overflow-y-auto overscroll-contain touch-pan-y">
+          {initialLoading && (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
               <p className="text-gray-400 mt-2">Načítání statistik...</p>
@@ -204,51 +395,100 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
             <div className="text-center py-8">
               <p className="text-red-400">❌ {error}</p>
               <button
-                onClick={fetchUserStats}
-                className="mt-2 px-4 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white text-sm transition-colors"
+                onClick={() => fetchUserStats(true)}
+                className="mt-2 px-4 py-2 min-h-[44px] bg-purple-600 hover:bg-purple-700 rounded-lg text-white text-sm transition-colors"
               >
                 Zkusit znovu
               </button>
             </div>
           )}
 
-          {stats && !loading && (
+          {stats && !initialLoading && (
             <div className="space-y-4">
               {/* Overview Tab */}
               {activeTab === 'overview' && (
                 <div className="space-y-4">
-                  {/* Daily Overview */}
-                  <div className="bg-gray-700/30 rounded-lg p-4">
-                    <h4 className="text-sm font-semibold text-purple-300 mb-3">📊 Dnešní přehled (celkem)</h4>
-                    <div className="grid grid-cols-2 gap-3 text-sm">
-                      <div>
-                        <div className="text-gray-400">Online čas celkem</div>
-                        <div className="text-green-400 font-semibold">
+                  {/* Server Comparison Info */}
+                  {stats.data.serverAverages && (
+                    <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
+                      <div className="text-xs text-purple-300 font-semibold mb-1">
+                        📊 Porovnání se serverem
+                      </div>
+                      <div className="text-xs text-gray-400">
+                        Srovnání s {stats.data.serverAverages.totalActiveUsers} aktivními uživateli
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Daily Overview with Comparisons */}
+                  <div>
+                    <h4 className="text-sm font-semibold text-purple-300 mb-3">📊 Dnešní přehled</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {/* Game Time */}
+                      {renderComparisonStat(
+                        'Herní čas',
+                        formatOnlineTime(stats.data.totals.totalGameTime),
+                        'text-blue-400',
+                        stats.data.serverAverages ? stats.data.totals.totalGameTime - stats.data.serverAverages.avgGameTime : undefined,
+                        stats.data.percentiles?.gameTimePercentile
+                      )}
+
+                      {/* Voice Time */}
+                      {renderComparisonStat(
+                        'Voice čas',
+                        formatOnlineTime(stats.data.totals.totalVoiceTime),
+                        'text-yellow-400',
+                        stats.data.serverAverages ? stats.data.totals.totalVoiceTime - stats.data.serverAverages.avgVoiceTime : undefined,
+                        stats.data.percentiles?.voiceTimePercentile
+                      )}
+
+                      {/* Songs Played */}
+                      {renderComparisonStat(
+                        'Spotify písně',
+                        stats.data.totals.totalSongsPlayed.toString(),
+                        'text-purple-400',
+                        stats.data.serverAverages ? stats.data.totals.totalSongsPlayed - stats.data.serverAverages.avgSongsPlayed : undefined,
+                        stats.data.percentiles?.songsPlayedPercentile,
+                        false
+                      )}
+
+                      {/* Online Time (no comparison) */}
+                      <div className="bg-gray-700/30 rounded-lg p-3 min-h-[80px] flex flex-col justify-center">
+                        <div className="text-sm text-gray-400">Online čas celkem</div>
+                        <div className="text-lg sm:text-xl font-bold text-green-400">
                           {formatOnlineTime(stats.data.totals.totalOnlineTime)}
                         </div>
                       </div>
-                      <div>
-                        <div className="text-gray-400">Spotify písně celkem</div>
-                        <div className="text-purple-400 font-semibold">
-                          {stats.data.totals.totalSongsPlayed}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-gray-400">Herní čas celkem</div>
-                        <div className="text-blue-400 font-semibold">
-                          {formatOnlineTime(stats.data.totals.totalGameTime)}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-gray-400">Voice čas celkem</div>
-                        <div className="text-yellow-400 font-semibold">
-                          {formatOnlineTime(stats.data.totals.totalVoiceTime)}
-                        </div>
-                      </div>
                     </div>
-                    <div className="mt-3 pt-2 border-t border-gray-600/30">
-                      <div className="text-xs text-gray-500">
-                        💡 Celkové časy zahrnují aktivní i dokončené session
+                  </div>
+
+                  {/* Additional Stats */}
+                  <div className="bg-gray-700/30 rounded-lg p-3 sm:p-4">
+                    <h4 className="text-sm font-semibold text-gray-300 mb-3">📈 Další statistiky</h4>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                      <div>
+                        <div className="text-gray-400">Různých her</div>
+                        <div className="text-blue-400 font-semibold">
+                          {stats.data.totals.gamesPlayed || 0}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400">Voice kanálů</div>
+                        <div className="text-yellow-400 font-semibold">
+                          {stats.data.totals.voiceChannelsUsed || 0}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400">Různých interpretů</div>
+                        <div className="text-purple-400 font-semibold">
+                          {stats.data.totals.artistsListened || 0}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-gray-400">Screen share</div>
+                        <div className="text-yellow-400 font-semibold">
+                          {formatOnlineTime(stats.data.totals.totalScreenShareTime || 0)}
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -509,6 +749,164 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
                     <div className="bg-gray-700/30 rounded-lg p-4 text-center">
                       <div className="text-gray-400 text-sm">
                         🎤 Dnes nebyl v žádném voice kanálu
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* Achievements Tab */}
+              {activeTab === 'achievements' && (
+                <div className="space-y-4">
+                  {/* Streaks Section */}
+                  <div className="bg-gradient-to-r from-orange-500/10 to-yellow-500/10 rounded-lg p-3 sm:p-4 border border-orange-500/20">
+                    <h4 className="text-sm font-semibold text-orange-300 mb-3 sm:mb-4">🔥 Aktivní série</h4>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+                      {/* Gaming Streak */}
+                      <div className="text-center bg-gray-700/30 rounded-lg p-3 min-h-[100px] flex flex-col justify-center">
+                        <div className="text-2xl mb-1">🎮</div>
+                        <div className="text-xs text-gray-400 mb-2">Gaming</div>
+                        <div className="flex justify-center gap-3 sm:gap-2">
+                          <div>
+                            <div className="text-lg font-bold text-blue-400">{streaks.gaming.current}</div>
+                            <div className="text-xs text-gray-500">aktuální</div>
+                          </div>
+                          <div className="border-l border-gray-600"></div>
+                          <div>
+                            <div className="text-lg font-bold text-yellow-400">{streaks.gaming.best}</div>
+                            <div className="text-xs text-gray-500">rekord</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Voice Streak */}
+                      <div className="text-center bg-gray-700/30 rounded-lg p-3 min-h-[100px] flex flex-col justify-center">
+                        <div className="text-2xl mb-1">🎤</div>
+                        <div className="text-xs text-gray-400 mb-2">Voice</div>
+                        <div className="flex justify-center gap-3 sm:gap-2">
+                          <div>
+                            <div className="text-lg font-bold text-yellow-400">{streaks.voice.current}</div>
+                            <div className="text-xs text-gray-500">aktuální</div>
+                          </div>
+                          <div className="border-l border-gray-600"></div>
+                          <div>
+                            <div className="text-lg font-bold text-yellow-400">{streaks.voice.best}</div>
+                            <div className="text-xs text-gray-500">rekord</div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Spotify Streak */}
+                      <div className="text-center bg-gray-700/30 rounded-lg p-3 min-h-[100px] flex flex-col justify-center">
+                        <div className="text-2xl mb-1">🎵</div>
+                        <div className="text-xs text-gray-400 mb-2">Spotify</div>
+                        <div className="flex justify-center gap-3 sm:gap-2">
+                          <div>
+                            <div className="text-lg font-bold text-purple-400">{streaks.spotify.current}</div>
+                            <div className="text-xs text-gray-500">aktuální</div>
+                          </div>
+                          <div className="border-l border-gray-600"></div>
+                          <div>
+                            <div className="text-lg font-bold text-yellow-400">{streaks.spotify.best}</div>
+                            <div className="text-xs text-gray-500">rekord</div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="mt-3 pt-3 border-t border-orange-500/20">
+                      <div className="text-xs text-gray-500 text-center">
+                        🔥 Udržuj aktivitu každý den a zlepšuj své rekordy!
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Unlocked Achievements */}
+                  {getUnlockedAchievements().length > 0 && (
+                    <div className="bg-gray-700/30 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-green-300 mb-3">
+                        ✨ Odemčené úspěchy ({getUnlockedAchievements().length}/{ACHIEVEMENTS.length})
+                      </h4>
+                      <div className="grid grid-cols-1 gap-3">
+                        {getUnlockedAchievements().map((achievement) => {
+                          const { current } = calculateAchievementProgress(achievement);
+                          return (
+                            <div key={achievement.id} className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg p-3 border border-green-500/30">
+                              <div className="flex items-center gap-3">
+                                <div className="text-3xl">{achievement.icon}</div>
+                                <div className="flex-1">
+                                  <div className="flex items-center gap-2">
+                                    <div className="font-semibold text-white">{achievement.title}</div>
+                                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
+                                      ✓ Dokončeno
+                                    </span>
+                                  </div>
+                                  <div className="text-xs text-gray-400">{achievement.description}</div>
+                                  <div className="text-xs text-green-400 mt-1">
+                                    {achievement.id === 'marathon-gamer' || achievement.id === 'social-butterfly' || achievement.id === 'streamer'
+                                      ? formatOnlineTime(current)
+                                      : achievement.id === 'night-owl' || achievement.id === 'early-bird'
+                                      ? 'Splněno!'
+                                      : `${current} / ${achievement.threshold}`}
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* In-Progress Achievements */}
+                  {getInProgressAchievements().length > 0 && (
+                    <div className="bg-gray-700/30 rounded-lg p-4">
+                      <h4 className="text-sm font-semibold text-purple-300 mb-3">
+                        🎯 Rozpracované úspěchy
+                      </h4>
+                      <div className="grid grid-cols-1 gap-3">
+                        {getInProgressAchievements().map((achievement) => {
+                          const { current, progress } = calculateAchievementProgress(achievement);
+                          return (
+                            <div key={achievement.id} className="bg-gray-700/50 rounded-lg p-3">
+                              <div className="flex items-center gap-3">
+                                <div className="text-3xl opacity-50">{achievement.icon}</div>
+                                <div className="flex-1">
+                                  <div className="font-semibold text-white">{achievement.title}</div>
+                                  <div className="text-xs text-gray-400">{achievement.description}</div>
+                                  <div className="mt-2">
+                                    <div className="flex items-center justify-between text-xs mb-1">
+                                      <span className="text-gray-400">
+                                        {achievement.id === 'marathon-gamer' || achievement.id === 'social-butterfly' || achievement.id === 'streamer'
+                                          ? `${formatOnlineTime(current)} / ${formatOnlineTime(achievement.threshold)}`
+                                          : achievement.id === 'night-owl' || achievement.id === 'early-bird'
+                                          ? 'Zkus být aktivní ve správný čas!'
+                                          : `${current} / ${achievement.threshold}`}
+                                      </span>
+                                      <span className="text-purple-400 font-semibold">{Math.round(progress)}%</span>
+                                    </div>
+                                    <div className="h-1.5 bg-gray-600 rounded-full overflow-hidden">
+                                      <div
+                                        className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
+                                        style={{ width: `${progress}%` }}
+                                      />
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* No Achievements Yet */}
+                  {getUnlockedAchievements().length === 0 && (
+                    <div className="bg-gray-700/30 rounded-lg p-6 text-center">
+                      <div className="text-4xl mb-3">🎯</div>
+                      <div className="text-gray-400 text-sm mb-2">Zatím nemáš žádné odemčené úspěchy</div>
+                      <div className="text-xs text-gray-500">
+                        Pokračuj v aktivitách a získej své první achievementy!
                       </div>
                     </div>
                   )}

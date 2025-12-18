@@ -49,6 +49,15 @@ export default function MostActiveMembers({ members, dataSource, totalMemberCoun
     }
   };
 
+  const getStatusLabel = (status: string) => {
+    switch (status) {
+      case 'online': return 'Online';
+      case 'idle': return 'Nečinný';
+      case 'dnd': return 'Nerušit';
+      default: return 'Offline';
+    }
+  };
+
   const formatOnlineTime = (minutes: number) => {
     if (minutes < 60) {
       return `${minutes}m`;
@@ -131,15 +140,25 @@ export default function MostActiveMembers({ members, dataSource, totalMemberCoun
         {members.slice(0, showCount).map((member, index) => {
           const activityLevel = getActivityLevel(member.dailyOnlineTime);
 
+          const handleClick = () => setSelectedUser({
+            userId: member.id,
+            displayName: member.displayName,
+            avatar: member.avatar
+          });
+
           return (
             <div
               key={member.id}
-              className="w-full flex items-center space-x-3 p-2 rounded-lg bg-gray-800/30 hover:bg-gray-700/40 cursor-pointer transition-colors"
-              onClick={() => setSelectedUser({
-                userId: member.id,
-                displayName: member.displayName,
-                avatar: member.avatar
-              })}
+              role="button"
+              tabIndex={0}
+              className="w-full flex items-center space-x-3 p-3 rounded-lg bg-gray-800/30 hover:bg-gray-700/40 active:bg-gray-700/50 cursor-pointer transition-colors min-h-[68px]"
+              onClick={handleClick}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  handleClick();
+                }
+              }}
             >
               {/* Rank */}
               <div className="flex-shrink-0 w-8 text-center">
@@ -149,28 +168,32 @@ export default function MostActiveMembers({ members, dataSource, totalMemberCoun
               </div>
 
               {/* Avatar */}
-              <div className="relative flex-shrink-0">
+              <div className="flex-shrink-0">
                 <SafeImage
                   src={member.avatar}
                   alt={member.displayName}
-                  width={32}
-                  height={32}
+                  width={40}
+                  height={40}
                   className="rounded-full"
                   fallback={
-                    <div className="w-8 h-8 bg-gray-600 rounded-full flex items-center justify-center">
-                      <span className="text-white text-xs font-bold">
+                    <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
+                      <span className="text-white text-sm font-bold">
                         {member.displayName.charAt(0).toUpperCase()}
                       </span>
                     </div>
                   }
                 />
-                {/* Status indicator */}
-                <div className={`absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full border-2 border-gray-700 ${getStatusColor(member.status)}`}></div>
               </div>
 
               {/* Member info */}
               <div className="flex-1 min-w-0 text-left">
-                <div className="text-white font-medium text-sm truncate">{member.displayName}</div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-white font-medium text-sm truncate">{member.displayName}</span>
+                  <span className="flex items-center gap-1 flex-shrink-0">
+                    <span className={`w-2 h-2 rounded-full ${getStatusColor(member.status)}`}></span>
+                    <span className="text-xs text-gray-400 hidden sm:inline">{getStatusLabel(member.status)}</span>
+                  </span>
+                </div>
                 <div className="text-xs">
                   <span className={activityLevel.color}>{activityLevel.text}</span>
                 </div>
@@ -178,7 +201,7 @@ export default function MostActiveMembers({ members, dataSource, totalMemberCoun
 
               {/* Daily Time */}
               <div className="flex-shrink-0 text-right">
-                <div className="text-xs text-green-300 font-semibold">{formatOnlineTime(member.dailyOnlineTime)}</div>
+                <div className="text-sm text-green-300 font-semibold">{formatOnlineTime(member.dailyOnlineTime)}</div>
                 <div className="text-xs text-gray-500">dnes</div>
               </div>
             </div>
@@ -192,7 +215,7 @@ export default function MostActiveMembers({ members, dataSource, totalMemberCoun
           {!isExpanded ? (
             <button
               onClick={handleShowMore}
-              className="text-sm text-purple-400 hover:text-purple-300 transition-colors flex items-center justify-center mx-auto"
+              className="text-sm text-purple-400 hover:text-purple-300 transition-colors flex items-center justify-center mx-auto min-h-[44px] px-4"
             >
               <span>Zobrazit více ({members.length - 20} dalších)</span>
               <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -202,7 +225,7 @@ export default function MostActiveMembers({ members, dataSource, totalMemberCoun
           ) : (
             <button
               onClick={handleShowLess}
-              className="text-sm text-purple-400 hover:text-purple-300 transition-colors flex items-center justify-center mx-auto"
+              className="text-sm text-purple-400 hover:text-purple-300 transition-colors flex items-center justify-center mx-auto min-h-[44px] px-4"
             >
               <span>Zobrazit méně</span>
               <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
