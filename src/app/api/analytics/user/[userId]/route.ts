@@ -313,42 +313,86 @@ export async function GET(
     
     // Get recent sessions
     const recentSessions = [];
-    
-    // Add recent game sessions - cumulated by game name
-    const recentGames = db.getDatabase().prepare(`
-      SELECT
-        'game' as type,
-        game_name as name,
-        MAX(start_time) as start_time,
-        MAX(end_time) as end_time,
-        SUM(duration_minutes) as duration_minutes
-      FROM game_sessions
-      WHERE user_id = ? AND (
-        (date(start_time) >= ? AND date(start_time) <= ? AND duration_minutes > 0) OR
-        (status = 'active')
-      )
-      GROUP BY game_name
-      ORDER BY MAX(start_time) DESC
-      LIMIT 5
-    `).all(userId, startDateStr, endDateStr);
-    
-    // Add recent voice sessions - cumulated by channel name
-    const recentVoice = db.getDatabase().prepare(`
-      SELECT
-        'voice' as type,
-        channel_name as name,
-        MAX(start_time) as start_time,
-        MAX(end_time) as end_time,
-        SUM(duration_minutes) as duration_minutes
-      FROM voice_sessions
-      WHERE user_id = ? AND (
-        (date(start_time) >= ? AND date(start_time) <= ? AND duration_minutes > 0) OR
-        (status = 'active')
-      )
-      GROUP BY channel_name
-      ORDER BY MAX(start_time) DESC
-      LIMIT 5
-    `).all(userId, startDateStr, endDateStr);
+
+    // For 1d timeRange, use reset-time-based filtering (consistent with other queries)
+    let recentGames, recentVoice;
+
+    if (timeRange === '1d') {
+      const userStatsForRecent = db.getUserStats(userId);
+      const resetTime = userStatsForRecent?.last_daily_reset || sessionStartTime;
+
+      // Add recent game sessions - cumulated by game name
+      recentGames = db.getDatabase().prepare(`
+        SELECT
+          'game' as type,
+          game_name as name,
+          MAX(start_time) as start_time,
+          MAX(end_time) as end_time,
+          SUM(duration_minutes) as duration_minutes
+        FROM game_sessions
+        WHERE user_id = ? AND (
+          (start_time >= ? AND status IN ('active', 'ended')) OR
+          (status = 'active')
+        )
+        GROUP BY game_name
+        ORDER BY MAX(start_time) DESC
+        LIMIT 5
+      `).all(userId, resetTime);
+
+      // Add recent voice sessions - cumulated by channel name
+      recentVoice = db.getDatabase().prepare(`
+        SELECT
+          'voice' as type,
+          channel_name as name,
+          MAX(start_time) as start_time,
+          MAX(end_time) as end_time,
+          SUM(duration_minutes) as duration_minutes
+        FROM voice_sessions
+        WHERE user_id = ? AND (
+          (start_time >= ? AND status IN ('active', 'ended')) OR
+          (status = 'active')
+        )
+        GROUP BY channel_name
+        ORDER BY MAX(start_time) DESC
+        LIMIT 5
+      `).all(userId, resetTime);
+    } else {
+      // Add recent game sessions - cumulated by game name
+      recentGames = db.getDatabase().prepare(`
+        SELECT
+          'game' as type,
+          game_name as name,
+          MAX(start_time) as start_time,
+          MAX(end_time) as end_time,
+          SUM(duration_minutes) as duration_minutes
+        FROM game_sessions
+        WHERE user_id = ? AND (
+          (date(start_time) >= ? AND date(start_time) <= ? AND duration_minutes > 0) OR
+          (status = 'active')
+        )
+        GROUP BY game_name
+        ORDER BY MAX(start_time) DESC
+        LIMIT 5
+      `).all(userId, startDateStr, endDateStr);
+
+      // Add recent voice sessions - cumulated by channel name
+      recentVoice = db.getDatabase().prepare(`
+        SELECT
+          'voice' as type,
+          channel_name as name,
+          MAX(start_time) as start_time,
+          MAX(end_time) as end_time,
+          SUM(duration_minutes) as duration_minutes
+        FROM voice_sessions
+        WHERE user_id = ? AND (
+          (date(start_time) >= ? AND date(start_time) <= ? AND duration_minutes > 0) OR
+          (status = 'active')
+        )
+        GROUP BY channel_name
+        ORDER BY MAX(start_time) DESC
+        LIMIT 5
+      `).all(userId, startDateStr, endDateStr);
+    }
     
     recentSessions.push(...recentGames, ...recentVoice);
     recentSessions.sort((a, b) => new Date(b.start_time).getTime() - new Date(a.start_time).getTime());
