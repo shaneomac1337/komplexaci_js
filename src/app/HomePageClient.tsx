@@ -1266,6 +1266,7 @@ export default function HomePageClient({
                     alt={game.title}
                     fill
                     className="object-cover transition-transform duration-500 group-hover:scale-110"
+                    unoptimized
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent"></div>
                 </div>
