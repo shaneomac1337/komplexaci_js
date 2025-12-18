@@ -41,7 +41,20 @@
       "Bash(for:*)",
       "Bash(do echo \"Uploading $f...\")",
       "Bash(git filter-repo:*)",
-      "Bash(pip install:*)"
+      "Bash(pip install:*)",
+      "Bash(git gc:*)",
+      "Bash(git rev-list:*)",
+      "Bash(git cat-file:*)",
+      "Bash(sort:*)",
+      "Bash(du -sh:*)",
+      "Bash(git lfs prune:*)",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(timeout /t 30)",
+      "Bash(ssh root@komplexaci.cz \"cd /opt/komplexaci_web && docker compose build --no-cache\")",
+      "Bash(git fetch:*)",
+      "Bash(curl:*)",
+      "Bash(ssh root@komplexaci.cz \"cd /opt/komplexaci_web && docker compose up -d && docker ps --filter name=komplexaci\")"
     ],
     "deny": []
   }
