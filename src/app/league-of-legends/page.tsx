@@ -739,6 +739,7 @@ export default function LeagueOfLegendsNextJS() {
                       width={400}
                       height={250}
                       className="object-cover"
+                      unoptimized
                     />
                   </div>
                   <div className={styles.gameMapContent}>
