@@ -441,7 +441,8 @@ class AnalyticsService {
       const session = this.db.getGameSession(user.gameSessionId);
       if (session) {
         const startTime = new Date(session.start_time);
-        const durationMinutes = Math.max(1, Math.round((utcEndTime.getTime() - startTime.getTime()) / (1000 * 60)));
+        // Use Math.max(0, ...) for consistency with voice/spotify sessions - allow 0-minute sessions
+        const durationMinutes = Math.max(0, Math.round((utcEndTime.getTime() - startTime.getTime()) / (1000 * 60)));
 
         // Update the session in database
         this.db.updateGameSession(user.gameSessionId, endTimeISO, durationMinutes);
@@ -631,6 +632,8 @@ class AnalyticsService {
   // IMMEDIATE UPDATE: Update Spotify song count in user_stats immediately when a new song starts
   private updateSpotifySongCountImmediately(userId: string) {
     try {
+      // BUG FIX #4: Only count Spotify songs that were played for at least 1 minute
+      // Previously every track change counted as a "play", even 2-second skips
       // Count Spotify songs since the user's last daily reset (not just calendar date)
       // This ensures proper reset behavior - only count sessions after the last reset
       const spotifyStats = this.db.getDatabase().prepare(`
@@ -643,6 +646,7 @@ class AnalyticsService {
             WHERE user_id = ?
           )
           AND s.status IN ('active', 'ended')
+          AND (s.duration_minutes >= 1 OR s.status = 'active')
       `).get(userId, userId) as any;
 
       const newDailySpotifySongs = spotifyStats?.songs_played || 0;
@@ -704,19 +708,26 @@ class AnalyticsService {
       // Get user's last daily reset time to only count sessions after reset
       const initialUserStats = this.db.getUserStats(userId);
       const resetTime = initialUserStats?.last_daily_reset || new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
-      
-      // Count game time since last daily reset (including active sessions for real-time updates)
-      // For active sessions, include them regardless of start time (they may have been recovered)
+
+      // BUG FIX #2: For active sessions that started before reset, only count the portion after reset
+      // Previously counted the full duration of active sessions even if they started before reset
       const gameStats = this.db.getDatabase().prepare(`
         SELECT
-          SUM(duration_minutes) as total_minutes,
+          SUM(
+            CASE
+              WHEN start_time >= ? THEN duration_minutes
+              WHEN status = 'active' THEN
+                CAST((julianday('now') - julianday(?)) * 1440 AS INTEGER)
+              ELSE 0
+            END
+          ) as total_minutes,
           COUNT(DISTINCT game_name) as games_played
         FROM game_sessions
         WHERE user_id = ? AND (
           (start_time >= ? AND status IN ('active', 'ended')) OR
           (status = 'active')
         )
-      `).get(userId, resetTime) as any;
+      `).get(resetTime, resetTime, userId, resetTime) as any;
 
       const newDailyGameMinutes = gameStats?.total_minutes || 0;
       const newDailyGamesPlayed = gameStats?.games_played || 0;
@@ -928,26 +939,38 @@ class AnalyticsService {
     try {
       const endTimeISO = endTime.toISOString();
 
-      // End all active game sessions
+      // BUG FIX #1: Calculate duration from start_time when ending sessions
+      // Previously duration_minutes was not recalculated, causing data loss
+
+      // End all active game sessions with proper duration calculation
       const gameResult = this.db.getDatabase().prepare(`
         UPDATE game_sessions
-        SET status = 'ended', end_time = ?, last_updated = CURRENT_TIMESTAMP
+        SET status = 'ended',
+            end_time = ?,
+            duration_minutes = CAST((julianday(?) - julianday(start_time)) * 1440 AS INTEGER),
+            last_updated = CURRENT_TIMESTAMP
         WHERE status = 'active'
-      `).run(endTimeISO);
+      `).run(endTimeISO, endTimeISO);
 
-      // End all active voice sessions
+      // End all active voice sessions with proper duration calculation
       const voiceResult = this.db.getDatabase().prepare(`
         UPDATE voice_sessions
-        SET status = 'ended', end_time = ?, last_updated = CURRENT_TIMESTAMP
+        SET status = 'ended',
+            end_time = ?,
+            duration_minutes = CAST((julianday(?) - julianday(start_time)) * 1440 AS INTEGER),
+            last_updated = CURRENT_TIMESTAMP
         WHERE status = 'active'
-      `).run(endTimeISO);
+      `).run(endTimeISO, endTimeISO);
 
-      // End all active Spotify sessions
+      // End all active Spotify sessions with proper duration calculation
       const spotifyResult = this.db.getDatabase().prepare(`
         UPDATE spotify_sessions
-        SET status = 'ended', end_time = ?, last_updated = CURRENT_TIMESTAMP
+        SET status = 'ended',
+            end_time = ?,
+            duration_minutes = CAST((julianday(?) - julianday(start_time)) * 1440 AS INTEGER),
+            last_updated = CURRENT_TIMESTAMP
         WHERE status = 'active'
-      `).run(endTimeISO);
+      `).run(endTimeISO, endTimeISO);
 
       console.log(`🧹 Ended ${gameResult.changes} game sessions, ${voiceResult.changes} voice sessions, ${spotifyResult.changes} Spotify sessions`);
 
@@ -1203,34 +1226,162 @@ class AnalyticsService {
     }
   }
 
-  // Legacy method - kept for API compatibility but no longer used
-  // Real-time validation via validateSessionsWithPresence() handles cleanup now
+  // Clean up stale sessions that have been inactive for too long
+  // This handles edge cases where sessions weren't properly ended (crashes, disconnects, etc.)
   public cleanupStaleSessions(staleMinutes: number = 5) {
-    // This method is now mostly redundant since we use real-time Discord validation
-    // Keeping it for API compatibility but it does nothing
-    console.log('ℹ️ Stale session cleanup skipped - using real-time validation instead');
+    try {
+      const staleTime = new Date(Date.now() - staleMinutes * 60 * 1000).toISOString();
+      const currentTime = new Date().toISOString();
+
+      // Find and end stale game sessions
+      const staleGames = this.db.getDatabase().prepare(`
+        SELECT id, user_id, start_time FROM game_sessions
+        WHERE status = 'active' AND last_updated < ?
+      `).all(staleTime) as { id: number; user_id: string; start_time: string }[];
+
+      for (const session of staleGames) {
+        const duration = Math.round((new Date(staleTime).getTime() - new Date(session.start_time).getTime()) / 60000);
+        this.db.getDatabase().prepare(`
+          UPDATE game_sessions SET status = 'stale', end_time = ?, duration_minutes = ? WHERE id = ?
+        `).run(currentTime, Math.max(0, duration), session.id);
+      }
+
+      // Find and end stale voice sessions
+      const staleVoice = this.db.getDatabase().prepare(`
+        SELECT id, user_id, start_time FROM voice_sessions
+        WHERE status = 'active' AND last_updated < ?
+      `).all(staleTime) as { id: number; user_id: string; start_time: string }[];
+
+      for (const session of staleVoice) {
+        const duration = Math.round((new Date(staleTime).getTime() - new Date(session.start_time).getTime()) / 60000);
+        this.db.getDatabase().prepare(`
+          UPDATE voice_sessions SET status = 'stale', end_time = ?, duration_minutes = ? WHERE id = ?
+        `).run(currentTime, Math.max(0, duration), session.id);
+      }
+
+      // Find and end stale Spotify sessions
+      const staleSpotify = this.db.getDatabase().prepare(`
+        SELECT id, user_id, start_time FROM spotify_sessions
+        WHERE status = 'active' AND last_updated < ?
+      `).all(staleTime) as { id: number; user_id: string; start_time: string }[];
+
+      for (const session of staleSpotify) {
+        const duration = Math.round((new Date(staleTime).getTime() - new Date(session.start_time).getTime()) / 60000);
+        this.db.getDatabase().prepare(`
+          UPDATE spotify_sessions SET status = 'stale', end_time = ?, duration_minutes = ? WHERE id = ?
+        `).run(currentTime, Math.max(0, duration), session.id);
+      }
+
+      const totalCleaned = staleGames.length + staleVoice.length + staleSpotify.length;
+      if (totalCleaned > 0) {
+        console.log(`🧹 Cleaned up ${staleGames.length} stale game sessions, ${staleVoice.length} stale voice sessions, ${staleSpotify.length} stale Spotify sessions`);
+      }
+    } catch (error) {
+      console.error('❌ Error cleaning up stale sessions:', error);
+    }
   }
 
   // Cross-reference active sessions with current Discord presence
   public validateActiveSessionsWithPresence() {
     try {
+      const currentTime = new Date();
+      const currentTimeISO = currentTime.toISOString();
+
+      // BUG FIX #3: Clean orphaned database sessions not in memory
+      // Previously only checked in-memory users, leaving orphaned DB sessions active
+      const memoryUserIds = Array.from(this.activeUsers.keys());
+
+      if (memoryUserIds.length > 0) {
+        // Create placeholders for IN clause
+        const placeholders = memoryUserIds.map(() => '?').join(',');
+
+        // Find orphaned game sessions (in DB but not in memory)
+        const orphanedGameSessions = this.db.getDatabase().prepare(`
+          SELECT id, user_id, start_time FROM game_sessions
+          WHERE status = 'active' AND user_id NOT IN (${placeholders})
+        `).all(...memoryUserIds) as any[];
+
+        for (const session of orphanedGameSessions) {
+          const startTime = new Date(session.start_time);
+          const duration = Math.max(0, Math.round((currentTime.getTime() - startTime.getTime()) / 60000));
+          this.db.getDatabase().prepare(`
+            UPDATE game_sessions
+            SET status = 'ended', end_time = ?, duration_minutes = ?, last_updated = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `).run(currentTimeISO, duration, session.id);
+          console.log(`🧹 Ended orphaned game session for user ${session.user_id} (${duration}m)`);
+        }
+
+        // Find orphaned voice sessions (in DB but not in memory)
+        const orphanedVoiceSessions = this.db.getDatabase().prepare(`
+          SELECT id, user_id, start_time FROM voice_sessions
+          WHERE status = 'active' AND user_id NOT IN (${placeholders})
+        `).all(...memoryUserIds) as any[];
+
+        for (const session of orphanedVoiceSessions) {
+          const startTime = new Date(session.start_time);
+          const duration = Math.max(0, Math.round((currentTime.getTime() - startTime.getTime()) / 60000));
+          this.db.getDatabase().prepare(`
+            UPDATE voice_sessions
+            SET status = 'ended', end_time = ?, duration_minutes = ?, last_updated = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `).run(currentTimeISO, duration, session.id);
+          console.log(`🧹 Ended orphaned voice session for user ${session.user_id} (${duration}m)`);
+        }
+
+        // Find orphaned Spotify sessions (in DB but not in memory)
+        const orphanedSpotifySessions = this.db.getDatabase().prepare(`
+          SELECT id, user_id, start_time FROM spotify_sessions
+          WHERE status = 'active' AND user_id NOT IN (${placeholders})
+        `).all(...memoryUserIds) as any[];
+
+        for (const session of orphanedSpotifySessions) {
+          const startTime = new Date(session.start_time);
+          const duration = Math.max(0, Math.round((currentTime.getTime() - startTime.getTime()) / 60000));
+          this.db.getDatabase().prepare(`
+            UPDATE spotify_sessions
+            SET status = 'ended', end_time = ?, duration_minutes = ?, last_updated = CURRENT_TIMESTAMP
+            WHERE id = ?
+          `).run(currentTimeISO, duration, session.id);
+          console.log(`🧹 Ended orphaned Spotify session for user ${session.user_id} (${duration}m)`);
+        }
+      } else {
+        // If no memory users, end all active sessions
+        console.log(`⚠️ No users in memory, checking for orphaned sessions...`);
+        const orphanedGameCount = this.db.getDatabase().prepare(`
+          SELECT COUNT(*) as count FROM game_sessions WHERE status = 'active'
+        `).get() as any;
+        const orphanedVoiceCount = this.db.getDatabase().prepare(`
+          SELECT COUNT(*) as count FROM voice_sessions WHERE status = 'active'
+        `).get() as any;
+        const orphanedSpotifyCount = this.db.getDatabase().prepare(`
+          SELECT COUNT(*) as count FROM spotify_sessions WHERE status = 'active'
+        `).get() as any;
+
+        if (orphanedGameCount.count > 0 || orphanedVoiceCount.count > 0 || orphanedSpotifyCount.count > 0) {
+          console.log(`🧹 Found ${orphanedGameCount.count} game, ${orphanedVoiceCount.count} voice, ${orphanedSpotifyCount.count} Spotify orphaned sessions - ending all`);
+          this.endAllActiveSessions(currentTime);
+        }
+      }
+
+      // Validate in-memory users against their session state
       for (const [, user] of this.activeUsers) {
         // Validate game sessions
         if (user.gameSessionId && !user.currentGame) {
           console.log(`⚠️ User ${user.displayName} has active game session but no current game - ending session`);
-          this.endGameSession(user, new Date());
+          this.endGameSession(user, currentTime);
         }
 
         // Validate voice sessions
         if (user.voiceSessionId && !user.isInVoice) {
           console.log(`⚠️ User ${user.displayName} has active voice session but not in voice - ending session`);
-          this.endVoiceSession(user, new Date());
+          this.endVoiceSession(user, currentTime);
         }
 
         // Validate Spotify sessions
         if (user.spotifySessionId && !user.currentSpotify) {
           console.log(`⚠️ User ${user.displayName} has active Spotify session but no current track - ending session`);
-          this.endSpotifySession(user, new Date());
+          this.endSpotifySession(user, currentTime);
         }
       }
     } catch (error) {

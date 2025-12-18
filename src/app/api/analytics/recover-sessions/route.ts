@@ -38,13 +38,19 @@ export async function POST(request: NextRequest) {
 
     // Get current state after recovery
     const activeUsers = analyticsService.getActiveUsers();
-    
+
+    // Count total members (non-bot members)
+    let totalMembers = 0;
+    guild.members.cache.forEach((member: any) => {
+      if (!member.user.bot) totalMembers++;
+    });
+
     const response = {
       status: 'success',
       message: 'Session recovery completed',
       timestamp: new Date().toISOString(),
       results: {
-        totalMembers: allMembers.length,
+        totalMembers,
         activeUsers: activeUsers.length,
         recoveredSessions: activeUsers.length,
         activeUserDetails: activeUsers.map(user => ({

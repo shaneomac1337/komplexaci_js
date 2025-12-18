@@ -24,18 +24,27 @@ export async function GET(
     `).get(userId) as any;
     
     // Calculate date range
+    // NOTE: Time ranges have different semantics (intentional design):
+    // - "1d" = Since last daily reset (can be less than 24 hours) - uses last_daily_reset
+    // - "7d" = Last 7 calendar days (rolling window) - uses date-based filtering
+    // - "30d" = Last 30 calendar days (legacy rolling period)
+    // - "monthly" = Since last monthly reset - uses last_monthly_reset
+    // - "90d" = Last 90 calendar days (rolling window)
+    // - "all" = All time since 2020
     const endDate = new Date();
     let startDate = new Date();
-    
+
     switch (timeRange) {
       case '1d':
+        // Fallback start date (actual filtering uses last_daily_reset)
         startDate.setDate(startDate.getDate() - 1);
         break;
       case '7d':
+        // Rolling 7-day window (calendar days, not reset-based)
         startDate.setDate(startDate.getDate() - 7);
         break;
       case '30d':
-        // Legacy 30-day rolling period (session-based)
+        // Legacy 30-day rolling period (session-based, calendar days)
         startDate.setDate(startDate.getDate() - 30);
         break;
       case 'monthly':
@@ -49,6 +58,7 @@ export async function GET(
         }
         break;
       case '90d':
+        // Rolling 90-day window (calendar days)
         startDate.setDate(startDate.getDate() - 90);
         break;
       case 'all':
@@ -202,31 +212,104 @@ export async function GET(
       `).all(userId, sessionStartTime, sessionEndTime);
     }
     
-    // Get user's Spotify activity (focus on plays, not time) - using same time filtering as other sessions
-    const spotifyActivity = db.getDatabase().prepare(`
-      SELECT
-        artist,
-        COUNT(*) as plays_count,
-        COUNT(DISTINCT track_name) as unique_tracks
-      FROM spotify_sessions
-      WHERE user_id = ? AND start_time >= ? AND start_time <= ?
-      GROUP BY artist
-      ORDER BY plays_count DESC
-      LIMIT 10
-    `).all(userId, sessionStartTime, sessionEndTime);
-    
-    // Get top tracks (focus on play count)
-    const topTracks = db.getDatabase().prepare(`
-      SELECT
-        track_name,
-        artist,
-        COUNT(*) as play_count
-      FROM spotify_sessions
-      WHERE user_id = ? AND start_time >= ? AND start_time <= ?
-      GROUP BY track_name, artist
-      ORDER BY play_count DESC
-      LIMIT 10
-    `).all(userId, sessionStartTime, sessionEndTime);
+    // Get user's Spotify activity (focus on plays, not time)
+    // For 1d timeRange, use last_daily_reset like games/voice do for consistency
+    let spotifyActivity;
+    let topTracks;
+
+    if (timeRange === '1d') {
+      // Use last_daily_reset for daily view (consistent with games/voice)
+      const userStatsForSpotify = db.getUserStats(userId);
+      const resetTime = userStatsForSpotify?.last_daily_reset || sessionStartTime;
+
+      spotifyActivity = db.getDatabase().prepare(`
+        SELECT
+          artist,
+          COUNT(*) as plays_count,
+          COUNT(DISTINCT track_name) as unique_tracks
+        FROM spotify_sessions
+        WHERE user_id = ? AND (
+          (start_time >= ? AND status IN ('active', 'ended')) OR
+          (status = 'active')
+        )
+        GROUP BY artist
+        ORDER BY plays_count DESC
+        LIMIT 10
+      `).all(userId, resetTime);
+
+      topTracks = db.getDatabase().prepare(`
+        SELECT
+          track_name,
+          artist,
+          COUNT(*) as play_count
+        FROM spotify_sessions
+        WHERE user_id = ? AND (
+          (start_time >= ? AND status IN ('active', 'ended')) OR
+          (status = 'active')
+        )
+        GROUP BY track_name, artist
+        ORDER BY play_count DESC
+        LIMIT 10
+      `).all(userId, resetTime);
+    } else if (timeRange === 'monthly') {
+      // Use monthly reset time for monthly view
+      const monthlyResetTime = userStats?.last_monthly_reset || sessionStartTime;
+
+      spotifyActivity = db.getDatabase().prepare(`
+        SELECT
+          artist,
+          COUNT(*) as plays_count,
+          COUNT(DISTINCT track_name) as unique_tracks
+        FROM spotify_sessions
+        WHERE user_id = ? AND (
+          (start_time >= ? AND status IN ('active', 'ended')) OR
+          (status = 'active')
+        )
+        GROUP BY artist
+        ORDER BY plays_count DESC
+        LIMIT 10
+      `).all(userId, monthlyResetTime);
+
+      topTracks = db.getDatabase().prepare(`
+        SELECT
+          track_name,
+          artist,
+          COUNT(*) as play_count
+        FROM spotify_sessions
+        WHERE user_id = ? AND (
+          (start_time >= ? AND status IN ('active', 'ended')) OR
+          (status = 'active')
+        )
+        GROUP BY track_name, artist
+        ORDER BY play_count DESC
+        LIMIT 10
+      `).all(userId, monthlyResetTime);
+    } else {
+      // For other time ranges (7d, 30d, 90d, all), use date-based filtering
+      spotifyActivity = db.getDatabase().prepare(`
+        SELECT
+          artist,
+          COUNT(*) as plays_count,
+          COUNT(DISTINCT track_name) as unique_tracks
+        FROM spotify_sessions
+        WHERE user_id = ? AND start_time >= ? AND start_time <= ?
+        GROUP BY artist
+        ORDER BY plays_count DESC
+        LIMIT 10
+      `).all(userId, sessionStartTime, sessionEndTime);
+
+      topTracks = db.getDatabase().prepare(`
+        SELECT
+          track_name,
+          artist,
+          COUNT(*) as play_count
+        FROM spotify_sessions
+        WHERE user_id = ? AND start_time >= ? AND start_time <= ?
+        GROUP BY track_name, artist
+        ORDER BY play_count DESC
+        LIMIT 10
+      `).all(userId, sessionStartTime, sessionEndTime);
+    }
     
     // Get recent sessions
     const recentSessions = [];
@@ -310,13 +393,69 @@ export async function GET(
       artistsListened: spotifyActivity.length,
       achievementsEarned: 0
     };
-    
+
+    // Calculate server averages and percentiles (only for daily view)
+    let serverAverages = null;
+    let percentiles = null;
+
+    if (timeRange === '1d') {
+      // Get server-wide averages from all active users
+      const averagesQuery = db.getDatabase().prepare(`
+        SELECT
+          AVG(daily_games_minutes) as avgGameTime,
+          AVG(daily_voice_minutes) as avgVoiceTime,
+          AVG(daily_spotify_songs) as avgSongsPlayed,
+          COUNT(*) as totalActiveUsers
+        FROM user_stats
+        WHERE daily_online_minutes > 0
+      `).get() as any;
+
+      serverAverages = {
+        avgGameTime: Math.round(averagesQuery?.avgGameTime || 0),
+        avgVoiceTime: Math.round(averagesQuery?.avgVoiceTime || 0),
+        avgSongsPlayed: Math.round(averagesQuery?.avgSongsPlayed || 0),
+        totalActiveUsers: averagesQuery?.totalActiveUsers || 0
+      };
+
+      // Calculate percentiles - what % of users this user beats
+      const totalUsers = serverAverages.totalActiveUsers;
+
+      if (totalUsers > 0) {
+        // Game time percentile
+        const gamePercentileQuery = db.getDatabase().prepare(`
+          SELECT COUNT(*) as usersBelow
+          FROM user_stats
+          WHERE daily_games_minutes < ? AND daily_online_minutes > 0
+        `).get(totalGameTime) as any;
+
+        // Voice time percentile
+        const voicePercentileQuery = db.getDatabase().prepare(`
+          SELECT COUNT(*) as usersBelow
+          FROM user_stats
+          WHERE daily_voice_minutes < ? AND daily_online_minutes > 0
+        `).get(totalVoiceTime) as any;
+
+        // Songs played percentile
+        const songsPercentileQuery = db.getDatabase().prepare(`
+          SELECT COUNT(*) as usersBelow
+          FROM user_stats
+          WHERE daily_spotify_songs < ? AND daily_online_minutes > 0
+        `).get(totalSongsPlayed) as any;
+
+        percentiles = {
+          gameTimePercentile: Math.round((gamePercentileQuery?.usersBelow / totalUsers) * 100),
+          voiceTimePercentile: Math.round((voicePercentileQuery?.usersBelow / totalUsers) * 100),
+          songsPlayedPercentile: Math.round((songsPercentileQuery?.usersBelow / totalUsers) * 100)
+        };
+      }
+    }
+
     // Calculate activity patterns
     const activityPatterns = {
       hourlyActivity: [],
       dailyActivity: []
     };
-    
+
     return NextResponse.json({
       success: true,
       userId,
@@ -331,7 +470,9 @@ export async function GET(
         achievements: [],
         recentSessions: recentSessions.slice(0, 10),
         totals,
-        activityPatterns
+        activityPatterns,
+        serverAverages,
+        percentiles
       }
     });
     

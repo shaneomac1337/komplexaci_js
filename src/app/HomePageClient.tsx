@@ -105,8 +105,7 @@ export default function HomePageClient({
 
   // Discord stats for Most Active Members
   const [discordStats, setDiscordStats] = useState<any>(null);
-
-
+  const prevDiscordDataRef = useRef<string>('');
 
   const [scrollDownTimeout, setScrollDownTimeout] = useState<NodeJS.Timeout | null>(null);
   const [activityTimeout, setActivityTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -662,7 +661,13 @@ export default function HomePageClient({
         const response = await fetch('/api/discord/server-stats');
         if (response.ok) {
           const data = await response.json();
-          setDiscordStats(data);
+
+          // Only update state if data actually changed
+          const dataStr = JSON.stringify(data);
+          if (dataStr !== prevDiscordDataRef.current) {
+            prevDiscordDataRef.current = dataStr;
+            setDiscordStats(data);
+          }
         }
       } catch (error) {
         console.error('Failed to fetch Discord stats:', error);

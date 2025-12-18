@@ -6,6 +6,63 @@ import { getAnalyticsDatabase } from './analytics/database';
 import { initializeAnalytics } from './analytics';
 import { getBestDiscordAvatarUrl } from './discord-avatar-utils';
 
+// === TIMEZONE HELPER FUNCTIONS ===
+// Robust Czech timezone handling without relying on unreliable toLocaleString parsing
+
+/**
+ * Get the last Sunday of a given month (used for DST calculations)
+ * @param year - The year
+ * @param month - The month (0-indexed, so March = 2, October = 9)
+ * @returns Date object for the last Sunday at 2:00 AM UTC
+ */
+function getLastSundayOfMonth(year: number, month: number): Date {
+  const lastDay = new Date(Date.UTC(year, month + 1, 0, 2, 0, 0)); // Last day of month at 2:00 AM UTC
+  const dayOfWeek = lastDay.getUTCDay();
+  lastDay.setUTCDate(lastDay.getUTCDate() - dayOfWeek);
+  return lastDay;
+}
+
+/**
+ * Get the UTC offset for Prague timezone (CET/CEST)
+ * @param date - The date to check
+ * @returns Offset in minutes (60 for CET, 120 for CEST)
+ */
+function getPragueOffset(date: Date): number {
+  // Czech timezone: CET (UTC+1) or CEST (UTC+2)
+  // DST starts last Sunday of March at 2:00 AM UTC (clocks move forward to 3:00 AM)
+  // DST ends last Sunday of October at 3:00 AM local (2:00 AM UTC, clocks move back to 2:00 AM)
+  const year = date.getUTCFullYear();
+  const marchLastSunday = getLastSundayOfMonth(year, 2); // March = 2
+  const octoberLastSunday = getLastSundayOfMonth(year, 9); // October = 9
+
+  if (date >= marchLastSunday && date < octoberLastSunday) {
+    return 120; // CEST = UTC+2 = 120 minutes
+  }
+  return 60; // CET = UTC+1 = 60 minutes
+}
+
+/**
+ * Convert a date to Czech time (Europe/Prague timezone)
+ * @param date - The date to convert (defaults to current time)
+ * @returns A new Date object representing the Czech local time
+ */
+function getCzechTime(date: Date = new Date()): Date {
+  const utcTime = date.getTime();
+  const pragueOffset = getPragueOffset(date);
+  return new Date(utcTime + pragueOffset * 60 * 1000);
+}
+
+/**
+ * Get midnight in Czech time for a given date
+ * @param date - The date to get midnight for
+ * @returns A Date object representing midnight Czech time
+ */
+function getCzechMidnight(date: Date): Date {
+  const czechTime = getCzechTime(date);
+  czechTime.setUTCHours(0, 0, 0, 0);
+  return czechTime;
+}
+
 interface CachedMember {
   id: string;
   username: string;
@@ -269,14 +326,12 @@ class DiscordGatewayService {
       }
     }
 
-    // Check for daily reset at midnight Czech time
-    const czechTime = new Date(currentTime.toLocaleString("en-US", {timeZone: "Europe/Prague"}));
-    const today = new Date(czechTime);
-    today.setHours(0, 0, 0, 0);
-    const lastReset = new Date(lastDailyReset.toLocaleString("en-US", {timeZone: "Europe/Prague"}));
-    lastReset.setHours(0, 0, 0, 0);
+    // Check for daily reset at midnight Czech time (using robust timezone calculation)
+    const czechTime = getCzechTime(currentTime);
+    const today = getCzechMidnight(currentTime);
+    const lastResetCzech = getCzechMidnight(lastDailyReset);
 
-    if (today.getTime() > lastReset.getTime()) {
+    if (today.getTime() > lastResetCzech.getTime()) {
       // Reset daily counters at midnight
       dailyOnlineTime = 0;
       lastDailyReset = currentTime;
@@ -343,14 +398,11 @@ class DiscordGatewayService {
       const oldStatus = member.status;
       const newStatus = presence.status;
 
-      // Check for daily reset at midnight Czech time
-      const czechTime = new Date(currentTime.toLocaleString("en-US", {timeZone: "Europe/Prague"}));
-      const today = new Date(czechTime);
-      today.setHours(0, 0, 0, 0);
-      const lastReset = new Date(member.lastDailyReset.toLocaleString("en-US", {timeZone: "Europe/Prague"}));
-      lastReset.setHours(0, 0, 0, 0);
+      // Check for daily reset at midnight Czech time (using robust timezone calculation)
+      const today = getCzechMidnight(currentTime);
+      const lastResetCzech = getCzechMidnight(member.lastDailyReset);
 
-      if (today.getTime() > lastReset.getTime()) {
+      if (today.getTime() > lastResetCzech.getTime()) {
         member.dailyOnlineTime = 0;
         member.lastDailyReset = currentTime;
         member.sessionStartTime = null; // Reset session on new day
@@ -461,14 +513,11 @@ class DiscordGatewayService {
     let updatedCount = 0;
 
     for (const [userId, member] of this.memberCache) {
-      // Check for daily reset at midnight Czech time
-      const czechTime = new Date(currentTime.toLocaleString("en-US", {timeZone: "Europe/Prague"}));
-      const today = new Date(czechTime);
-      today.setHours(0, 0, 0, 0);
-      const lastReset = new Date(member.lastDailyReset.toLocaleString("en-US", {timeZone: "Europe/Prague"}));
-      lastReset.setHours(0, 0, 0, 0);
+      // Check for daily reset at midnight Czech time (using robust timezone calculation)
+      const today = getCzechMidnight(currentTime);
+      const lastResetCzech = getCzechMidnight(member.lastDailyReset);
 
-      if (today.getTime() > lastReset.getTime()) {
+      if (today.getTime() > lastResetCzech.getTime()) {
         member.dailyOnlineTime = 0;
         member.lastDailyReset = currentTime;
         member.sessionStartTime = null; // Reset session on new day

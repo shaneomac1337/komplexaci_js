@@ -12,8 +12,6 @@ interface UserAnalyticsModalProps {
 }
 
 interface UserAnalyticsData {
-  totals24h: any;
-  totals7d: any;
   totals30d: any;
   gameSessions: any[];
   topTracks: any[];
@@ -24,8 +22,6 @@ interface UserAnalyticsData {
 export default function UserAnalyticsModal({ isOpen, onClose, userId, displayName, avatar }: UserAnalyticsModalProps) {
   const [activeTab, setActiveTab] = useState<'overview' | 'games' | 'spotify'>('overview');
   const [analyticsData, setAnalyticsData] = useState<UserAnalyticsData>({
-    totals24h: {},
-    totals7d: {},
     totals30d: {},
     gameSessions: [],
     topTracks: [],
@@ -43,23 +39,12 @@ export default function UserAnalyticsModal({ isOpen, onClose, userId, displayNam
     setAnalyticsData(prev => ({ ...prev, loading: true, error: null }));
 
     try {
-      // Fetch data for all three time periods
-      const [response24h, response7d, response30d] = await Promise.all([
-        fetch(`/api/analytics/user/${userId}?timeRange=1d`),
-        fetch(`/api/analytics/user/${userId}?timeRange=7d`),
-        fetch(`/api/analytics/user/${userId}?timeRange=monthly`)
-      ]);
+      // Fetch only monthly data (30d period)
+      const response30d = await fetch(`/api/analytics/user/${userId}?timeRange=monthly`);
+      const result30d = await response30d.json();
 
-      const [result24h, result7d, result30d] = await Promise.all([
-        response24h.json(),
-        response7d.json(),
-        response30d.json()
-      ]);
-
-      if (result24h.success && result7d.success && result30d.success) {
+      if (result30d.success) {
         setAnalyticsData({
-          totals24h: result24h.data.totals || {},
-          totals7d: result7d.data.totals || {},
           totals30d: result30d.data.totals || {},
           gameSessions: result30d.data.gameSessions || [],
           topTracks: result30d.data.topTracks || [],
@@ -144,7 +129,12 @@ export default function UserAnalyticsModal({ isOpen, onClose, userId, displayNam
               />
               <div>
                 <h2 className="text-lg sm:text-xl font-semibold text-white">{displayName}</h2>
-                <p className="text-[#b9bbbe] text-xs sm:text-sm">Osobní statistiky</p>
+                <div className="space-y-0.5">
+                  <p className="text-xs sm:text-sm font-semibold text-[#5865f2]">Měsíční statistiky</p>
+                  <p className="text-xs text-[#b9bbbe]">
+                    {new Date(new Date().getFullYear(), new Date().getMonth(), 1).toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit' })} - {new Date().toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' })}
+                  </p>
+                </div>
               </div>
             </div>
             <button

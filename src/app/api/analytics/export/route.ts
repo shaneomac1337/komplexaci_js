@@ -10,13 +10,36 @@ export async function GET(request: NextRequest) {
     const format = searchParams.get('format') || 'json'; // json, csv
     const startDate = searchParams.get('startDate');
     const endDate = searchParams.get('endDate');
-    const tables = searchParams.get('tables')?.split(',') || ['daily_snapshots', 'game_sessions', 'voice_sessions', 'spotify_sessions'];
-    
+    const requestedTables = searchParams.get('tables')?.split(',') || ['daily_snapshots', 'game_sessions', 'voice_sessions', 'spotify_sessions'];
+
+    // Security: Validate table names against allowlist to prevent SQL injection
+    const VALID_TABLES = ['user_stats', 'game_sessions', 'voice_sessions', 'spotify_sessions', 'daily_snapshots'];
+    const tables = requestedTables.filter(table => VALID_TABLES.includes(table.trim()));
+
+    // Check if any invalid tables were requested
+    const invalidTables = requestedTables.filter(table => !VALID_TABLES.includes(table.trim()));
+    if (invalidTables.length > 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid table names',
+        invalidTables,
+        validTables: VALID_TABLES
+      }, { status: 400 });
+    }
+
+    if (tables.length === 0) {
+      return NextResponse.json({
+        success: false,
+        error: 'No valid tables specified',
+        validTables: VALID_TABLES
+      }, { status: 400 });
+    }
+
     const db = getAnalyticsDatabase();
     const database = db.getDatabase();
-    
+
     console.log(`📤 Starting data export (format: ${format}, dates: ${startDate} to ${endDate})`);
-    
+
     const exportData: any = {
       metadata: {
         exportedAt: new Date().toISOString(),
@@ -26,11 +49,11 @@ export async function GET(request: NextRequest) {
       },
       data: {}
     };
-    
+
     // Build date filter for queries
     let dateFilter = '';
     const params: any[] = [];
-    
+
     if (startDate && endDate) {
       dateFilter = ' WHERE date >= ? AND date <= ?';
       params.push(startDate, endDate);
@@ -41,10 +64,11 @@ export async function GET(request: NextRequest) {
       dateFilter = ' WHERE date <= ?';
       params.push(endDate);
     }
-    
+
     // Export each requested table
     for (const table of tables) {
       try {
+        // Table name is now validated against allowlist, safe to use in query
         let query = `SELECT * FROM ${table}`;
         let queryParams = [];
         
