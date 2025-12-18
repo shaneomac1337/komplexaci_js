@@ -80,12 +80,6 @@ interface Achievement {
   category: 'gaming' | 'voice' | 'spotify' | 'special';
 }
 
-interface Streaks {
-  gaming: { current: number; best: number };
-  voice: { current: number; best: number };
-  spotify: { current: number; best: number };
-}
-
 // Achievement definitions
 const ACHIEVEMENTS: Achievement[] = [
   // Gaming
@@ -111,13 +105,6 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'spotify' | 'gaming' | 'voice' | 'achievements'>('overview');
   const prevDataRef = useRef<string>('');
-
-  // Mock streaks data - in production, this would come from backend
-  const [streaks] = useState<Streaks>({
-    gaming: { current: 3, best: 7 },
-    voice: { current: 5, best: 12 },
-    spotify: { current: 8, best: 15 },
-  });
 
   useEffect(() => {
     if (isOpen && userId) {
@@ -758,68 +745,6 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
               {/* Achievements Tab */}
               {activeTab === 'achievements' && (
                 <div className="space-y-4">
-                  {/* Streaks Section */}
-                  <div className="bg-gradient-to-r from-orange-500/10 to-yellow-500/10 rounded-lg p-3 sm:p-4 border border-orange-500/20">
-                    <h4 className="text-sm font-semibold text-orange-300 mb-3 sm:mb-4">🔥 Aktivní série</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
-                      {/* Gaming Streak */}
-                      <div className="text-center bg-gray-700/30 rounded-lg p-3 min-h-[100px] flex flex-col justify-center">
-                        <div className="text-2xl mb-1">🎮</div>
-                        <div className="text-xs text-gray-400 mb-2">Gaming</div>
-                        <div className="flex justify-center gap-3 sm:gap-2">
-                          <div>
-                            <div className="text-lg font-bold text-blue-400">{streaks.gaming.current}</div>
-                            <div className="text-xs text-gray-500">aktuální</div>
-                          </div>
-                          <div className="border-l border-gray-600"></div>
-                          <div>
-                            <div className="text-lg font-bold text-yellow-400">{streaks.gaming.best}</div>
-                            <div className="text-xs text-gray-500">rekord</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Voice Streak */}
-                      <div className="text-center bg-gray-700/30 rounded-lg p-3 min-h-[100px] flex flex-col justify-center">
-                        <div className="text-2xl mb-1">🎤</div>
-                        <div className="text-xs text-gray-400 mb-2">Voice</div>
-                        <div className="flex justify-center gap-3 sm:gap-2">
-                          <div>
-                            <div className="text-lg font-bold text-yellow-400">{streaks.voice.current}</div>
-                            <div className="text-xs text-gray-500">aktuální</div>
-                          </div>
-                          <div className="border-l border-gray-600"></div>
-                          <div>
-                            <div className="text-lg font-bold text-yellow-400">{streaks.voice.best}</div>
-                            <div className="text-xs text-gray-500">rekord</div>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Spotify Streak */}
-                      <div className="text-center bg-gray-700/30 rounded-lg p-3 min-h-[100px] flex flex-col justify-center">
-                        <div className="text-2xl mb-1">🎵</div>
-                        <div className="text-xs text-gray-400 mb-2">Spotify</div>
-                        <div className="flex justify-center gap-3 sm:gap-2">
-                          <div>
-                            <div className="text-lg font-bold text-purple-400">{streaks.spotify.current}</div>
-                            <div className="text-xs text-gray-500">aktuální</div>
-                          </div>
-                          <div className="border-l border-gray-600"></div>
-                          <div>
-                            <div className="text-lg font-bold text-yellow-400">{streaks.spotify.best}</div>
-                            <div className="text-xs text-gray-500">rekord</div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="mt-3 pt-3 border-t border-orange-500/20">
-                      <div className="text-xs text-gray-500 text-center">
-                        🔥 Udržuj aktivitu každý den a zlepšuj své rekordy!
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Unlocked Achievements */}
                   {getUnlockedAchievements().length > 0 && (
                     <div className="bg-gray-700/30 rounded-lg p-4">
