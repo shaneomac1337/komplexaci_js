@@ -1,0 +1,35 @@
+# BACKUP: Original docker-compose.yml that builds on server
+# This file is kept for reference - the new workflow uses pre-built images from GHCR
+
+# Komplexaci Gaming Clan Website
+services:
+  komplexaci-app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
+    image: komplexaci:latest
+    container_name: komplexaci-web
+    restart: unless-stopped
+    network_mode: host
+    env_file:
+      - .env
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - ANALYTICS_DATA_DIR=/app/data
+    volumes:
+      - /etc/localtime:/etc/localtime:ro
+      - analytics-data:/app/data
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+volumes:
+  analytics-data:
+    driver: local
