@@ -2,6 +2,10 @@
 
 import { useState, useEffect, useRef } from 'react';
 
+// Development-only logging utility
+const isDev = process.env.NODE_ENV === 'development';
+const devLog = isDev ? Function.prototype.bind.call(console.log, console) : () => {};
+
 interface OnlineMember {
   id: string;
   username: string;
@@ -78,11 +82,11 @@ export default function DiscordServerStats() {
   const prevDataRef = useRef<string>('');
 
   useEffect(() => {
-    console.log('DiscordServerStats useEffect running');
+    devLog('DiscordServerStats useEffect running');
 
     const fetchStats = async (isInitial = false) => {
       try {
-        console.log('Fetching Discord stats...');
+        devLog('Fetching Discord stats...');
         const response = await fetch('/api/discord/server-stats');
 
         if (!response.ok) {
@@ -90,28 +94,28 @@ export default function DiscordServerStats() {
         }
 
         const data = await response.json();
-        console.log('Discord stats received:', data);
+        devLog('Discord stats received:', data);
 
         // Debug streaming data
         if (data.streamingStats) {
-          console.log('🔍 Streaming stats received:', data.streamingStats);
+          devLog('🔍 Streaming stats received:', data.streamingStats);
         }
 
         // Debug individual member streaming data
         const streamingMembers = data.onlineMembers?.filter((member: OnlineMember) => member.streaming?.isStreaming);
         const voiceMembers = data.onlineMembers?.filter((member: OnlineMember) => member.streaming?.inVoice || member.streaming?.isStreaming);
 
-        console.log('🔍 All online members with streaming data:', data.onlineMembers?.map(m => ({
+        devLog('🔍 All online members with streaming data:', data.onlineMembers?.map(m => ({
           name: m.displayName,
           streaming: m.streaming
         })));
 
         if (streamingMembers?.length > 0) {
-          console.log('🔴 Members currently streaming:', streamingMembers);
+          devLog('🔴 Members currently streaming:', streamingMembers);
         }
 
         if (voiceMembers?.length > 0) {
-          console.log('🎤 Members in voice:', voiceMembers);
+          devLog('🎤 Members in voice:', voiceMembers);
         }
 
         // Only update state if data actually changed

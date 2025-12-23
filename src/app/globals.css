@@ -34,6 +34,122 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+/* =====================================================
+   PERFORMANCE OPTIMIZATIONS - Reduce flickering
+   ===================================================== */
+
+/* Force GPU acceleration for animated elements */
+.retro-banner,
+.retro-banner-inner,
+.member-card-exact,
+.game-card-exact,
+[class*="animate-"],
+[class*="transition-"] {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+/* Reduce animation jank on complex elements */
+.hero-section,
+#hero,
+#clenove,
+#hry,
+#discord,
+#o-nas,
+#kontakt {
+  contain: layout style paint;
+  /* Firefox-specific: force stable layers */
+  isolation: isolate;
+}
+
+/* Firefox WebRender optimization - prevent layer churn */
+@supports (-moz-appearance: none) {
+  .hero-section,
+  #hero,
+  #clenove,
+  #hry,
+  #discord,
+  #o-nas,
+  #kontakt,
+  .retro-banner,
+  .trax-widget,
+  .member-card-exact,
+  .game-card-exact {
+    transform: translateZ(0);
+    will-change: auto; /* Firefox handles will-change differently - auto is safer */
+  }
+}
+
+/* Optimize elements with heavy animations */
+.enhanced-card,
+.music-feature-card,
+.card-inner,
+.member-card-front,
+.member-card-back,
+.trax-widget,
+.retro-banner {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  perspective: 1000px;
+  will-change: transform;
+}
+
+/* Prevent layout thrashing on game cards */
+.game-card-exact,
+.member-card-exact {
+  contain: layout style;
+  will-change: transform, opacity;
+}
+
+/* Pause animations for elements not in viewport - toggled via JS */
+.pause-when-hidden {
+  animation-play-state: paused !important;
+}
+
+/* Optimize heavy background animations that cause flickering */
+.discord-wave,
+.music-pattern,
+.floating-particles,
+.particle,
+[class*="discord-"],
+[class*="wave-"] {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  will-change: transform, opacity;
+}
+
+/* Use composite-only animations where possible */
+.discord-wave,
+.music-pattern {
+  transform: translate3d(0, 0, 0);
+}
+
+/* Reduce animation complexity on heavy elements */
+.floating-particles .particle {
+  will-change: transform;
+  contain: strict;
+}
+
+/* Disable animations during page load to prevent initial flicker */
+.reduce-motion-on-load * {
+  animation-duration: 0.01ms !important;
+  transition-duration: 0.01ms !important;
+}
+
+/* Prefer reduced motion - disable heavy animations */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
 /* Custom animations for CS2 page */
 .animate-shimmer {
   animation: shimmer 2s infinite;

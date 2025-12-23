@@ -3,6 +3,10 @@
 import React, { useState } from 'react';
 import Image from 'next/image';
 
+// Development-only logging utility
+const isDev = process.env.NODE_ENV === 'development';
+const devLog = isDev ? console.log.bind(console) : () => {};
+
 interface SafeImageProps {
   src: string | null;
   alt: string;
@@ -44,10 +48,10 @@ export default function SafeImage({
   const [hasError, setHasError] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Log image loading attempts for debugging
+  // Log image loading attempts for debugging (dev only)
   React.useEffect(() => {
     if (src) {
-      console.log(`🖼️ SafeImage loading: ${src} for ${alt}`);
+      devLog(`🖼️ SafeImage loading: ${src} for ${alt}`);
     }
   }, [src, alt]);
 
