@@ -12,6 +12,7 @@ const Header = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [sectionTheme, setSectionTheme] = useState('cyan');
   const headerRef = useRef<HTMLElement>(null);
+  const lastActiveSectionRef = useRef<string>(''); // Track last section to prevent unnecessary updates
   const pathname = usePathname();
 
   const toggleMobileMenu = () => {
@@ -66,17 +67,18 @@ const Header = () => {
     const sections = ['hero', 'o-nas', 'clenove', 'hry', 'discord', 'kontakt'];
     let currentIntersecting: { id: string; ratio: number }[] = [];
     
+    // Reduced threshold granularity for better performance
     const observerOptions = {
       root: null,
-      rootMargin: '-20% 0px -20% 0px', // More balanced detection
-      threshold: [0, 0.25, 0.5, 0.75, 1.0] // More granular thresholds
+      rootMargin: '-20% 0px -20% 0px',
+      threshold: [0.1, 0.5] // Reduced from 5 thresholds to 2 for performance
     };
 
     // Special observer for the last section (kontakt) with different margins
     const lastSectionObserverOptions = {
       root: null,
-      rootMargin: '-20% 0px -80% 0px', // More lenient bottom margin for last section
-      threshold: [0, 0.1, 0.25, 0.5] // Lower thresholds for last section
+      rootMargin: '-20% 0px -80% 0px',
+      threshold: [0.1, 0.3] // Reduced thresholds for performance
     };
 
     const observer = new IntersectionObserver((entries) => {
@@ -106,12 +108,15 @@ const Header = () => {
           current.ratio > prev.ratio ? current : prev
         );
 
-        console.log('Active section changed to:', mostVisible.id);
-        setActiveSection(mostVisible.id);
+        // Only update state if the section actually changed (prevents unnecessary re-renders)
+        if (mostVisible.id !== lastActiveSectionRef.current) {
+          lastActiveSectionRef.current = mostVisible.id;
+          setActiveSection(mostVisible.id);
 
-        // Update section theme based on active section
-        const newTheme = sectionColorMap[mostVisible.id] || 'cyan';
-        setSectionTheme(newTheme);
+          // Update section theme based on active section
+          const newTheme = sectionColorMap[mostVisible.id] || 'cyan';
+          setSectionTheme(newTheme);
+        }
       }
     }, observerOptions);
 
@@ -122,10 +127,10 @@ const Header = () => {
           // For the last section, also check if we're near the bottom of the page
           const scrollPosition = window.scrollY + window.innerHeight;
           const documentHeight = document.documentElement.scrollHeight;
-          const isNearBottom = scrollPosition >= documentHeight - 100; // Within 100px of bottom
-          
-          if (isNearBottom || entry.intersectionRatio > 0.1) {
-            console.log('Kontakt section activated (last section logic)');
+          const isNearBottom = scrollPosition >= documentHeight - 100;
+
+          if ((isNearBottom || entry.intersectionRatio > 0.1) && lastActiveSectionRef.current !== 'kontakt') {
+            lastActiveSectionRef.current = 'kontakt';
             setActiveSection('kontakt');
             setSectionTheme('purple');
           }
@@ -137,17 +142,13 @@ const Header = () => {
     sections.slice(0, -1).forEach((sectionId) => {
       const element = document.getElementById(sectionId);
       if (element) {
-        console.log('Observing section:', sectionId, element);
         observer.observe(element);
-      } else {
-        console.log('Section not found:', sectionId);
       }
     });
 
     // Observe the last section with special observer
     const lastSection = document.getElementById('kontakt');
     if (lastSection) {
-      console.log('Observing last section with special logic:', 'kontakt');
       lastSectionObserver.observe(lastSection);
       // Also observe with regular observer for consistency
       observer.observe(lastSection);

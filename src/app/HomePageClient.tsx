@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import Image from 'next/image';
 import Head from 'next/head';
 import './komplexaci.css';
@@ -12,6 +12,11 @@ import DailyAwards from './components/DailyAwards';
 import PerformanceStatus from '../components/PerformanceStatus';
 import { usePlaylist } from '@/hooks/usePlaylist';
 import { members as defaultMembers, games as defaultGames, Member } from '@/data/members';
+
+// Development-only logging utility to reduce production overhead
+const isDev = process.env.NODE_ENV === 'development';
+const devLog = isDev ? Function.prototype.bind.call(console.log, console) : () => {};
+const devWarn = isDev ? Function.prototype.bind.call(console.warn, console) : () => {};
 
 interface HomePageClientProps {
   members?: Member[];
@@ -101,13 +106,13 @@ export default function HomePageClient({
 
   // Dynamic playlist
   const { tracks: playlist } = usePlaylist();
-  const [lastScrollY, setLastScrollY] = useState(0);
+  const lastScrollYRef = useRef(0); // Use ref instead of state to avoid re-renders on scroll
 
   // Discord stats for Most Active Members
   const [discordStats, setDiscordStats] = useState<any>(null);
   const prevDiscordDataRef = useRef<string>('');
 
-  const [scrollDownTimeout, setScrollDownTimeout] = useState<NodeJS.Timeout | null>(null);
+  // scrollDownTimeout moved to ref (scrollDownTimeoutRef) to prevent re-renders
   const [activityTimeout, setActivityTimeout] = useState<NodeJS.Timeout | null>(null);
   const [musicStartTimeout, setMusicStartTimeout] = useState<NodeJS.Timeout | null>(null);
   const [hasShownMusicStart, setHasShownMusicStart] = useState(false);
@@ -136,9 +141,9 @@ export default function HomePageClient({
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          console.log('👀 Members section intersection:', entry.isIntersecting, 'ratio:', entry.intersectionRatio, 'mobile:', isMobile);
+          devLog('👀 Members section intersection:', entry.isIntersecting, 'ratio:', entry.intersectionRatio, 'mobile:', isMobile);
           if (entry.isIntersecting && !membersVisible) {
-            console.log('✅ Members section visible, triggering animations');
+            devLog('✅ Members section visible, triggering animations');
             setMembersVisible(true);
           }
         });
@@ -158,7 +163,7 @@ export default function HomePageClient({
     const fallbackDelay = isMobile ? 2000 : 3000;
     const fallbackTimer = setTimeout(() => {
       if (!membersVisible) {
-        console.log('🔄 Fallback: Showing members after timeout (mobile:', isMobile, ')');
+        devLog('🔄 Fallback: Showing members after timeout (mobile:', isMobile, ')');
         setMembersVisible(true);
       }
     }, fallbackDelay);
@@ -179,7 +184,7 @@ export default function HomePageClient({
         const wweState = JSON.parse(e.newValue || '{}');
         if (wweState.isPlaying && isPlaying) {
           // WWE page started playing, pause main music
-          console.log('WWE music started, pausing main music');
+          devLog('WWE music started, pausing main music');
           if (audioElement && !isDemoMode) {
             audioElement.pause();
           }
@@ -187,7 +192,7 @@ export default function HomePageClient({
         }
       } else if (e.key === 'stop-main-music') {
         // WWE page explicitly requested to stop main music
-        console.log('WWE page requested to stop main music');
+        devLog('WWE page requested to stop main music');
         if (audioElement && !isDemoMode) {
           audioElement.pause();
         }
@@ -199,7 +204,7 @@ export default function HomePageClient({
         const state = JSON.parse(e.newValue || '{}');
         if (state.isPlaying && state.tabId !== tabId) {
           // Another tab started playing KOMPG Trax
-          console.log(`🎵 KOMPG Trax started in another tab (${state.tabId}), pausing this tab`);
+          devLog(`🎵 KOMPG Trax started in another tab (${state.tabId}), pausing this tab`);
           if (audioElement && !isDemoMode && isPlaying) {
             audioElement.pause();
           }
@@ -211,7 +216,7 @@ export default function HomePageClient({
           });
         } else if (!state.isPlaying || !e.newValue) {
           // Other tab stopped playing
-          console.log('🎵 KOMPG Trax stopped in other tab');
+          devLog('🎵 KOMPG Trax stopped in other tab');
           setIsPlayingInOtherTab(false);
           setOtherTabInfo(null);
         }
@@ -269,7 +274,7 @@ export default function HomePageClient({
             // More aggressive timeout for Firefox - only 10 seconds instead of 30
             const isRecent = Date.now() - (state.timestamp || 0) < 10000;
             if (isRecent) {
-              console.log(`🎵 KOMPG Trax is already playing in tab ${state.tabId}, preventing auto-start`);
+              devLog(`🎵 KOMPG Trax is already playing in tab ${state.tabId}, preventing auto-start`);
               setIsPlayingInOtherTab(true);
               setOtherTabInfo({
                 track: state.track || 'Unknown Track',
@@ -278,12 +283,12 @@ export default function HomePageClient({
               setHasUserInteracted(true); // Prevent auto-start
               return true;
             } else {
-              console.log('🎵 Found stale KOMPG Trax state (older than 10s), clearing it');
+              devLog('🎵 Found stale KOMPG Trax state (older than 10s), clearing it');
               localStorage.removeItem('kompg-music-state');
             }
           } else if (state.tabId !== tabId) {
             // If state shows not playing from another tab, clear it
-            console.log('🎵 Found non-playing state from another tab, clearing it');
+            devLog('🎵 Found non-playing state from another tab, clearing it');
             localStorage.removeItem('kompg-music-state');
           }
         } catch (error) {
@@ -302,14 +307,14 @@ export default function HomePageClient({
           // Only consider WWE music as playing if it's from the current session
           // Clear stale data from previous sessions
           if (state.isPlaying) {
-            console.log('Found WWE music state in localStorage, checking if still valid...');
+            devLog('Found WWE music state in localStorage, checking if still valid...');
             // Clear the stale state since we're on the main page now
             localStorage.removeItem('wwe-music-state');
-            console.log('Cleared stale WWE music state from localStorage');
+            devLog('Cleared stale WWE music state from localStorage');
             return false; // Don't prevent auto-start
           }
         } catch (error) {
-          console.log('Error parsing WWE music state, clearing localStorage:', error);
+          devLog('Error parsing WWE music state, clearing localStorage:', error);
           localStorage.removeItem('wwe-music-state');
         }
       }
@@ -325,12 +330,12 @@ export default function HomePageClient({
           // On page refresh/load, be more aggressive about clearing old states
           const age = Date.now() - (state.timestamp || 0);
           if (age > 5000) { // Clear anything older than 5 seconds on page load
-            console.log(`🧹 Page load: Clearing old KOMPG state (${age}ms old)`);
+            devLog(`🧹 Page load: Clearing old KOMPG state (${age}ms old)`);
             localStorage.removeItem('kompg-music-state');
             return false;
           }
         } catch (error) {
-          console.log('🧹 Page load: Clearing invalid KOMPG state');
+          devLog('🧹 Page load: Clearing invalid KOMPG state');
           localStorage.removeItem('kompg-music-state');
           return false;
         }
@@ -351,7 +356,7 @@ export default function HomePageClient({
     // This ensures the ribbon always shows when visiting the main page
     if (!isPlaying && !hasExistingPlayback) {
       setHasUserInteracted(false);
-      console.log('Reset hasUserInteracted to show auto-play ribbon on main page');
+      devLog('Reset hasUserInteracted to show auto-play ribbon on main page');
     }
   }, [tabId]);
 
@@ -391,14 +396,14 @@ export default function HomePageClient({
           const state = JSON.parse(kompgState);
           // Remove states older than 10 seconds (more aggressive for Firefox)
           if (Date.now() - (state.timestamp || 0) > 10000) {
-            console.log('🧹 Cleaning up stale KOMPG Trax state (older than 10s)');
+            devLog('🧹 Cleaning up stale KOMPG Trax state (older than 10s)');
             localStorage.removeItem('kompg-music-state');
             setIsPlayingInOtherTab(false);
             setOtherTabInfo(null);
           }
           // Also clean up if state shows not playing
           else if (!state.isPlaying && state.tabId !== tabId) {
-            console.log('🧹 Cleaning up non-playing state from another tab');
+            devLog('🧹 Cleaning up non-playing state from another tab');
             localStorage.removeItem('kompg-music-state');
             setIsPlayingInOtherTab(false);
             setOtherTabInfo(null);
@@ -427,7 +432,7 @@ export default function HomePageClient({
             if (state.tabId !== tabId) {
               const age = Date.now() - (state.timestamp || 0);
               if (age > 8000) { // Clear if older than 8 seconds when tab becomes visible
-                console.log('🧹 Tab visible: Clearing stale KOMPG state');
+                devLog('🧹 Tab visible: Clearing stale KOMPG state');
                 localStorage.removeItem('kompg-music-state');
                 setIsPlayingInOtherTab(false);
                 setOtherTabInfo(null);
@@ -456,16 +461,16 @@ export default function HomePageClient({
 
     // Define event handlers (without handleEnded to avoid stale closure issues)
     const handleError = () => {
-      console.log('Audio file not found, switching to demo mode');
+      devLog('Audio file not found, switching to demo mode');
       setIsDemoMode(true);
     };
 
     const handleLoadStart = () => {
-      console.log('Loading audio...');
+      devLog('Loading audio...');
     };
 
     const handleCanPlay = () => {
-      console.log('Audio file loaded successfully - real audio mode active');
+      devLog('Audio file loaded successfully - real audio mode active');
       setIsDemoMode(false);
     };
 
@@ -481,7 +486,7 @@ export default function HomePageClient({
       const initialTrack = Math.floor(Math.random() * playlist.length);
       setCurrentTrack(initialTrack);
       audio.src = playlist[initialTrack].file;
-      console.log('Attempting to load random initial track:', playlist[initialTrack].title, 'from:', playlist[initialTrack].file);
+      devLog('Attempting to load random initial track:', playlist[initialTrack].title, 'from:', playlist[initialTrack].file);
     }
 
     // No auto-start timer - music only starts when user explicitly clicks
@@ -513,6 +518,9 @@ export default function HomePageClient({
   }, [hasUserInteracted]); // Only depend on hasUserInteracted - handleFirstInteraction is stable
 
   // Separate useEffect for scroll listener with proper dependencies
+  // Using refs for scroll tracking to prevent re-renders on every scroll event
+  const scrollDownTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
   useEffect(() => {
     const handleScroll = () => {
       const currentScrollY = window.scrollY;
@@ -522,46 +530,45 @@ export default function HomePageClient({
         return; // Don't trigger interaction on scroll
       }
 
-      // Check if we're scrolling down by comparing with last position
-      const isScrollingDown = currentScrollY > lastScrollY;
+      // Check if we're scrolling down by comparing with last position (using ref)
+      const isScrollingDown = currentScrollY > lastScrollYRef.current;
 
       // Clear any existing scroll down timeout
-      if (scrollDownTimeout) {
-        clearTimeout(scrollDownTimeout);
+      if (scrollDownTimeoutRef.current) {
+        clearTimeout(scrollDownTimeoutRef.current);
       }
 
       // If scrolling down and widget is visible, start 0.1-second timer to hide
       if (isScrollingDown && isTraxVisible && !isTraxAutoHidden && currentScrollY > 50) {
-        const newScrollDownTimeout = setTimeout(() => {
+        scrollDownTimeoutRef.current = setTimeout(() => {
           if (isMountedRef.current) {
-            console.log('🔽 Hiding Trax - scrolled down for 0.1 seconds:', currentScrollY);
+            devLog('🔽 Hiding Trax - scrolled down for 0.1 seconds:', currentScrollY);
             setIsTraxAutoHidden(true);
           }
         }, 100); // Hide after 0.1 seconds of scrolling down
-
-        setScrollDownTimeout(newScrollDownTimeout);
       }
 
-      setLastScrollY(currentScrollY);
+      // Update ref (doesn't trigger re-render)
+      lastScrollYRef.current = currentScrollY;
     };
 
-    window.addEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
 
     return () => {
       window.removeEventListener('scroll', handleScroll);
       // Clean up scroll down timeout
-      if (scrollDownTimeout) {
-        clearTimeout(scrollDownTimeout);
+      if (scrollDownTimeoutRef.current) {
+        clearTimeout(scrollDownTimeoutRef.current);
       }
     };
-  }, [isTraxVisible, isTraxAutoHidden, hasUserInteracted, lastScrollY]); // Dependencies for scroll handler
+  }, [isTraxVisible, isTraxAutoHidden, hasUserInteracted]); // Removed lastScrollY - now using ref
 
   // Separate useEffect for handling track ended event with current state
   useEffect(() => {
     if (!audioElement) return;
 
     const handleEnded = () => {
-      console.log('Track ended, playing next');
+      devLog('Track ended, playing next');
 
       // Calculate next track
       let next;
@@ -576,7 +583,7 @@ export default function HomePageClient({
         return; // No playlist available
       }
 
-      console.log('Auto-advancing to track:', playlist[next]?.title);
+      devLog('Auto-advancing to track:', playlist[next]?.title);
 
       // Update the current track state
       setCurrentTrack(next);
@@ -593,20 +600,20 @@ export default function HomePageClient({
           .then(() => {
             // Ensure the playing state is maintained
             setIsPlaying(true);
-            console.log('Auto-advanced and playing:', playlist[next].title);
+            devLog('Auto-advanced and playing:', playlist[next].title);
 
             // Show Kompg Trax widget for auto-advance
             setIsTraxVisible(true);
             setIsTraxAutoHidden(false);
             setShowBriefly(true);
-            console.log('🎵 Auto-advance - showing Kompg Trax for new track:', playlist[next].title);
+            devLog('🎵 Auto-advance - showing Kompg Trax for new track:', playlist[next].title);
 
             // Auto-hide after 4 seconds for auto-advance
             setTimeout(() => {
               if (isMountedRef.current) {
                 setShowBriefly(false);
                 setIsTraxAutoHidden(true);
-                console.log('⏰ Auto-hiding Kompg Trax after auto-advance');
+                devLog('⏰ Auto-hiding Kompg Trax after auto-advance');
               }
             }, 4000);
           })
@@ -616,20 +623,20 @@ export default function HomePageClient({
           });
       } else if (isDemoMode) {
         // In demo mode, just maintain the playing state and show widget
-        console.log('Demo mode: Auto-advanced to', playlist[next]?.title);
+        devLog('Demo mode: Auto-advanced to', playlist[next]?.title);
 
         // Show Kompg Trax widget for demo mode auto-advance
         setIsTraxVisible(true);
         setIsTraxAutoHidden(false);
         setShowBriefly(true);
-        console.log('🎮 Demo auto-advance - showing Kompg Trax for new track:', playlist[next]?.title);
+        devLog('🎮 Demo auto-advance - showing Kompg Trax for new track:', playlist[next]?.title);
 
         // Auto-hide after 4 seconds for demo auto-advance
         setTimeout(() => {
           if (isMountedRef.current) {
             setShowBriefly(false);
             setIsTraxAutoHidden(true);
-            console.log('⏰ Auto-hiding Kompg Trax after demo auto-advance');
+            devLog('⏰ Auto-hiding Kompg Trax after demo auto-advance');
           }
         }, 4000);
       }
@@ -645,7 +652,7 @@ export default function HomePageClient({
   // Watch for currentTrack changes and update audio source (only when not auto-advancing)
   useEffect(() => {
     if (audioElement && playlist && playlist[currentTrack] && !isDemoMode) {
-      console.log('Current track changed to:', currentTrack, playlist[currentTrack].title);
+      devLog('Current track changed to:', currentTrack, playlist[currentTrack].title);
       // Only update src if it's different to avoid interrupting playback
       const newSrc = playlist[currentTrack].file;
       if (audioElement.src !== window.location.origin + newSrc && audioElement.src !== newSrc) {
@@ -696,7 +703,7 @@ export default function HomePageClient({
       const newActivityTimeout = setTimeout(() => {
         if (isMountedRef.current) {
           setIsTraxAutoHidden(true);
-          console.log('💤 Auto-hiding Trax after 15s inactivity (music paused)');
+          devLog('💤 Auto-hiding Trax after 15s inactivity (music paused)');
         }
       }, 15000);
 
@@ -724,14 +731,14 @@ export default function HomePageClient({
       setIsTraxAutoHidden(false);
       setShowBriefly(true);
       setHasShownMusicStart(true);
-      console.log('🎵 Music started - showing Kompg Trax for 5 seconds');
+      devLog('🎵 Music started - showing Kompg Trax for 5 seconds');
 
       // Auto-minimize after 5 seconds - ALWAYS hide regardless of scroll position
       const newMusicTimeout = setTimeout(() => {
         if (isMountedRef.current) {
           setShowBriefly(false);
           setIsTraxAutoHidden(true);
-          console.log('⏰ Auto-minimizing Kompg Trax after 5 seconds');
+          devLog('⏰ Auto-minimizing Kompg Trax after 5 seconds');
         }
       }, 5000);
 
@@ -772,7 +779,7 @@ export default function HomePageClient({
 
     // If music is playing in another tab, take over playback
     if (isPlayingInOtherTab && !isPlaying) {
-      console.log('🎵 Taking over playback from another tab');
+      devLog('🎵 Taking over playback from another tab');
       setIsPlayingInOtherTab(false);
       setOtherTabInfo(null);
       // Continue with normal play logic
@@ -781,12 +788,12 @@ export default function HomePageClient({
     // Demo mode - just toggle UI state
     if (isDemoMode) {
       setIsPlaying(!isPlaying);
-      console.log(isPlaying ? 'Demo: Music paused' : `Demo: Playing ${playlist?.[currentTrack]?.title || 'Unknown Track'}`);
+      devLog(isPlaying ? 'Demo: Music paused' : `Demo: Playing ${playlist?.[currentTrack]?.title || 'Unknown Track'}`);
       return;
     }
 
     if (!audioElement) {
-      console.log('No audio element available, switching to demo mode');
+      devLog('No audio element available, switching to demo mode');
       setIsDemoMode(true);
       setIsPlaying(!isPlaying);
       return;
@@ -796,7 +803,7 @@ export default function HomePageClient({
       if (isPlaying) {
         audioElement.pause();
         setIsPlaying(false);
-        console.log('Real audio paused');
+        devLog('Real audio paused');
       } else {
         // Ensure we have a valid source and it matches the current track
         const expectedSrc = playlist?.[currentTrack]?.file || '';
@@ -806,7 +813,7 @@ export default function HomePageClient({
                           (currentSrc === expectedSrc || currentSrc === window.location.origin + expectedSrc);
 
         if (!isValidSrc && expectedSrc) {
-          console.log('Setting audio source to:', expectedSrc);
+          devLog('Setting audio source to:', expectedSrc);
           audioElement.src = expectedSrc;
           // Wait a bit for the source to be set
           await new Promise(resolve => setTimeout(resolve, 50));
@@ -815,7 +822,7 @@ export default function HomePageClient({
         if (expectedSrc) {
           await audioElement.play();
           setIsPlaying(true);
-          console.log('Real audio playing:', playlist?.[currentTrack]?.title || 'Unknown Track');
+          devLog('Real audio playing:', playlist?.[currentTrack]?.title || 'Unknown Track');
         }
       }
     } catch (error) {
@@ -823,12 +830,12 @@ export default function HomePageClient({
 
       // Only switch to demo mode for actual file loading errors, not autoplay restrictions
       if (error instanceof DOMException && error.name === 'NotAllowedError') {
-        console.log('Autoplay blocked by browser - this is normal, user needs to interact with play button');
+        devLog('Autoplay blocked by browser - this is normal, user needs to interact with play button');
         // Don't switch to demo mode for autoplay restrictions
         return;
       } else {
         // Switch to demo mode only for actual audio loading/file errors
-        console.log('Actual audio error detected, switching to demo mode:', error);
+        devLog('Actual audio error detected, switching to demo mode:', error);
         setIsDemoMode(true);
         setIsPlaying(!isPlaying);
       }
@@ -846,13 +853,13 @@ export default function HomePageClient({
 
   const nextTrack = () => {
     if (isLoadingTrack || !playlist || playlist.length === 0) {
-      console.log('Already loading a track or no playlist available, ignoring next track request');
+      devLog('Already loading a track or no playlist available, ignoring next track request');
       return;
     }
 
     const next = isShuffleMode ? getRandomTrack() : (currentTrack + 1) % playlist.length;
     setCurrentTrack(next);
-    console.log(isShuffleMode ? 'Random next track:' : 'Next track:', playlist[next]?.title);
+    devLog(isShuffleMode ? 'Random next track:' : 'Next track:', playlist[next]?.title);
 
     if (!isDemoMode && audioElement) {
       loadTrack(next);
@@ -861,13 +868,13 @@ export default function HomePageClient({
 
   const prevTrack = () => {
     if (isLoadingTrack || !playlist || playlist.length === 0) {
-      console.log('Already loading a track or no playlist available, ignoring previous track request');
+      devLog('Already loading a track or no playlist available, ignoring previous track request');
       return;
     }
 
     const prev = isShuffleMode ? getRandomTrack() : (currentTrack === 0 ? playlist.length - 1 : currentTrack - 1);
     setCurrentTrack(prev);
-    console.log(isShuffleMode ? 'Random previous track:' : 'Previous track:', playlist[prev]?.title);
+    devLog(isShuffleMode ? 'Random previous track:' : 'Previous track:', playlist[prev]?.title);
 
     if (!isDemoMode && audioElement) {
       loadTrack(prev);
@@ -881,7 +888,7 @@ export default function HomePageClient({
     const wasPlaying = isPlaying;
     const newSrc = playlist[trackIndex].file;
 
-    console.log('Loading track:', playlist[trackIndex].title, 'from:', newSrc);
+    devLog('Loading track:', playlist[trackIndex].title, 'from:', newSrc);
 
     try {
       // Pause current playback and reset
@@ -946,7 +953,7 @@ export default function HomePageClient({
         setIsPlaying(true);
       }
 
-      console.log('Successfully loaded track:', playlist[trackIndex].title);
+      devLog('Successfully loaded track:', playlist[trackIndex].title);
     } catch (error) {
       console.error('Error loading/playing new track:', error);
       // Switch to demo mode if audio fails
@@ -974,7 +981,7 @@ export default function HomePageClient({
       setIsTraxVisible(false);
       setIsTraxAutoHidden(false);
       setShowBriefly(false);
-      console.log('🔽 Manually hiding Trax widget');
+      devLog('🔽 Manually hiding Trax widget');
     } else {
       // Widget is hidden (either not visible or auto-hidden) - show it
       setIsTraxVisible(true);
@@ -993,7 +1000,7 @@ export default function HomePageClient({
         clearTimeout(scrollDownTimeout);
       }
 
-      console.log('🔼 Manually showing Trax widget');
+      devLog('🔼 Manually showing Trax widget');
     }
   };
 
@@ -1004,7 +1011,7 @@ export default function HomePageClient({
       return; // Already handled, don't run again
     }
 
-    console.log('🎵 First user click detected, starting music...');
+    devLog('🎵 First user click detected, starting music...');
     setHasUserInteracted(true);
     setIsTraxVisible(true);
 
@@ -1018,7 +1025,7 @@ export default function HomePageClient({
 
     // Check if music is already playing in another tab
     if (isPlayingInOtherTab) {
-      console.log('🎵 Music is playing in another tab, not auto-starting here');
+      devLog('🎵 Music is playing in another tab, not auto-starting here');
       return;
     }
 
@@ -1026,7 +1033,7 @@ export default function HomePageClient({
     if (playlist && playlist.length > 0) {
       const randomTrack = Math.floor(Math.random() * playlist.length);
       setCurrentTrack(randomTrack);
-      console.log('🎵 Auto-starting random track:', playlist[randomTrack]?.title);
+      devLog('🎵 Auto-starting random track:', playlist[randomTrack]?.title);
 
       // Start playing the track
       if (audioElement && !isDemoMode) {
@@ -1034,14 +1041,14 @@ export default function HomePageClient({
           audioElement.src = playlist[randomTrack].file;
           await audioElement.play();
           setIsPlaying(true);
-          console.log('✅ Successfully auto-started music:', playlist[randomTrack]?.title);
+          devLog('✅ Successfully auto-started music:', playlist[randomTrack]?.title);
         } catch (error) {
-          console.log('❌ Could not auto-start music, user needs to click play button:', error);
+          devLog('❌ Could not auto-start music, user needs to click play button:', error);
           // Don't switch to demo mode for autoplay restrictions
           // Just show the widget and let user click play
         }
       } else if (isDemoMode) {
-        console.log('🎮 Starting in demo mode...');
+        devLog('🎮 Starting in demo mode...');
         setIsPlaying(true);
       }
     }
@@ -1061,11 +1068,11 @@ export default function HomePageClient({
       
       pageTurnSound.play().catch(err => {
         // Silently fail if audio can't play (user hasn't interacted yet)
-        console.log('Page turn sound blocked:', err);
+        devLog('Page turn sound blocked:', err);
       });
     } catch (error) {
       // Silently fail if audio file doesn't exist
-      console.log('Page turn sound error:', error);
+      devLog('Page turn sound error:', error);
     }
 
     setFlippedCards(prev => {
@@ -1292,6 +1299,50 @@ export default function HomePageClient({
               </a>
             ))}
             </div>
+
+            {/* Komplexáci RETRO Banner */}
+            <a
+              href="https://retro.komplexaci.cz/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className={`retro-banner group block mt-16 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
+              style={{ transitionDelay: '900ms' }}
+            >
+              <div className="retro-banner-inner">
+                {/* Scanlines overlay */}
+                <div className="retro-banner-scanlines"></div>
+
+                {/* Content */}
+                <div className="retro-banner-content">
+                  <div className="retro-banner-icon">🕹️</div>
+                  <div className="retro-banner-text">
+                    <div className="retro-new-badge">Nový projekt!</div>
+                    <h3 className="retro-banner-title">
+                      <span className="retro-title-komplexaci">Komplexáci</span>
+                      <span className="retro-title-retro">RETRO</span>
+                    </h3>
+                    <p className="retro-banner-description">
+                      Hraj klasické retro hry přímo v prohlížeči! NES, SNES, Sega, GBA, PSX a další konzole.
+                    </p>
+                  </div>
+                  <div className="retro-banner-cta">
+                    <span>Vyzkoušet</span>
+                    <svg className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                    </svg>
+                  </div>
+                </div>
+
+                {/* Decorative console icons */}
+                <div className="retro-console-icons">
+                  <span className="retro-console-icon" style={{ animationDelay: '0s' }}>👾</span>
+                  <span className="retro-console-icon" style={{ animationDelay: '0.5s' }}>🎮</span>
+                  <span className="retro-console-icon" style={{ animationDelay: '1s' }}>📺</span>
+                  <span className="retro-console-icon" style={{ animationDelay: '1.5s' }}>🕹️</span>
+                </div>
+              </div>
+            </a>
+
           </div>
         </div>
       </section>
@@ -1321,7 +1372,7 @@ export default function HomePageClient({
       >
         {/* Simplified Background Layers - Performance Optimized */}
         <div
-          className="absolute inset-0 opacity-20 pointer-events-none"
+          className="absolute inset-0 opacity-20 pointer-events-none discord-wave-bg"
           style={{
             background: `
               linear-gradient(45deg,
@@ -1332,8 +1383,11 @@ export default function HomePageClient({
                 transparent 100%
               )
             `,
-            animation: 'discordWave 20s ease-in-out infinite',
-            transform: 'translateZ(0)'
+            animation: 'discordWave 30s ease-in-out infinite', // Slowed from 20s to 30s
+            transform: 'translate3d(0, 0, 0)', // Force GPU layer
+            willChange: 'transform, opacity',
+            backfaceVisibility: 'hidden',
+            WebkitBackfaceVisibility: 'hidden'
           }}
         />
 
@@ -1747,7 +1801,7 @@ export default function HomePageClient({
           onClick={() => {
             // Use auto-hidden instead of just hiding to keep mini icon glowing
             setIsTraxAutoHidden(true);
-            console.log('❌ Manually closing Trax widget with X');
+            devLog('❌ Manually closing Trax widget with X');
           }}
           style={{
             position: 'absolute',
