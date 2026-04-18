@@ -1,0 +1,62 @@
+# Keep build context lean and safe.
+# Anything in here is NOT sent to the Docker daemon.
+
+# VCS
+.git
+.gitattributes
+.gitignore
+.github
+
+# Dependency / build artifacts (rebuilt inside the image)
+node_modules
+.next
+out
+build
+coverage
+dist
+.turbo
+*.tsbuildinfo
+
+# Runtime / editor state
+.vercel
+.vscode
+.idea
+.cursor
+.claude
+
+# Env and secrets — never ship these into an image
+.env
+.env.*
+!.env.example
+
+# Docker / infra config (already sent explicitly if needed)
+Dockerfile*
+docker/
+docker-compose*.yml
+docker-compose*.yaml
+
+# Documentation
+README.md
+**/README.md
+*.md
+
+# Logs and debug artifacts
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Local scratch / in-progress work
+tmp
+current_page
+
+# Analytics DB files (runtime-only, never baked into image)
+data/*.db
+data/*.db-shm
+data/*.db-wal
+
+# OS cruft
+.DS_Store
+Thumbs.db
+*.pem
