@@ -1,15 +1,15 @@
 "use client";
-import { useState, useEffect, useRef, useMemo } from 'react';
+import { useState, useEffect, useRef, useMemo, memo, useCallback } from 'react';
 import Image from 'next/image';
 import Head from 'next/head';
 import './komplexaci.css';
+import './hero-members-redesign.css';
 import Header from './components/Header';
 import ServerStatus from './components/ServerStatus';
 import DiscordServerStats from './components/DiscordServerStats';
 import MostActiveMembers from './components/MostActiveMembers';
 import DailyAwards from './components/DailyAwards';
 
-import PerformanceStatus from '../components/PerformanceStatus';
 import { usePlaylist } from '@/hooks/usePlaylist';
 import { members as defaultMembers, games as defaultGames, Member } from '@/data/members';
 
@@ -75,6 +75,184 @@ function shuffleArray<T>(array: T[]): T[] {
     [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
   }
   return shuffled;
+}
+
+// Precompute per-card tint as rgba so the browser doesn't run color-mix on every repaint
+function hexToRgba(hex: string, alpha: number): string {
+  const m = hex.replace('#', '').match(/.{2}/g);
+  if (!m) return `rgba(0,255,255,${alpha})`;
+  const [r, g, b] = m.map((x) => parseInt(x, 16));
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+// Isolated, memoized member card. Only re-renders when its own props change,
+// so flipping one card doesn't reconcile the other nine. Also pauses its MP4
+// while face-down so the browser stops decoding frames the user can't see.
+interface MemberCardProps {
+  member: Member;
+  index: number;
+  flipped: boolean;
+  animateIn: boolean;
+  onFlip: (id: string) => void;
+}
+
+const MemberCard = memo(function MemberCard({
+  member,
+  index,
+  flipped,
+  animateIn,
+  onFlip,
+}: MemberCardProps) {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  // Pause video when the card flips face-down; resume when it flips back.
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!v) return;
+    if (flipped) {
+      v.pause();
+    } else {
+      const p = v.play();
+      if (p && typeof (p as Promise<void>).catch === 'function') {
+        (p as Promise<void>).catch(() => {});
+      }
+    }
+  }, [flipped]);
+
+  const numStr = String(index + 1).padStart(2, '0');
+  const acc = member.accent ?? '#00FFFF';
+
+  const cardStyle = useMemo(
+    () => ({
+      ['--acc' as any]: acc,
+      ['--acc-ring' as any]: hexToRgba(acc, 0.3),
+      ['--acc-bg' as any]: hexToRgba(acc, 0.2),
+      // Stagger the ENTRY reveal via a custom property — the CSS overrides
+      // transition-delay back to 0 as soon as `.flipped` is applied, so this
+      // delay never leaks into the click-to-flip transition.
+      ['--entry-delay' as any]: `${index * 150}ms`,
+    }),
+    [acc, index]
+  );
+
+  const handleClick = useCallback(() => onFlip(member.id), [onFlip, member.id]);
+
+  return (
+    <article
+      className={`dirA-player ${animateIn ? 'is-revealed' : ''} ${flipped ? 'flipped' : ''}`}
+      style={cardStyle}
+      onClick={handleClick}
+    >
+      <div className="dirA-player-inner">
+      {/* FRONT */}
+      <div className="dirA-player-face dirA-player-front">
+        <div className="dirA-player-img-wrap">
+          <video
+            ref={videoRef}
+            src={member.image.replace(/\.gif$/i, '.mp4')}
+            autoPlay
+            muted
+            loop
+            playsInline
+            preload="auto"
+            aria-label={member.name}
+          />
+        </div>
+        <div className="dirA-player-scrim" />
+        <div className="dirA-player-masthead">
+          <span className="issue">KOMPLEX</span>
+          <span className="vol">№ {numStr} · EST {member.joinedYear ?? 2016}</span>
+        </div>
+        <span className="dirA-player-role-chip">{member.role}</span>
+        <span className="dirA-player-flip-hint" aria-hidden>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+            <path d="M3 12a9 9 0 0 1 15-6.7L21 8" />
+            <path d="M21 3v5h-5" />
+            <path d="M21 12a9 9 0 0 1-15 6.7L3 16" />
+            <path d="M3 21v-5h5" />
+          </svg>
+        </span>
+        <span className="dirA-player-num">{numStr}</span>
+        <div className="dirA-player-overlay">
+          <p className="dirA-player-real">{member.realName}</p>
+          <h3 className="dirA-player-name">{member.name}</h3>
+        </div>
+      </div>
+      {/* BACK */}
+      <div className="dirA-player-face dirA-player-back">
+        <div className="dirA-back-num">EST {member.joinedYear ?? 2016}</div>
+        <header className="dirA-back-head">
+          <span className="dirA-back-eyebrow">Profile</span>
+          <h3 className="dirA-back-name">{member.name}</h3>
+          <span className="dirA-back-role">{member.role}</span>
+        </header>
+        <div className="dirA-back-bio-wrap">
+          <p className="dirA-back-bio">{member.bio}</p>
+        </div>
+        <div className="dirA-back-stats">
+          {member.stats.map((s, k) => (
+            <div key={k} className={`dirA-back-stat${k === 0 ? ' featured' : ''}`}>
+              <span className="dirA-back-stat-k">{s.label}</span>
+              <span className="dirA-back-stat-v" title={s.value}>{s.value}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+      </div>
+    </article>
+  );
+});
+
+// Hero redesign — Direction A (Esports Pro)
+function HeroRedesign({ showMusicHint }: { showMusicHint: boolean }) {
+  return (
+    <section id="hero" className="hero-redesign">
+      <div className="hero-bg">
+        <video
+          autoPlay
+          muted
+          loop
+          playsInline
+          poster="https://cdn.komplexaci.cz/komplexaci/img/neon.jpg"
+        >
+          <source src="https://cdn.komplexaci.cz/hero_video.mp4" type="video/mp4" />
+        </video>
+      </div>
+      <div className="hero-content">
+        <div className="hero-tag">
+          <span className="pulse" />
+          EST · 2016 · CZ HERNÍ KOMUNITA
+        </div>
+        <h1 className="hero-headline">
+          KOMPLEX<span className="accent">ÁCI</span>
+        </h1>
+        <p className="hero-subtitle">// Česká herní komunita (v důchodu)</p>
+        <p className="hero-desc">
+          Specializovali jsme se na League of Legends a Counter Strike: GO. Teď už jen vzpomínáme — ale Discord stále hoří.
+        </p>
+        <div className="cta-row">
+          <a href="#discord" className="btn-primary">
+            Připoj se k nám <span aria-hidden>→</span>
+          </a>
+          <a href="#clenove" className="btn-ghost">
+            Roster
+          </a>
+        </div>
+        {showMusicHint && (
+          <div className="hero-perf">
+            <div className="bg-black/40 backdrop-blur-sm px-4 py-2 rounded-full border border-purple-500/20 animate-pulse max-w-xs mx-auto">
+              <p className="text-xs text-purple-300 flex items-center justify-center">
+                <svg className="w-3 h-3 mr-2" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
+                </svg>
+                Klikni kamkoliv pro spuštění hudby
+              </p>
+            </div>
+          </div>
+        )}
+      </div>
+    </section>
+  );
 }
 
 export default function HomePageClient({
@@ -1054,25 +1232,30 @@ export default function HomePageClient({
     }
   };
 
-  // Card flip functionality with page turn sound
-  const handleCardFlip = (memberId: string) => {
-    // Play page turn sound effect - skip to the impactful part for immediate effect!
-    try {
-      const pageTurnSound = new Audio('https://cdn.komplexaci.cz/komplexaci/audio/page-turn.mp3');
-      pageTurnSound.volume = 0.7; // 70% volume for strong presence
-      pageTurnSound.playbackRate = 1.5; // Play 1.5x faster to match the 0.3s flip animation
-      
-      // Skip the quiet beginning and jump straight to the peak "swoosh" part
-      // This creates an immediate, punchy effect that matches the instant card flip
-      pageTurnSound.currentTime = 0.18; // Start 180ms into the sound for maximum impact
-      
-      pageTurnSound.play().catch(err => {
-        // Silently fail if audio can't play (user hasn't interacted yet)
-        devLog('Page turn sound blocked:', err);
-      });
-    } catch (error) {
-      // Silently fail if audio file doesn't exist
-      devLog('Page turn sound error:', error);
+  // Page-turn sound — constructed once and reused so the click->flip path
+  // doesn't pay a fresh CDN fetch + audio decode each time.
+  const pageTurnAudioRef = useRef<HTMLAudioElement | null>(null);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const a = new Audio('https://cdn.komplexaci.cz/komplexaci/audio/page-turn.mp3');
+    a.volume = 0.7;
+    a.playbackRate = 1.5;
+    a.preload = 'auto';
+    pageTurnAudioRef.current = a;
+  }, []);
+
+  const handleCardFlip = useMemo(() => (memberId: string) => {
+    const a = pageTurnAudioRef.current;
+    if (a) {
+      try {
+        a.currentTime = 0.18;
+        const p = a.play();
+        if (p && typeof (p as Promise<void>).catch === 'function') {
+          (p as Promise<void>).catch((err) => devLog('Page turn sound blocked:', err));
+        }
+      } catch (error) {
+        devLog('Page turn sound error:', error);
+      }
     }
 
     setFlippedCards(prev => {
@@ -1084,7 +1267,7 @@ export default function HomePageClient({
       }
       return newSet;
     });
-  };
+  }, []);
 
 
 
@@ -1099,57 +1282,8 @@ export default function HomePageClient({
       {/* Header with Scroll Spy */}
       <Header />
 
-      {/* Hero Section - EXACT Recreation */}
-      <section id="hero" className="hero-exact">
-        {/* Video Background */}
-        <video
-          autoPlay
-          muted
-          loop
-          playsInline
-          className="hero-video-bg"
-          poster="https://cdn.komplexaci.cz/komplexaci/img/neon.jpg"
-        >
-          <source src="https://cdn.komplexaci.cz/hero_video.mp4" type="video/mp4" />
-        </video>
-        <div className="hero-content-exact">
-          {/* Large Logo Display */}
-          <div className="hero-logo-container mb-8">
-            <Image
-              src="https://cdn.komplexaci.cz/komplexaci/img/logo.png"
-              alt="Komplexáci Logo"
-              width={300}
-              height={300}
-              className="hero-logo mx-auto"
-              quality={100}
-              priority={true}
-              unoptimized={true}
-            />
-          </div>
-          <h2 className="hero-title-exact">
-            Komplexáci
-          </h2>
-          <p className="hero-subtitle-exact">
-            Česká herní komunita (v důchodu)
-          </p>
-          <p className="hero-desc-exact">
-            Specializovali jsme se na League of Legends a Counter Strike: GO
-          </p>
-          <a
-            href="#discord"
-            className="inline-block bg-gradient-to-r from-orange-500 via-pink-500 to-cyan-400 hover:from-orange-600 hover:via-pink-600 hover:to-cyan-500 px-8 py-4 rounded-full text-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg hover:shadow-cyan-500/40 border border-cyan-400/30"
-          >
-            Připoj se k nám
-          </a>
-
-          {/* Minimalistic Performance Status */}
-          <div className="mt-6">
-            <PerformanceStatus showMusicHint={!hasUserInteracted && isLoaded} />
-          </div>
-
-
-        </div>
-      </section>
+      {/* Hero Section — Direction A redesign */}
+      <HeroRedesign showMusicHint={!hasUserInteracted && isLoaded} />
 
       {/* About Section - EXACT Recreation */}
       <section id="o-nas" className="relative z-10 py-20" style={{ backgroundColor: 'var(--darker-bg)' }}>
@@ -1177,8 +1311,8 @@ export default function HomePageClient({
         </div>
       </section>
 
-      {/* Members Section - EXACT Recreation */}
-      <section ref={membersRef} id="clenove" className="relative z-10 py-20" style={{ backgroundColor: 'var(--dark-bg)' }}>
+      {/* Members Section — Direction A redesign (magazine cover flip) */}
+      <section ref={membersRef} id="clenove" className="relative z-10 py-20 members-redesign" style={{ backgroundColor: 'var(--dark-bg)' }}>
         <div className="container mx-auto px-6">
           <h2 className="text-4xl font-bold text-center mb-12" style={{
             fontFamily: "'Exo 2', sans-serif",
@@ -1187,65 +1321,16 @@ export default function HomePageClient({
           }}>
             Naši členové
           </h2>
-          <div className="members-grid-exact">
+          <div className="dirA-roster">
             {shuffledMembers.map((member, index) => (
-              <div
+              <MemberCard
                 key={member.id}
-                className={`member-card-exact member-${member.id}-exact ${
-                  membersVisible ? 'animate-in' : ''
-                } ${flippedCards.has(member.id) ? 'flipped' : ''}`}
-                style={{ animationDelay: `${index * 150}ms` }}
-                onClick={() => handleCardFlip(member.id)}
-              >
-                <div className="member-card-inner">
-                  {/* Front of the card */}
-                  <div className="member-card-front">
-                    <div className="member-avatar-exact">
-                      <Image
-                        src={member.image}
-                        alt={member.name}
-                        width={120}
-                        height={120}
-                        className="w-full h-full object-cover"
-                        unoptimized
-                      />
-                    </div>
-                    <h3 className="member-name-exact">{member.name}</h3>
-                    <p className="member-real-name-exact">{member.realName}</p>
-                    <p className="member-role-exact">{member.role}</p>
-                  </div>
-
-                  {/* Back of the card */}
-                  <div className="member-card-back">
-                    <button
-                      className="member-card-close"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        handleCardFlip(member.id);
-                      }}
-                    >
-                      ✕
-                    </button>
-
-                    <div className="member-name-back" style={{ marginBottom: '15px', fontSize: '1.3rem', fontWeight: 'bold', color: 'var(--light-text)' }}>
-                      {member.name}
-                    </div>
-
-                    <p className="member-bio-text">
-                      {member.bio}
-                    </p>
-
-                    <div className="member-stats-list">
-                      {member.stats.map((stat, statIndex) => (
-                        <div key={statIndex} className="member-stat-item">
-                          <span className="member-stat-label">{stat.label}:</span>
-                          <span className="member-stat-value">{stat.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </div>
+                member={member}
+                index={index}
+                flipped={flippedCards.has(member.id)}
+                animateIn={membersVisible}
+                onFlip={handleCardFlip}
+              />
             ))}
           </div>
         </div>

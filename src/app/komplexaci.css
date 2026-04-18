@@ -47,999 +47,444 @@
     --cyber-glow-blue: rgba(0, 212, 255, 0.5);
 }
 
-/* Synthwave Header */
-.header {
+/* ================================================================
+   Pill Navigation (replaces the old .header + .main-nav + .submenu
+   block). Ported from the Claude Design handoff `dirA.jsx` with
+   pill-variant overrides baked in, plus per-section accent via
+   --pill-accent set on the <nav> element by Header.tsx.
+   ================================================================ */
+/* Reserved top band so page content is always physically below the nav. */
+.pill-nav-spacer {
+    height: 64px;
+    flex-shrink: 0;
+}
+
+.pill-nav {
+    --pill-accent: var(--synthwave-cyan);
+    position: fixed;
+    top: 10px;
+    left: 50%;
+    transform: translate(-50%, 0);
+    z-index: 1002;
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 6px;
+    background: rgba(7, 7, 13, 0.78);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 999px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #d8d8e8;
+    box-shadow:
+        0 12px 40px rgba(0, 0, 0, 0.45),
+        0 0 0 1px rgba(255, 255, 255, 0.02);
+    width: max-content;
+    max-width: calc(100vw - 24px);
+    transition:
+        top 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+        left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+        right 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+        width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+        max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+        transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+        border-radius 0.35s cubic-bezier(0.4, 0, 0.2, 1),
+        background-color 0.35s ease,
+        border-color 0.3s ease,
+        box-shadow 0.35s ease,
+        padding 0.35s ease;
+    will-change: transform, width;
+}
+
+/* Full-width "shelf" that fades in when docked, behind the pill.
+   Makes sure no text peeks beside the pill at the very top. */
+.pill-nav::before {
+    content: '';
     position: fixed;
     top: 0;
     left: 0;
-    width: 100%;
-    z-index: 1002;
-    background: linear-gradient(135deg,
-        rgba(10, 10, 15, 0.92) 0%,
-        rgba(26, 10, 31, 0.92) 50%,
-        rgba(10, 10, 15, 0.92) 100%
-    );
-    backdrop-filter: blur(10px) saturate(150%);
-    border-bottom: 2px solid transparent;
-    border-image: linear-gradient(90deg,
-        transparent 0%,
-        var(--synthwave-cyan) 25%,
-        var(--synthwave-magenta) 50%,
-        var(--synthwave-cyan) 75%,
-        transparent 100%
-    ) 1;
-    box-shadow:
-        0 4px 32px rgba(0, 0, 0, 0.5),
-        0 0 25px var(--synthwave-cyan-glow),
-        0 0 15px var(--synthwave-magenta-glow);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    overflow: visible;
-}
-
-
-/* Synthwave Header scroll effect */
-.header.scrolled {
-    background: linear-gradient(135deg,
-        rgba(5, 5, 8, 0.96) 0%,
-        rgba(26, 10, 31, 0.96) 50%,
-        rgba(5, 5, 8, 0.96) 100%
-    );
-    backdrop-filter: blur(12px) saturate(160%);
-    border-image: linear-gradient(90deg,
-        transparent 0%,
-        var(--synthwave-cyan) 20%,
-        var(--synthwave-magenta) 50%,
-        var(--synthwave-orange) 80%,
-        transparent 100%
-    ) 1;
-    box-shadow:
-        0 8px 40px rgba(0, 0, 0, 0.6),
-        0 0 35px var(--synthwave-cyan-glow),
-        0 0 20px var(--synthwave-magenta-glow);
-}
-
-.header .container {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 8px 20px;
-    max-width: 1400px;
-    margin: 0 auto;
-    position: relative;
-    z-index: 2;
-    overflow: visible;
-}
-
-/* Auth Section Styles */
-.auth-section {
-    margin-left: auto;
-    padding-left: 1rem;
-    display: flex;
-    align-items: center;
-}
-
-.logo {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    position: relative;
-    z-index: 10;
-}
-
-.logo:hover {
-    transform: translateY(-2px) scale(1.02);
-    /* Simplified filter to prevent disappearing */
-    filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.6));
-}
-
-.site-logo {
-    height: 50px;
-    width: auto;
-}
-
-.site-logo-placeholder {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    position: relative;
-    border-radius: 10px;
-    background: linear-gradient(135deg,
-        var(--shark-teal) 0%,
-        var(--shark-teal-light) 100%
-    );
-    backdrop-filter: blur(15px);
-    border: 1px solid var(--shark-teal-light);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    box-shadow: 0 4px 15px var(--shark-glow);
-    overflow: hidden;
-}
-
-.site-logo-placeholder:hover {
-    background: linear-gradient(135deg,
-        var(--shark-teal-light) 0%,
-        var(--gaming-orange) 100%
-    );
-    border-color: var(--gaming-orange);
-    transform: scale(1.05);
-    box-shadow: 0 6px 20px var(--orange-glow);
-}
-
-.logo-image {
-    width: 32px;
-    height: 32px;
-    object-fit: contain;
-    /* Minimal filters for crisp quality */
-    filter: drop-shadow(0 0 4px var(--shark-glow));
-    transition: all 0.3s ease;
-    z-index: 2;
-    position: relative;
-    /* Ensure crisp rendering */
-    image-rendering: -webkit-optimize-contrast;
-    image-rendering: crisp-edges;
-}
-
-.logo:hover .logo-image {
-    /* Minimal hover effect to maintain quality */
-    filter: drop-shadow(0 0 8px var(--orange-glow));
-    transform: scale(1.05);
-}
-
-/* Logo text styling is now handled in globals.css to avoid conflicts */
-
-.logo h1 {
-    font-family: 'Exo 2', sans-serif;
-    font-size: 1.4rem;
-    font-weight: 700;
-    margin: 0;
-    color: #ffffff;
-    letter-spacing: 0.8px;
-    transition: all 0.4s ease;
-    text-shadow: 0 0 10px var(--shark-glow);
-}
-
-.logo:hover h1 {
-    text-shadow: 0 0 20px var(--orange-glow);
-}
-
-.main-nav {
-    display: flex;
-    align-items: center;
-    overflow: visible;
-    margin-left: 2rem; /* Add space between logo and navigation */
-}
-
-.nav-list {
-    display: flex;
-    list-style: none;
-    flex-wrap: wrap;
-    justify-content: center;
-    margin: 0;
-    padding: 0;
-}
-
-.nav-link {
-    display: block;
-    padding: 10px 18px;
-    color: rgba(255, 255, 255, 0.85);
-    font-family: 'Exo 2', sans-serif;
-    font-weight: 500;
-    text-transform: uppercase;
-    font-size: 0.8rem;
-    letter-spacing: 0.8px;
-    text-decoration: none;
-    position: relative;
-    border-radius: 8px;
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    backdrop-filter: blur(15px);
-    border: 1px solid transparent;
-    background: rgba(0, 0, 0, 0.2);
-    overflow: hidden;
-    z-index: 1;
-}
-
-/* Base hover/active styles - will be enhanced by gradient morph */
-.gradient-morph-header .nav-link:hover {
-    color: #ffffff;
-    border: 1px solid var(--theme-primary);
-    text-shadow:
-        0 0 8px var(--theme-primary-glow),
-        0 0 15px var(--theme-secondary-glow);
-    /* Removed translateY - keeping it flat and subtle */
-}
-
-.gradient-morph-header .nav-link.active {
-    color: #ffffff;
-    border: 1px solid var(--theme-primary);
-    text-shadow:
-        0 0 8px var(--theme-primary-glow),
-        0 0 15px var(--theme-secondary-glow);
-    /* Removed translateY - keeping it flat and subtle */
-}
-
-.gradient-morph-header .nav-link::after {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 50%;
-    width: 0;
-    height: 1.5px;
-    background: linear-gradient(90deg,
-        var(--theme-primary),
-        var(--theme-secondary),
-        var(--theme-primary)
-    );
-    transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-    transform: translateX(-50%);
-    opacity: 0;
-    box-shadow: 0 0 6px var(--theme-primary-glow);
-    z-index: 5;
-}
-
-.gradient-morph-header .nav-link:hover::after,
-.gradient-morph-header .nav-link.active::after {
-    width: 70%;
-    opacity: 0.9;
-}
-
-/* ============================================
-   GRADIENT MORPH HEADER - Dynamic Color Shifting
-   ============================================ */
-
-/* CSS Variables for Dynamic Theme Colors */
-.gradient-morph-header {
-    --theme-primary: var(--synthwave-cyan);
-    --theme-primary-glow: var(--synthwave-cyan-glow);
-    --theme-secondary: var(--synthwave-magenta);
-    --theme-secondary-glow: var(--synthwave-magenta-glow);
-    transition:
-        --theme-primary 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-        --theme-primary-glow 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-        --theme-secondary 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-        --theme-secondary-glow 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-        border-image 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-        box-shadow 0.8s cubic-bezier(0.4, 0, 0.2, 1),
-        background 0.8s cubic-bezier(0.4, 0, 0.2, 1);
-}
-
-/* Section-Aware Theme Colors */
-.gradient-morph-header[data-theme="cyan"] {
-    --theme-primary: #00FFFF;
-    --theme-primary-glow: rgba(0, 255, 255, 0.5);
-    --theme-secondary: #0099ff;
-    --theme-secondary-glow: rgba(0, 153, 255, 0.4);
-    border-image: linear-gradient(90deg,
-        transparent 0%,
-        #00FFFF 25%,
-        #0099ff 50%,
-        #00FFFF 75%,
-        transparent 100%
-    ) 1;
-    box-shadow:
-        0 4px 32px rgba(0, 0, 0, 0.5),
-        0 0 30px rgba(0, 255, 255, 0.3),
-        0 0 15px rgba(0, 153, 255, 0.2);
-}
-
-.gradient-morph-header[data-theme="magenta"] {
-    --theme-primary: #ff6ec7;
-    --theme-primary-glow: rgba(255, 110, 199, 0.5);
-    --theme-secondary: #ff00ff;
-    --theme-secondary-glow: rgba(255, 0, 255, 0.4);
-    border-image: linear-gradient(90deg,
-        transparent 0%,
-        #ff6ec7 25%,
-        #ff00ff 50%,
-        #ff6ec7 75%,
-        transparent 100%
-    ) 1;
-    box-shadow:
-        0 4px 32px rgba(0, 0, 0, 0.5),
-        0 0 30px rgba(255, 110, 199, 0.3),
-        0 0 15px rgba(255, 0, 255, 0.2);
-}
-
-.gradient-morph-header[data-theme="orange"] {
-    --theme-primary: #FF8C00;
-    --theme-primary-glow: rgba(255, 140, 0, 0.5);
-    --theme-secondary: #ff6600;
-    --theme-secondary-glow: rgba(255, 102, 0, 0.4);
-    border-image: linear-gradient(90deg,
-        transparent 0%,
-        #FF8C00 25%,
-        #ff6600 50%,
-        #FF8C00 75%,
-        transparent 100%
-    ) 1;
-    box-shadow:
-        0 4px 32px rgba(0, 0, 0, 0.5),
-        0 0 30px rgba(255, 140, 0, 0.3),
-        0 0 15px rgba(255, 102, 0, 0.2);
-}
-
-.gradient-morph-header[data-theme="purple"] {
-    --theme-primary: #9B30FF;
-    --theme-primary-glow: rgba(155, 48, 255, 0.5);
-    --theme-secondary: #7B2FFF;
-    --theme-secondary-glow: rgba(123, 47, 255, 0.4);
-    border-image: linear-gradient(90deg,
-        transparent 0%,
-        #9B30FF 25%,
-        #7B2FFF 50%,
-        #9B30FF 75%,
-        transparent 100%
-    ) 1;
-    box-shadow:
-        0 4px 32px rgba(0, 0, 0, 0.5),
-        0 0 30px rgba(155, 48, 255, 0.3),
-        0 0 15px rgba(123, 47, 255, 0.2);
-}
-
-/* Animated Gradient Border Stroke */
-.gradient-morph-header::before {
-    content: '';
-    position: absolute;
-    bottom: -2px;
-    left: 0;
     right: 0;
-    height: 2px;
-    background: linear-gradient(90deg,
-        transparent 0%,
-        var(--theme-primary) 25%,
-        var(--theme-secondary) 50%,
-        var(--theme-primary) 75%,
-        transparent 100%
-    );
-    background-size: 200% 100%;
-    animation: borderFlow 3s linear infinite;
-    opacity: 0.8;
+    height: 56px;
+    background: linear-gradient(180deg,
+        rgba(5, 5, 10, 0.72) 0%,
+        rgba(5, 5, 10, 0.45) 55%,
+        transparent 100%);
+    backdrop-filter: blur(14px) saturate(140%);
+    -webkit-backdrop-filter: blur(14px) saturate(140%);
+    z-index: -1;
+    opacity: 0;
+    transform: translateY(-8px);
+    transition:
+        opacity 0.35s ease,
+        transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     pointer-events: none;
 }
 
-@keyframes borderFlow {
-    0% {
-        background-position: 0% 0%;
-    }
-    100% {
-        background-position: 200% 0%;
-    }
+.pill-nav.is-docked::before {
+    opacity: 1;
+    transform: translateY(0);
 }
 
-/* Enhanced Logo Glow Based on Theme */
-.gradient-morph-header .logo-text {
+/* Docked: morph into a full-width bar that occupies the reserved top band.
+   We intentionally inherit `left: 50%` and `transform: translate(-50%, 0)`
+   from the base rule — animating only `width` (not left/transform) keeps the
+   pill center-anchored throughout the morph, so it grows/shrinks symmetrically
+   from both sides instead of appearing to slide from the left. */
+.pill-nav.is-docked {
+    top: 0;
+    width: 100vw;
+    max-width: 100vw;
+    padding: 10px 20px;
+    justify-content: center;
+    background: rgba(5, 5, 10, 0.94);
+    border-color: rgba(255, 255, 255, 0.14);
+    border-top-color: transparent;
+    border-left-color: transparent;
+    border-right-color: transparent;
+    border-radius: 0;
+    box-shadow:
+        0 6px 24px rgba(0, 0, 0, 0.55),
+        0 2px 0 0 color-mix(in srgb, var(--pill-accent) 35%, transparent);
+}
+
+.pill-nav-brand {
+    padding: 8px 14px;
+    margin-right: 4px;
+    font-family: 'Exo 2', system-ui, sans-serif;
+    font-weight: 800;
+    letter-spacing: 0.06em;
+    font-size: 13px;
     background: linear-gradient(135deg,
-        var(--theme-primary),
-        var(--theme-secondary),
-        var(--theme-primary)
-    );
-    background-size: 200% 200%;
+        var(--synthwave-cyan),
+        var(--synthwave-magenta),
+        var(--synthwave-orange));
     -webkit-background-clip: text;
-    -webkit-text-fill-color: transparent;
     background-clip: text;
-    animation: logoMorphGlow 4s ease-in-out infinite;
-    filter: drop-shadow(0 0 10px var(--theme-primary-glow));
-    transition: filter 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    color: transparent;
+    border: 0;
+    cursor: pointer;
+    flex-shrink: 0;
+    white-space: nowrap;
 }
 
-@keyframes logoMorphGlow {
-    0%, 100% {
-        background-position: 0% 50%;
-    }
-    50% {
-        background-position: 100% 50%;
-    }
-}
-
-/* Liquid Hover Effects - DISABLED (was causing large box issue) */
-.gradient-morph-header .nav-link::before {
-    display: none;
-}
-
-/* Ripple effects removed - were causing visual bugs */
-
-/* Clean hover/active - no size changes, just subtle background */
-.gradient-morph-header .nav-link:hover,
-.gradient-morph-header .nav-link.active {
-    background: var(--theme-primary-glow);
-}
-
-/* Gradient Reveal on Text - subtle effect */
-.gradient-morph-header .nav-link span {
+.pill-nav-items {
     position: relative;
-    display: inline-block;
-    z-index: 2;
+    display: flex;
+    gap: 0;
+    align-items: center;
 }
 
-/* Optional: Subtle Noise Texture Overlay */
-.gradient-morph-header::after {
-    content: '';
+.pill-nav-indicator {
     position: absolute;
     top: 0;
     left: 0;
-    right: 0;
-    bottom: 0;
-    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
-    opacity: 0.03;
-    mix-blend-mode: overlay;
+    height: 100%;
+    background: var(--pill-accent);
+    border-radius: 999px;
+    transition:
+        transform 0.38s cubic-bezier(0.5, 0.1, 0.2, 1),
+        width 0.38s cubic-bezier(0.5, 0.1, 0.2, 1),
+        background-color 0.4s ease,
+        opacity 0.25s ease;
+    z-index: 0;
     pointer-events: none;
+    box-shadow: 0 6px 20px -4px color-mix(in srgb, var(--pill-accent) 60%, transparent);
 }
 
-/* Performance: Reduce Motion Support */
-@media (prefers-reduced-motion: reduce) {
-    .gradient-morph-header,
-    .gradient-morph-header::before,
-    .nav-link {
-        animation: none !important;
-        transition: opacity 0.3s ease, color 0.3s ease !important;
-    }
-}
-
-/* Submenu styling */
-.has-submenu {
+.pill-nav-item,
+.pill-nav-item-wrap {
     position: relative;
+    z-index: 1;
 }
 
-.has-submenu .nav-link {
-    position: relative;
-    padding-right: 36px;
+.pill-nav-item {
+    padding: 8px 14px;
+    border-radius: 999px;
+    color: #9b9bb0;
+    transition: color 0.25s;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: transparent;
+    border: 0;
+    cursor: pointer;
+    font: inherit;
+    text-transform: inherit;
+    letter-spacing: inherit;
+    white-space: nowrap;
 }
 
-/* Desktop dropdown arrow - using FontAwesome icon */
-.has-submenu .nav-link .submenu-arrow {
+.pill-nav-item:hover {
+    color: #fff;
+}
+
+.pill-nav-item.on {
+    color: #000;
+    font-weight: 700;
+}
+
+.pill-nav-caret {
+    transition: transform 0.2s ease;
+    opacity: 0.7;
+}
+
+.pill-nav-caret.rotated {
+    transform: rotate(180deg);
+}
+
+/* Submenu (Hry dropdown) */
+.pill-nav-submenu {
     position: absolute;
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--synthwave-cyan);
-    opacity: 0.8;
-    transition: all 0.3s ease;
-    pointer-events: none;
-}
-
-.has-submenu:hover .nav-link .submenu-arrow {
-    color: var(--synthwave-orange);
-    opacity: 1;
-    transform: translateY(-50%) rotate(180deg);
-    filter: drop-shadow(0 0 6px var(--synthwave-orange-glow));
-}
-
-.submenu {
-    position: absolute;
-    top: calc(100% + 8px);
-    left: 0;
-    background: linear-gradient(180deg,
-        rgba(10, 10, 15, 0.96) 0%,
-        rgba(26, 10, 31, 0.96) 100%
-    );
-    backdrop-filter: blur(20px) saturate(180%);
-    min-width: 220px;
-    width: auto;
-    height: auto;
-    max-height: 400px;
+    top: calc(100% + 10px);
+    left: 50%;
+    transform: translateX(-50%) translateY(-6px);
+    min-width: 200px;
+    padding: 6px;
+    background: rgba(7, 7, 13, 0.92);
+    backdrop-filter: blur(18px) saturate(140%);
+    -webkit-backdrop-filter: blur(18px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 14px;
     box-shadow:
-        0 8px 32px rgba(0, 0, 0, 0.6),
-        0 0 25px var(--synthwave-cyan-glow),
-        0 0 15px var(--synthwave-magenta-glow),
-        inset 0 1px 1px rgba(0, 255, 255, 0.1);
-    border-radius: 12px;
+        0 20px 48px rgba(0, 0, 0, 0.55),
+        0 0 24px color-mix(in srgb, var(--pill-accent) 20%, transparent);
     opacity: 0;
     visibility: hidden;
-    transform: translateY(-15px) scale(0.95);
-    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-    list-style: none;
-    padding: 12px 0;
-    margin: 0;
-    border: 1px solid var(--synthwave-cyan);
-    overflow: visible;
-    z-index: 1003;
     pointer-events: none;
-    white-space: nowrap;
+    transition:
+        opacity 0.2s ease,
+        transform 0.2s ease,
+        visibility 0.2s ease;
+    z-index: 1003;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
 }
 
-
-.has-submenu:hover .submenu {
+.pill-nav-item-wrap.submenu-open .pill-nav-submenu {
     opacity: 1;
     visibility: visible;
-    transform: translateY(0) scale(1);
     pointer-events: auto;
+    transform: translateX(-50%) translateY(0);
 }
 
-.submenu .nav-link {
-    padding: 12px 20px;
-    font-size: 0.85rem;
-    border-bottom: 1px solid rgba(0, 255, 255, 0.15);
+.pill-nav-submenu-item {
     display: block;
-    width: 100%;
-    box-sizing: border-box;
-    white-space: nowrap;
-    min-height: auto;
-    background: transparent;
-    transition: all 0.3s ease;
+    padding: 9px 14px;
+    border-radius: 10px;
+    font-family: 'Roboto', system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.02em;
+    text-transform: none;
+    color: #d8d8e8;
+    text-decoration: none;
+    transition: background-color 0.2s ease, color 0.2s ease, transform 0.2s ease;
 }
 
-.submenu .nav-link:hover {
-    background: linear-gradient(90deg,
-        rgba(0, 255, 255, 0.15) 0%,
-        rgba(255, 110, 199, 0.1) 100%
-    );
-    color: var(--synthwave-cyan);
-    border-color: var(--synthwave-cyan);
-    transform: translateX(5px);
-    padding-left: 25px;
+.pill-nav-submenu-item:hover {
+    background: color-mix(in srgb, var(--pill-accent) 18%, transparent);
+    color: #fff;
+    transform: translateX(2px);
 }
 
-.submenu .nav-link:last-child {
-    border-bottom: none;
+/* Divider + auth */
+.pill-nav-divider {
+    width: 1px;
+    height: 16px;
+    background: rgba(255, 255, 255, 0.16);
+    margin: 0 6px;
+    flex-shrink: 0;
 }
 
-/* This section is now handled above with absolute positioning for desktop */
+.pill-nav-auth {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 4px 4px 8px;
+    flex-shrink: 0;
+}
 
-/* Mobile menu toggle */
-.mobile-menu-toggle {
-    display: none;
-    flex-direction: column;
-    background: none;
-    border: none;
+.pill-nav-auth-loading .pill-nav-auth-dot {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.12);
+    animation: pill-nav-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pill-nav-pulse {
+    0%, 100% { opacity: 0.35; }
+    50% { opacity: 0.9; }
+}
+
+.pill-nav-login {
+    padding: 6px 12px;
+    border-radius: 999px;
+    background: #5865F2;
+    color: #fff;
+    border: 0;
     cursor: pointer;
-    padding: 5px;
-    position: relative;
-    z-index: 10;
+    font: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background-color 0.2s ease, transform 0.2s ease;
 }
 
-/* Hide mobile menu header and close button on desktop */
-.mobile-menu-header {
-    display: none;
+.pill-nav-login:hover {
+    background: #4752C4;
+    transform: translateY(-1px);
 }
 
-.mobile-menu-close {
-    display: none;
+.pill-nav-user {
+    gap: 8px;
 }
 
-.mobile-menu-toggle .bar {
-    width: 25px;
-    height: 3px;
-    background: linear-gradient(90deg,
-        var(--synthwave-cyan),
-        var(--synthwave-magenta),
-        var(--synthwave-orange)
-    );
-    margin: 3px 0;
-    transition: all 0.3s ease;
-    border-radius: 2px;
-    box-shadow:
-        0 0 10px var(--synthwave-cyan-glow),
-        0 0 8px var(--synthwave-magenta-glow);
+.pill-nav-avatar {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #a855f7);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
-.mobile-menu-toggle:hover .bar {
-    box-shadow:
-        0 0 18px var(--synthwave-cyan-glow),
-        0 0 15px var(--synthwave-magenta-glow),
-        0 0 12px var(--synthwave-orange-glow);
-    transform: scaleX(1.1);
+.pill-nav-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
 }
 
-/* Medium screen adjustments */
-@media (max-width: 1024px) and (min-width: 769px) {
-    .main-nav {
-        margin-left: 1.5rem; /* Moderate spacing on medium screens */
+.pill-nav-avatar-fallback {
+    font-family: 'Exo 2', system-ui, sans-serif;
+    font-size: 12px;
+    font-weight: 700;
+    color: #fff;
+}
+
+.pill-nav-username {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 10px;
+    color: #d8d8e8;
+    text-transform: none;
+    letter-spacing: 0;
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pill-nav-logout {
+    background: var(--pill-accent);
+    color: #000;
+    padding: 6px 12px;
+    border: 0;
+    border-radius: 999px;
+    font: inherit;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 0.4s ease, transform 0.2s ease;
+}
+
+.pill-nav-logout:hover {
+    transform: translateY(-1px);
+}
+
+/* ----- Responsive ----- */
+@media (max-width: 1024px) {
+    .pill-nav {
+        font-size: 10px;
+        padding: 5px;
+    }
+    .pill-nav-item {
+        padding: 7px 10px;
+    }
+    .pill-nav-brand {
+        padding: 7px 10px;
+        font-size: 12px;
+    }
+    .pill-nav-username {
+        max-width: 80px;
     }
 }
 
-/* Mobile responsive */
 @media (max-width: 768px) {
-    .mobile-menu-toggle {
-        display: flex;
+    .pill-nav {
+        top: 10px;
+        gap: 0;
+        padding: 4px;
     }
-
-    .main-nav {
-        margin-left: 1rem; /* Reduce spacing on mobile */
+    .pill-nav-brand {
+        padding: 6px 8px;
+        font-size: 11px;
     }
-
-    .header .container {
-        padding: 8px 12px;
-        gap: 8px;
-        min-height: 60px; /* Ensure consistent header height */
-        align-items: center;
+    .pill-nav-item {
+        padding: 6px 10px;
     }
-
-    /* Reset desktop nav-list completely for mobile */
-    .main-nav .nav-list {
-        display: none; /* Hide by default */
-        position: fixed;
-        top: 0;
-        left: -100%;
-        width: 100vw;
-        height: 100vh;
-        min-height: 100vh;
-        max-height: 100vh;
-        flex-direction: column;
-        background: linear-gradient(180deg,
-            rgba(15, 15, 25, 0.98) 0%,
-            rgba(10, 10, 15, 0.98) 100%
-        );
-        backdrop-filter: blur(20px) saturate(150%);
-        transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        box-shadow:
-            0 0 30px var(--shark-glow),
-            inset 0 1px 0 rgba(255, 255, 255, 0.05);
-        padding: 100px 24px 40px 24px;
-        border-right: 1px solid var(--shark-teal-light);
-        z-index: 1001;
-        justify-content: flex-start;
-        align-items: stretch;
-        list-style: none;
-        margin: 0;
-        overflow-y: auto;
-        overflow-x: hidden;
-        flex-wrap: nowrap;
-        gap: 12px;
-        box-sizing: border-box;
+    .pill-nav-divider {
+        margin: 0 4px;
     }
-
-    .main-nav .nav-list.active {
-        display: flex;
-        left: 0;
-    }
-
-    .nav-list li {
-        display: block !important;
-        width: 100%;
-        margin: 0;
-        padding: 0;
-    }
-
-    .site-logo-placeholder {
-        width: 36px;
-        height: 36px;
-    }
-
-    .logo-image {
-        width: 24px;
-        height: 24px;
-    }
-
-    .logo h1 {
-        font-size: 1.2rem;
-    }
-
-    .logo {
-        gap: 8px;
-    }
-
-    .logo h1 {
-        font-size: 1.5rem !important;
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-        max-width: 200px;
-    }
-
-    /* Mobile Hero Logo */
-    .hero-logo {
-        width: 180px;
-        height: 180px;
-    }
-
-
-
-    .nav-link {
-        display: flex !important;
-        padding: 16px 20px;
-        margin: 0;
-        border-radius: 12px;
-        background: rgba(255, 255, 255, 0.08) !important;
-        border: 1px solid rgba(255, 255, 255, 0.12) !important;
-        text-align: left;
-        font-size: 1rem;
-        color: rgba(255, 255, 255, 0.9) !important;
-        text-decoration: none;
-        font-weight: 500;
-        letter-spacing: 0.3px;
-        text-transform: none;
-        width: 100%;
-        box-sizing: border-box;
-        flex-shrink: 0;
-        min-height: 56px;
-        align-items: center;
-        justify-content: flex-start;
-        transition: all 0.3s ease;
-        position: relative;
-    }
-
-    .nav-link:hover,
-    .nav-link.active {
-        background: rgba(20, 163, 189, 0.15) !important;
-        border-color: var(--shark-teal-light) !important;
-        color: rgba(255, 255, 255, 1) !important;
-        transform: translateX(4px);
-        box-shadow:
-            0 4px 12px var(--shark-glow),
-            inset 0 1px 0 rgba(255, 255, 255, 0.1);
-    }
-
-    .nav-link:active {
-        transform: translateX(2px);
-        transition: all 0.1s ease;
-    }
-
-    .nav-link::after {
+    .pill-nav-username {
         display: none;
     }
-
-    /* Mobile Submenu - Collapsible Design */
-    .has-submenu .submenu {
-        max-height: 0;
-        overflow: hidden;
-        opacity: 0;
-        transition: all 0.3s ease;
-        background: rgba(0, 0, 0, 0.3);
-        margin: 0;
-        padding: 0;
-        border-left: 3px solid var(--shark-teal-light);
-        margin-left: 20px;
+    .pill-nav-auth {
+        padding: 2px 2px 2px 4px;
     }
+}
 
-    .has-submenu.mobile-submenu-open .submenu {
-        max-height: 200px;
-        opacity: 1;
-        padding: 8px 0;
-    }
-
-    .has-submenu .submenu .nav-link {
-        display: block;
-        padding: 12px 20px;
-        margin: 2px 0;
-        font-size: 0.9rem;
-        color: rgba(255, 255, 255, 0.8) !important;
-        background: rgba(255, 255, 255, 0.05) !important;
-        border: none !important;
-        border-radius: 6px;
-        transition: all 0.3s ease;
-        position: relative;
-        padding-left: 20px;
-    }
-
-    .has-submenu .submenu .nav-link:hover,
-    .has-submenu .submenu .nav-link:active {
-        background: rgba(20, 163, 189, 0.1) !important;
-        color: rgba(255, 255, 255, 1) !important;
-        transform: translateX(4px);
-    }
-
-    /* Mobile submenu indicator and arrow rotation */
-    .has-submenu .nav-link {
-        position: relative;
-        justify-content: space-between !important;
-        align-items: center !important;
-    }
-
-    .submenu-arrow {
-        transition: all 0.3s ease;
-        margin-left: auto;
-        font-size: 1rem;
-        color: var(--synthwave-cyan);
-        display: inline-block !important;
-        opacity: 1 !important;
-        flex-shrink: 0;
-        position: static;
+@media (max-width: 520px) {
+    .pill-nav {
+        left: 8px;
+        right: 8px;
         transform: none;
-        filter: drop-shadow(0 0 4px var(--synthwave-cyan-glow));
+        max-width: none;
+        width: calc(100vw - 16px);
     }
-
-    .has-submenu.mobile-submenu-open .submenu-arrow.rotated {
-        transform: rotate(180deg);
-        color: var(--synthwave-orange);
-        filter: drop-shadow(0 0 6px var(--synthwave-orange-glow));
-    }
-
-    .has-submenu .nav-link:hover .submenu-arrow {
-        color: var(--synthwave-magenta);
-        filter: drop-shadow(0 0 5px var(--synthwave-magenta-glow));
-    }
-
-    /* Mobile - hide CSS arrow fallback since we're using FontAwesome */
-    .has-submenu .nav-link::after {
-        display: none;
-    }
-
-    /* Mobile menu header with close button */
-    .mobile-menu-header {
-        display: flex !important;
-        justify-content: flex-end;
-        align-items: center;
-        margin-bottom: 20px;
-        padding: 0 4px;
-    }
-
-    .mobile-menu-close {
-        background: none;
-        border: none;
-        color: rgba(255, 255, 255, 0.8);
-        font-size: 1.5rem;
-        padding: 8px;
-        cursor: pointer;
-        border-radius: 8px;
-        transition: all 0.3s ease;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        width: 40px;
-        height: 40px;
-    }
-
-    .mobile-menu-close:hover {
-        background: rgba(255, 255, 255, 0.1);
-        color: rgba(255, 255, 255, 1);
-        transform: scale(1.1);
-    }
-
-    .mobile-menu-close:active {
-        transform: scale(0.95);
-    }
-
-    /* Auth Section Mobile Styles */
-    .auth-section {
-        padding-left: 0.5rem;
-        margin-left: 0;
-        flex-shrink: 0;
-        display: flex;
-        align-items: center;
-    }
-
-    /* Ensure auth buttons are properly sized for mobile */
-    .auth-section button {
-        min-height: 44px;
-        min-width: 44px;
-        padding: 8px 12px;
-        font-size: 0.85rem;
-        white-space: nowrap;
-    }
-
-    /* User profile adjustments for mobile */
-    .auth-section img {
-        width: 32px !important;
-        height: 32px !important;
-    }
-
-    /* Better mobile header layout */
-    .header .container {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        width: 100%;
-    }
-
-    .main-nav {
-        order: 2;
-        margin-left: auto;
-        margin-right: 0.5rem;
-    }
-
-    .auth-section {
-        order: 3;
-        margin-left: 0;
-    }
-
-    .auth-section .flex.flex-col span {
-        font-size: 0.75rem;
-        line-height: 1.2;
-    }
-
-    /* Hide user role text on very small screens */
-    @media (max-width: 480px) {
-        .auth-section .text-gray-400 {
-            display: none;
-        }
-
-        .logo h1 {
-            font-size: 1.3rem !important;
-            max-width: 150px;
-        }
-
-        .header .container {
-            padding: 6px 10px;
-            gap: 6px;
-        }
-
-        .auth-section button {
-            padding: 6px 10px;
-            font-size: 0.8rem;
-            min-width: 40px;
-            min-height: 40px;
-        }
-
-        .mobile-menu-toggle {
-            padding: 3px;
-        }
-
-        .mobile-menu-toggle .bar {
-            width: 22px;
-            height: 2px;
-        }
-    }
-}
-
-/* Desktop submenu styles - override mobile styles for desktop */
-@media (min-width: 769px) {
-    .has-submenu .submenu {
-        /* Reset mobile styles for desktop - Synthwave themed */
-        max-height: none;
-        overflow: visible;
-        opacity: 0;
-        transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-        background: linear-gradient(180deg,
-            rgba(10, 10, 15, 0.96) 0%,
-            rgba(26, 10, 31, 0.96) 100%
-        );
-        backdrop-filter: blur(20px) saturate(180%);
-        margin: 0;
-        padding: 12px 0;
-        border-left: none;
-        margin-left: 0;
-        position: absolute;
-        top: 100%;
+    .pill-nav.is-docked {
         left: 0;
-        min-width: 220px;
-        border-radius: 12px;
-        border: 1px solid var(--synthwave-cyan);
-        box-shadow:
-            0 8px 32px rgba(0, 0, 0, 0.6),
-            0 0 25px var(--synthwave-cyan-glow),
-            0 0 15px var(--synthwave-magenta-glow);
-        visibility: hidden;
-        transform: translateY(-15px) scale(0.95);
-        pointer-events: none;
-        z-index: 1003;
+        right: 0;
     }
-
-    .has-submenu:hover .submenu {
-        opacity: 1;
-        visibility: visible;
-        transform: translateY(0) scale(1);
-        pointer-events: auto;
-    }
-
-    .has-submenu .submenu .nav-link {
-        /* Reset mobile styles for desktop */
-        padding: 12px 20px;
-        margin: 0;
-        font-size: 0.85rem;
-        color: rgba(255, 255, 255, 0.9) !important;
-        background: transparent !important;
-        border: none !important;
-        border-bottom: 1px solid rgba(0, 255, 255, 0.15);
-        border-radius: 0;
-        position: static;
-        padding-left: 20px;
-        min-height: auto;
-        white-space: nowrap;
-        transition: all 0.3s ease;
-    }
-
-    .has-submenu .submenu .nav-link:hover {
-        background: linear-gradient(90deg,
-            rgba(0, 255, 255, 0.15) 0%,
-            rgba(255, 110, 199, 0.1) 100%
-        ) !important;
-        color: var(--synthwave-cyan) !important;
-        border-color: var(--synthwave-cyan);
-        transform: translateX(5px);
-        padding-left: 25px;
-    }
-
-    .has-submenu .submenu .nav-link:last-child {
-        border-bottom: none;
-    }
-
-    .has-submenu .submenu .nav-link::before {
+    .pill-nav-brand {
         display: none;
     }
-
-    /* Desktop submenu arrow - already handled in main styles above */
+    /* Only enable horizontal scrolling where items can actually overflow.
+       On desktop this would clip the Hry dropdown. */
+    .pill-nav-items {
+        overflow-x: auto;
+        scrollbar-width: none;
+        -ms-overflow-style: none;
+    }
+    .pill-nav-items::-webkit-scrollbar {
+        display: none;
+    }
 }
+
+@media (prefers-reduced-motion: reduce) {
+    .pill-nav,
+    .pill-nav-indicator,
+    .pill-nav-submenu,
+    .pill-nav-logout,
+    .pill-nav-login {
+        transition: none;
+    }
+}
+
 
 /* Exact Hero Section Recreation - Full Height for All Screens */
 .hero-exact {
