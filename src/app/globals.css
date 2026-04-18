@@ -51,10 +51,13 @@ body {
   transform: translateZ(0);
 }
 
-/* Reduce animation jank on complex elements */
+/* Reduce animation jank on complex elements.
+   NOTE: #clenove is intentionally omitted — its redesigned member cards
+   use a 3D flip (transform-style: preserve-3d), and `contain: layout
+   style paint` + `isolation: isolate` flatten that 3D context, causing
+   both card faces to render simultaneously. */
 .hero-section,
 #hero,
-#clenove,
 #hry,
 #discord,
 #o-nas,
@@ -68,7 +71,6 @@ body {
 @supports (-moz-appearance: none) {
   .hero-section,
   #hero,
-  #clenove,
   #hry,
   #discord,
   #o-nas,

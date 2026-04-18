@@ -212,13 +212,16 @@
    MEMBER CARDS (magazine cover flip)
    ================================================================ */
 
-/* Override global rules in globals.css that flatten 3D inside #clenove.
-   Those rules apply `contain: layout style paint` + `isolation: isolate` to
-   every top-level section; both collapse the 3D rendering context, so a card's
-   back face paints black through the flip. Restore defaults here. */
+/* Belt-and-suspenders against 3D flattening.
+   The source of the issue was `contain: layout style paint` + `isolation:
+   isolate` in globals.css targeting every top-level section, which collapsed
+   the 3D rendering context and caused both card faces to render at once.
+   `#clenove` is now excluded from that list in globals.css, but we keep this
+   explicit override + `!important` so that users on a stale cached
+   globals.css still render the flip correctly. */
 #clenove.members-redesign {
-  contain: none;
-  isolation: auto;
+  contain: none !important;
+  isolation: auto !important;
 }
 
 .members-redesign .dirA-roster {
@@ -248,7 +251,10 @@
 .members-redesign .dirA-player-inner {
   position: absolute;
   inset: 0;
-  transform-style: preserve-3d;
+  /* `!important` guards against any cached ancestor rule that could flatten
+     the 3D context (see #clenove note above). Without preserve-3d, the back
+     face paints through the front. */
+  transform-style: preserve-3d !important;
   transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
@@ -285,12 +291,45 @@
 .members-redesign .dirA-player-face {
   position: absolute;
   inset: 0;
-  backface-visibility: hidden;
-  -webkit-backface-visibility: hidden;
+  /* `!important` ensures the rear face stays invisible even if a stale
+     global stylesheet re-enables default backface rendering. */
+  backface-visibility: hidden !important;
+  -webkit-backface-visibility: hidden !important;
   overflow: hidden;
   box-shadow:
     0 12px 28px -12px rgba(0, 0, 0, 0.55),
     0 0 0 1px var(--acc-ring);
+  /* Defensive safety net — opacity-based face visibility that does NOT
+     depend on 3D rendering. If the 3D context flattens for any reason
+     (stale stylesheet, browser quirk, unexpected parent containment),
+     backface-visibility silently fails and both faces render at once.
+     Only one face is ever `opacity: 1` at a time, so the bug cannot
+     visually manifest regardless of 3D state.
+
+     Timing is tuned to the rotation's cubic-bezier(0.2, 0.8, 0.2, 1)
+     curve, which is heavily ease-out — the card reaches edge-on (90°)
+     at about 45ms into the 450ms flip, not at the linear midpoint.
+     A short fade centered on that moment hides the swap behind the
+     edge-on card and keeps the animation smooth. */
+  transition: opacity 0.06s linear 0.02s;
+}
+
+/* Default: front visible, back hidden. */
+.members-redesign .dirA-player-back {
+  opacity: 0;
+}
+.members-redesign .dirA-player-front {
+  opacity: 1;
+}
+
+/* Flipped: swap visibility. Combined with the rotateY(180deg) on
+   `.dirA-player-inner`, this gives the full flip effect even if the
+   3D context has flattened. */
+.members-redesign .dirA-player.flipped .dirA-player-back {
+  opacity: 1;
+}
+.members-redesign .dirA-player.flipped .dirA-player-front {
+  opacity: 0;
 }
 
 /* FRONT — magazine cover */

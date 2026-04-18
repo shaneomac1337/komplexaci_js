@@ -1866,12 +1866,21 @@ export default function HomePageClient({
       </section>
 
       {/* Footer */}
-      <footer className="relative z-10 py-8 border-t border-purple-500/20" style={{ backgroundColor: 'var(--darker-bg)' }}>
-        <div className="container mx-auto px-6 text-center">
+      <footer className="relative z-10 py-10 border-t border-purple-500/20" style={{ backgroundColor: 'var(--darker-bg)' }}>
+        <div className="container mx-auto px-6 flex flex-col items-center gap-4 text-center">
+          <Image
+            src="https://cdn.komplexaci.cz/komplexaci/img/logo.png"
+            alt="Komplexáci"
+            width={72}
+            height={72}
+            unoptimized
+            className="opacity-80 hover:opacity-100 transition-opacity duration-300"
+            style={{ height: 'auto', width: '72px' }}
+          />
           <p style={{ color: 'var(--medium-text)' }}>
             © 2025 Komplexáci | Všechna práva vyhrazena
           </p>
-          <p className="text-sm mt-2" style={{ color: 'var(--medium-text)', fontSize: '0.95em' }}>
+          <p className="text-sm" style={{ color: 'var(--medium-text)', fontSize: '0.95em' }}>
             S láskou vytvořil Martin Pěnkava • Běží na Next.js 15.3.3 ⚡
           </p>
         </div>
