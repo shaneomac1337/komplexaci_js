@@ -1136,20 +1136,27 @@ class DiscordGatewayService {
   }
 }
 
-// Singleton instance
-let discordGateway: DiscordGatewayService | null = null;
+// Singleton instance, stored on globalThis so it survives across module
+// instances. Under `output: 'standalone'` + Next.js webpack chunking, this
+// file can be bundled into multiple API-route chunks; a module-level `let`
+// would give each chunk its own null-initialized copy and spawn one Discord
+// gateway connection per chunk — the second connection kicks the first off
+// mid-`guild.members.fetch()`, causing `GuildMembersTimeout`.
+declare global {
+  var __komplexaciDiscordGateway: DiscordGatewayService | undefined;
+}
 
 export function getDiscordGateway(): DiscordGatewayService {
-  if (!discordGateway) {
-    discordGateway = new DiscordGatewayService();
-    
+  if (!globalThis.__komplexaciDiscordGateway) {
+    globalThis.__komplexaciDiscordGateway = new DiscordGatewayService();
+
     // Auto-connect in production or when explicitly enabled
     if (process.env.NODE_ENV === 'production' || process.env.ENABLE_DISCORD_GATEWAY === 'true') {
-      discordGateway.connect().catch(console.error);
+      globalThis.__komplexaciDiscordGateway.connect().catch(console.error);
     }
   }
-  
-  return discordGateway;
+
+  return globalThis.__komplexaciDiscordGateway;
 }
 
 export type { CachedMember, ServerStats };
