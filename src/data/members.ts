@@ -14,6 +14,8 @@ export interface Member {
   image: string;
   bio: string;
   stats: MemberStat[];
+  accent?: string;
+  joinedYear?: number;
 }
 
 export const members: Member[] = [
@@ -28,7 +30,9 @@ export const members: Member[] = [
       { label: 'Oblíbený interpret', value: 'Viktor Sheen' },
       { label: 'Oblíbená hra', value: 'CS2' },
       { label: 'KD Ratio', value: '1.8' }
-    ]
+    ],
+    accent: '#ef4444',
+    joinedYear: 2016
   },
   {
     id: 'zander',
@@ -41,7 +45,9 @@ export const members: Member[] = [
       { label: 'Herní role', value: 'Pařmen' },
       { label: 'Oblíbená hra', value: 'Všechny' },
       { label: 'Hláška', value: 'Kokot zaprcanej' }
-    ]
+    ],
+    accent: '#10b981',
+    joinedYear: 2016
   },
   {
     id: 'shane',
@@ -54,7 +60,9 @@ export const members: Member[] = [
       { label: 'Tech stack', value: 'HTML, CSS, JavaScript, PHP, React' },
       { label: 'Oblíbená hra', value: 'Retro pářky' },
       { label: 'Hodiny ve hře', value: '2500+' }
-    ]
+    ],
+    accent: '#3b82f6',
+    joinedYear: 2016
   },
   {
     id: 'jugyna',
@@ -67,7 +75,9 @@ export const members: Member[] = [
       { label: 'Oblíbená zbraň', value: 'Proudnice typu C' },
       { label: 'Oblíbená mapa', value: 'Inferno' },
       { label: 'Uspěšnost hašení', value: '100%' }
-    ]
+    ],
+    accent: '#f59e0b',
+    joinedYear: 2016
   },
   {
     id: 'pipa',
@@ -80,7 +90,9 @@ export const members: Member[] = [
       { label: 'Status', value: 'Dead na midu na Cache' },
       { label: 'Oblíbená aktivita', value: 'LAN Party' },
       { label: 'Citát', value: '"Je ve ventilaci, Pípí bajzn,"' }
-    ]
+    ],
+    accent: '#64748b',
+    joinedYear: 2016
   },
   {
     id: 'strix',
@@ -93,7 +105,9 @@ export const members: Member[] = [
       { label: 'Herní styl', value: 'Chaotické dobro' },
       { label: 'Specialita', value: 'Překvapivé tahy' },
       { label: 'Hlášky', value: '"Hej čím, whooo booost"' }
-    ]
+    ],
+    accent: '#a855f7',
+    joinedYear: 2017
   },
   {
     id: 'azarin',
@@ -106,7 +120,9 @@ export const members: Member[] = [
       { label: 'Hudební styl', value: 'Mumble rap' },
       { label: 'Herní role', value: 'Entry Fragger' },
       { label: 'Informace', value: 'Shen je v latu od lvl 3' }
-    ]
+    ],
+    accent: '#ec4899',
+    joinedYear: 2017
   },
   {
     id: 'podri',
@@ -119,7 +135,9 @@ export const members: Member[] = [
       { label: 'Oblíbená činnost', value: 'Jízda na skůtru' },
       { label: 'Specialita', value: 'Chodil do třídy s Azarinem' },
       { label: 'Vybavení', value: 'Na Hollywoodech měl dlažební kostku' }
-    ]
+    ],
+    accent: '#06b6d4',
+    joinedYear: 2019
   },
   {
     id: 'zdravicko',
@@ -132,7 +150,9 @@ export const members: Member[] = [
       { label: 'Oblíbená činnost', value: 'Scrollovat 9gag' },
       { label: 'Zaměstnání', value: 'Šťouchač brambor' },
       { label: 'Motto', value: 'Život dává a bere' }
-    ]
+    ],
+    accent: '#84cc16',
+    joinedYear: 2022
   },
   {
     id: 'roseck',
@@ -145,7 +165,9 @@ export const members: Member[] = [
       { label: 'Label', value: 'TNKDLBL' },
       { label: 'Umístění', value: 'Ostrava pyčo' },
       { label: 'Hobby', value: 'Poslech kvalitního zvuku' }
-    ]
+    ],
+    accent: '#f97316',
+    joinedYear: 2016
   }
 ];
 

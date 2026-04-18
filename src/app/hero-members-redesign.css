@@ -1,0 +1,619 @@
+/* ================================================================
+   Hero + Member Cards redesign — Direction A (Esports Pro)
+   Scoped under .hero-redesign / .members-redesign so tokens and
+   styles do not leak into the rest of the page.
+   ================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* ---------- Scoped tokens ---------- */
+.hero-redesign,
+.members-redesign {
+  --brand-cyan: #00FFFF;
+  --brand-magenta: #ff6ec7;
+  --brand-orange: #FF8C00;
+  --bg-0: #07070d;
+  --bg-1: #0a0a14;
+  --bg-2: #11111e;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --text-0: #ffffff;
+  --text-1: #d8d8e8;
+  --text-2: #9b9bb0;
+  --text-3: #6b6b80;
+  --accent: var(--brand-cyan);
+  --font-display: 'Exo 2', system-ui, sans-serif;
+  --font-body: 'Roboto', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* ================================================================
+   HERO
+   ================================================================ */
+.hero-redesign {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  /* Bleed up under the Header's reserved 64px top band so the video still
+     visually reaches the viewport top. The negative margin cancels the
+     spacer's layout effect for this section specifically. */
+  margin-top: -64px;
+  padding: 140px 48px 80px;
+  overflow: hidden;
+  background: var(--bg-0);
+  color: var(--text-0);
+  font-family: var(--font-body);
+}
+
+.hero-redesign .hero-bg {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+}
+
+.hero-redesign .hero-bg video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  opacity: 0.6;
+}
+
+.hero-redesign .hero-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 30% 20%, rgba(0, 255, 255, 0.08), transparent 50%),
+    radial-gradient(ellipse at 80% 80%, rgba(255, 110, 199, 0.08), transparent 50%),
+    linear-gradient(180deg, rgba(7, 7, 13, 0.4) 0%, rgba(7, 7, 13, 0.85) 70%, var(--bg-0) 100%);
+}
+
+.hero-redesign .hero-content {
+  position: relative;
+  z-index: 2;
+  max-width: 1100px;
+  margin: 0 auto;
+  width: 100%;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hero-redesign .hero-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  background: rgba(0, 0, 0, 0.4);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin-bottom: 24px;
+}
+
+.hero-redesign .hero-tag .pulse {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 0 10px var(--accent);
+  animation: hero-pulse 2s infinite;
+}
+
+@keyframes hero-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+.hero-redesign h1.hero-headline {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(48px, 11vw, 180px);
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+  margin: 0 0 18px;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--text-0);
+}
+
+.hero-redesign h1.hero-headline .accent {
+  background: linear-gradient(135deg, var(--accent) 0%, var(--brand-magenta) 60%, var(--brand-orange) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.hero-redesign .hero-subtitle {
+  font-family: var(--font-mono);
+  font-size: 14px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--text-2);
+  margin: 0 0 14px;
+}
+
+.hero-redesign .hero-desc {
+  font-size: 18px;
+  color: var(--text-1);
+  line-height: 1.55;
+  max-width: 620px;
+  margin: 0 auto 32px;
+}
+
+.hero-redesign .cta-row {
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.hero-redesign .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 28px;
+  background: var(--accent);
+  color: #000;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border-radius: 3px;
+  border: 0;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 0 0 0 var(--accent);
+  text-decoration: none;
+}
+
+.hero-redesign .btn-primary:hover {
+  box-shadow: 0 0 30px -2px var(--accent);
+  transform: translateY(-1px);
+}
+
+.hero-redesign .btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 28px;
+  background: transparent;
+  color: var(--text-0);
+  border: 1px solid var(--line-strong);
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  border-radius: 3px;
+  transition: all 0.2s;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+.hero-redesign .btn-ghost:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.hero-redesign .hero-perf {
+  margin-top: 24px;
+}
+
+/* ================================================================
+   MEMBER CARDS (magazine cover flip)
+   ================================================================ */
+
+/* Override global rules in globals.css that flatten 3D inside #clenove.
+   Those rules apply `contain: layout style paint` + `isolation: isolate` to
+   every top-level section; both collapse the 3D rendering context, so a card's
+   back face paints black through the flip. Restore defaults here. */
+#clenove.members-redesign {
+  contain: none;
+  isolation: auto;
+}
+
+.members-redesign .dirA-roster {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 16px;
+}
+
+/* Classic flip-card pattern:
+     - `.dirA-player` (outer) establishes perspective (camera)
+     - `.dirA-player-inner` carries `transform-style: preserve-3d` and the
+       `rotateY(180deg)` flip. The inner wrapper is what Chromium needs to
+       keep faces in 3D space — putting preserve-3d on the CSS Grid item
+       directly gets silently flattened. */
+.members-redesign .dirA-player {
+  --acc: var(--accent);
+  --acc-ring: rgba(255, 255, 255, 0.16);
+  --acc-bg: transparent;
+  --entry-delay: 0ms;
+  position: relative;
+  aspect-ratio: 3 / 4;
+  cursor: pointer;
+  border-radius: 10px;
+  perspective: 2200px;
+}
+
+.members-redesign .dirA-player-inner {
+  position: absolute;
+  inset: 0;
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+/* Entry reveal — cards start at opacity 0 only while NOT yet animated in.
+   Once `.is-revealed` is added the selector stops matching and the animation
+   fades them from 0 to 1, after which opacity stays at 1 (full 3D context
+   restored, so the flip renders properly). */
+@keyframes memberCardFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.members-redesign .dirA-player:not(.is-revealed) {
+  opacity: 0;
+}
+
+.members-redesign .dirA-player.is-revealed {
+  animation: memberCardFadeIn 0.5s ease-out both;
+  animation-delay: var(--entry-delay);
+}
+
+.members-redesign .dirA-player.flipped .dirA-player-inner {
+  transform: rotateY(180deg);
+}
+
+.members-redesign .dirA-player:hover:not(.flipped) .dirA-player-inner {
+  transform: translateY(-4px);
+}
+
+/* No explicit `will-change`. Modern browsers auto-promote transforming
+   elements to their own compositor layer for the duration of a transition
+   and tear it down afterwards — exactly what we want, no accumulation. */
+
+.members-redesign .dirA-player-face {
+  position: absolute;
+  inset: 0;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  overflow: hidden;
+  box-shadow:
+    0 12px 28px -12px rgba(0, 0, 0, 0.55),
+    0 0 0 1px var(--acc-ring);
+}
+
+/* FRONT — magazine cover */
+.members-redesign .dirA-player-front {
+  background: var(--bg-2);
+}
+
+.members-redesign .dirA-player-img-wrap {
+  position: absolute;
+  inset: 0;
+  background: var(--bg-2);
+  overflow: hidden;
+}
+
+.members-redesign .dirA-player-img-wrap img,
+.members-redesign .dirA-player-img-wrap video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.members-redesign .dirA-player-scrim {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  background: linear-gradient(180deg,
+    rgba(0, 0, 0, 0.35) 0%,
+    transparent 30%,
+    transparent 45%,
+    rgba(0, 0, 0, 0.65) 75%,
+    rgba(0, 0, 0, 0.92) 100%);
+  pointer-events: none;
+}
+
+.members-redesign .dirA-player-masthead {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  padding: 9px 11px 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+  background: linear-gradient(180deg, rgba(0, 0, 0, 0.6), transparent);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.members-redesign .dirA-player-masthead .issue {
+  color: var(--acc);
+  font-weight: 700;
+}
+
+.members-redesign .dirA-player-masthead .vol {
+  opacity: 0.7;
+}
+
+.members-redesign .dirA-player-role-chip {
+  position: absolute;
+  top: 38px;
+  left: 11px;
+  z-index: 5;
+  font-family: var(--font-mono);
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #000;
+  background: var(--acc);
+  padding: 3px 7px;
+}
+
+.members-redesign .dirA-player-flip-hint {
+  position: absolute;
+  top: 38px;
+  right: 11px;
+  z-index: 5;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  color: #fff;
+  transition: transform 0.3s, background 0.2s, color 0.2s;
+}
+
+.members-redesign .dirA-player:hover .dirA-player-flip-hint {
+  background: var(--acc);
+  color: #000;
+  transform: rotate(180deg);
+}
+
+.members-redesign .dirA-player-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 5;
+  padding: 14px 12px 12px;
+}
+
+.members-redesign .dirA-player-real {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.7);
+  margin: 0 0 3px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.members-redesign .dirA-player-name {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: clamp(18px, 1.8vw, 26px);
+  line-height: 0.95;
+  margin: 0 0 9px;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.5);
+}
+
+.members-redesign .dirA-player-num {
+  position: absolute;
+  right: 10px;
+  bottom: 8px;
+  z-index: 6;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 36px;
+  line-height: 1;
+  color: rgba(255, 255, 255, 0.1);
+  letter-spacing: -0.04em;
+  pointer-events: none;
+}
+
+/* =================================================================
+   BACK FACE — profile-card style
+   ================================================================= */
+.members-redesign .dirA-player-back {
+  transform: rotateY(180deg);
+  background:
+    radial-gradient(circle at 100% 0%, var(--acc-bg) 0%, transparent 60%),
+    linear-gradient(180deg, var(--bg-2) 0%, var(--bg-1) 100%);
+  padding: 12px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  color: var(--text-1);
+}
+
+/* Watermark issue number in the top-right */
+.members-redesign .dirA-back-num {
+  position: absolute;
+  top: 10px;
+  right: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.2em;
+  color: var(--text-3);
+  pointer-events: none;
+}
+
+/* Header */
+.members-redesign .dirA-back-head {
+  padding-bottom: 8px;
+  position: relative;
+}
+
+.members-redesign .dirA-back-head::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 28px;
+  height: 2px;
+  background: var(--acc);
+}
+
+.members-redesign .dirA-back-eyebrow {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.28em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  margin-bottom: 6px;
+}
+
+.members-redesign .dirA-back-name {
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 28px;
+  line-height: 0.98;
+  letter-spacing: -0.02em;
+  color: var(--text-0);
+  margin: 0 0 5px;
+  text-transform: uppercase;
+}
+
+.members-redesign .dirA-back-role {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--acc);
+}
+
+/* Bio */
+.members-redesign .dirA-back-bio-wrap {
+  border-left: 2px solid var(--acc);
+  padding: 2px 0 2px 10px;
+}
+
+.members-redesign .dirA-back-bio {
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--text-1);
+  margin: 0;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Stats — featured one is label-above-value (prominent), rest are inline rows */
+.members-redesign .dirA-back-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.members-redesign .dirA-back-stat {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 6px;
+  padding: 4px 0;
+  border-bottom: 1px solid var(--line);
+}
+
+.members-redesign .dirA-back-stat:last-child {
+  border-bottom: 0;
+}
+
+.members-redesign .dirA-back-stat.featured {
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  padding: 4px 0 6px;
+}
+
+.members-redesign .dirA-back-stat-k {
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--text-3);
+  flex-shrink: 0;
+}
+
+.members-redesign .dirA-back-stat-v {
+  font-family: var(--font-display);
+  font-weight: 700;
+  font-size: 13px;
+  line-height: 1.25;
+  color: var(--text-0);
+  letter-spacing: -0.01em;
+  text-align: right;
+  max-width: 65%;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+.members-redesign .dirA-back-stat.featured .dirA-back-stat-v {
+  font-size: 16px;
+  color: var(--acc);
+  text-align: left;
+  max-width: 100%;
+}
+
+
+/* ================================================================
+   RESPONSIVE
+   ================================================================ */
+@media (max-width: 1100px) {
+  .members-redesign .dirA-roster {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+@media (max-width: 980px) {
+  .hero-redesign {
+    padding: 120px 24px 60px;
+  }
+}
+
+@media (max-width: 860px) {
+  .members-redesign .dirA-roster {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 640px) {
+  .members-redesign .dirA-roster {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 12px;
+  }
+  .members-redesign .dirA-player-name {
+    font-size: 16px;
+  }
+}

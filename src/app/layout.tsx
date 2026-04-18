@@ -2,9 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/SessionProvider";
-import "./low-performance.css";
-import { PerformanceProvider } from "@/contexts/PerformanceContext";
-import PerformanceControl from "@/components/PerformanceControl";
 import SEOContent from "@/components/SEOContent";
 
 const geistSans = Geist({
@@ -203,11 +200,8 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SessionProvider>
-          <PerformanceProvider>
-            <SEOContent />
-            {children}
-            <PerformanceControl />
-          </PerformanceProvider>
+          <SEOContent />
+          {children}
         </SessionProvider>
       </body>
     </html>
