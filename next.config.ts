@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Emit a self-contained server bundle at .next/standalone so the Docker
+  // runtime stage can ship only the traced deps (not the full node_modules).
+  // See Dockerfile: the runner copies .next/standalone + .next/static + public.
+  output: 'standalone',
   eslint: {
     // Warning: This allows production builds to successfully complete even if
     // your project has ESLint errors.
@@ -80,7 +84,8 @@ const nextConfig: NextConfig = {
     contentDispositionType: 'attachment',
     contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
-  // Exclude Discord.js and its native dependencies from client-side bundling
+  // Keep native / Discord-side modules out of the client/Edge bundles. These
+  // are resolved from node_modules at runtime on the server.
   serverExternalPackages: [
     'discord.js',
     'zlib-sync',
@@ -95,7 +100,11 @@ const nextConfig: NextConfig = {
     'node-opus',
     'opusscript',
     'tweetnacl',
-    'ws'
+    'ws',
+    // Native SQLite bindings — must stay external so their .node binaries are
+    // loaded from node_modules rather than bundled by webpack/turbopack.
+    'better-sqlite3',
+    'sqlite3',
   ],
 };
 

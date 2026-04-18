@@ -1,31 +1,46 @@
-version: '3.8'
-
-# Komplexáci Gaming Clan Website
-# Uses host networking for better performance and direct access to host network
+# Komplexáci Gaming Clan Website — local/dev compose.
+# Builds the image from source and runs it with host networking for direct
+# access to host services (e.g. a local DB). Production uses GHCR; see
+# docker-compose.production.yml.
 services:
   komplexaci-app:
     build:
-      context: .
+      context: ..
       dockerfile: Dockerfile
     image: komplexaci:latest
     container_name: komplexaci-web
     restart: unless-stopped
+    # Host networking — the app binds to the host's :3000 directly.
+    # `ports:` is intentionally omitted: it's a no-op under host mode and
+    # causes a Compose warning.
     network_mode: host
-    ports:
-      - "3000:3000"  # Map container port 3000 to host port 3000
+    env_file:
+      - ../.env
     environment:
       - NODE_ENV=production
       - PORT=3000
       - ANALYTICS_DATA_DIR=/app/data
     volumes:
       - /etc/localtime:/etc/localtime:ro
-      - analytics-data:/app/data  # Persist analytics database
+      - analytics-data:/app/data
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
+      # HEAD probe — cheap liveness check that doesn't spin up Discord gateway
+      # / analytics introspection on every interval.
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "--method=HEAD", "http://127.0.0.1:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
-      start_period: 40s
+      # Discord gateway handshake + analytics DB warmup can take ~30-60s on
+      # cold start, so give the app a full 90s grace period.
+      start_period: 90s
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 768M
+        reservations:
+          cpus: '0.25'
+          memory: 256M
 
 volumes:
   analytics-data:

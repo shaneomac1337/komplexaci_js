@@ -8,10 +8,10 @@ This project uses GitHub Actions to automatically build and push Docker images t
 
 | File | Purpose |
 |------|---------|
-| `../Dockerfile` | Main Dockerfile used by GitHub Actions |
-| `docker-compose.production.yml` | Production compose file (pulls from GHCR) |
-| `Dockerfile.server-build` | BACKUP: Old Dockerfile that cloned repo during build |
-| `docker-compose.server-build.yml` | BACKUP: Old compose file that built on server |
+| `../Dockerfile` | Main Dockerfile used by GitHub Actions (multi-stage, Next.js standalone output, non-root runtime). |
+| `../.dockerignore` | Build-context exclusions (keeps `.env`, `.git`, `node_modules`, etc. out of the image). |
+| `docker-compose.yml` | Local/dev compose — builds the image from source. |
+| `docker-compose.production.yml` | Production compose — pulls the pre-built image from GHCR. |
 
 ## Setup (One-time)
 
