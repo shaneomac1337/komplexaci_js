@@ -13,8 +13,11 @@ ENV PYTHON=/usr/bin/python3
 # Copy package files first for better caching
 COPY package.json package-lock.json ./
 
-# Install dependencies
-RUN npm ci
+# Use `npm install` rather than `npm ci` because `bufferutil` / `utf-8-validate`
+# are optional native deps that can't compile on Windows dev machines, so the
+# committed lock omits them. Linux here can compile them, and `npm install`
+# resolves missing entries without the strict lock-parity check `npm ci` does.
+RUN npm install --no-audit --no-fund
 
 # Copy source code
 COPY . .
