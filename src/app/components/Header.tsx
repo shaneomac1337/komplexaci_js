@@ -37,6 +37,12 @@ const SECTION_COLOR_MAP: Record<string, string> = {
   'kontakt': 'var(--synthwave-purple)',
 };
 
+// Per-route accent for sub-pages where there is no scrollspy section.
+// Keeps the docked pill bar's bottom line and indicator chip on-brand.
+const PAGE_COLOR_MAP: Record<string, string> = {
+  '/videotvorba': 'var(--synthwave-magenta)',
+};
+
 const Header = () => {
   const pathname = usePathname();
   const [activeSection, setActiveSection] = useState('hero');
@@ -48,7 +54,10 @@ const Header = () => {
   const hrySubmenuCloseTimer = useRef<number | null>(null);
   const lastActiveSectionRef = useRef<string>('');
 
-  const accent = SECTION_COLOR_MAP[activeSection] || 'var(--synthwave-cyan)';
+  const accent =
+    pathname !== '/' && PAGE_COLOR_MAP[pathname]
+      ? PAGE_COLOR_MAP[pathname]
+      : SECTION_COLOR_MAP[activeSection] || 'var(--synthwave-cyan)';
 
   const updateIndicator = useCallback(() => {
     const wrap = itemsRef.current;

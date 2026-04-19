@@ -1,535 +1,453 @@
 "use client";
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import Header from '../components/Header';
+import '../komplexaci.css';
+import './videotvorba.css';
+
+type Video = {
+  id: string;
+  title: string;
+  description: string;
+  views?: string;
+  featured?: boolean;
+  platform?: string;
+};
+
+type CategoryKey = 'all' | 'latest' | 'retro' | 'gaming';
+
+const VIDEO_CATEGORIES: Record<Exclude<CategoryKey, 'all'>, { label: string; videos: Video[] }> = {
+  latest: {
+    label: 'Nejnovější',
+    videos: [
+      {
+        id: '5CnFK-7bRQc',
+        title: 'Best way to play Retro Wrestling Games on Windows',
+        description: 'Návod jak hrát retro wrestlingové hry na Windows',
+        views: '118',
+        featured: true,
+      },
+    ],
+  },
+  retro: {
+    label: 'Retro Gaming',
+    videos: [
+      {
+        id: '5UwzVCNvFvE',
+        title: 'WWF Smackdown! Just Bring It - Royal Rumble',
+        description: 'Retro wrestling gameplay v 1440p — epický Royal Rumble match',
+        platform: 'PS2',
+      },
+      {
+        id: 'C4oJaAkDE4U',
+        title: 'WWF Smackdown! 2 Know Your Role - Royal Rumble',
+        description: 'PSX retro klasika s 3.2K views — Royal Rumble v 1440p',
+        platform: 'PSX',
+      },
+    ],
+  },
+  gaming: {
+    label: 'Modern Gaming',
+    videos: [
+      {
+        id: 'i3KL5t-EXPw',
+        title: 'Komplexáci Gaming Intro (2025)',
+        description: 'Nové intro našeho herního klanu pro rok 2025',
+      },
+      {
+        id: 'danDl9fUwAM',
+        title: 'Trackmania Epic Battle',
+        description: 'Napínavé závodní souboje v Trackmania',
+      },
+      {
+        id: '2l-ZlM1rixM',
+        title: 'KompG - Rocket League 2023',
+        description: 'Rocket League highlights našeho klanu v 1440p',
+      },
+      {
+        id: 'yQCLwKLRGWg',
+        title: 'KompG - U.R.F Montage',
+        description: 'League of Legends montáž s nejlepšími momenty',
+      },
+    ],
+  },
+};
+
+const CATEGORY_FILTERS: { key: CategoryKey; label: string }[] = [
+  { key: 'all', label: 'All Channels' },
+  { key: 'latest', label: 'Nejnovější' },
+  { key: 'retro', label: 'Retro' },
+  { key: 'gaming', label: 'Modern' },
+];
+
+const CATEGORY_TAG_LABEL: Record<Exclude<CategoryKey, 'all'>, string> = {
+  latest: 'LATEST',
+  retro: 'RETRO',
+  gaming: 'MODERN',
+};
+
+const TAGS = ['Gaming', 'League of Legends', 'CS2', 'WWE Games', 'Retro', 'Komplexáci'];
+
+const allVideosWithCategory = (
+  Object.entries(VIDEO_CATEGORIES) as [Exclude<CategoryKey, 'all'>, typeof VIDEO_CATEGORIES['retro']][]
+).flatMap(([key, cat]) =>
+  cat.videos.map((v) => ({ ...v, category: key }))
+);
+
+const featuredVideo = VIDEO_CATEGORIES.latest.videos[0];
+
+/** Live HH:MM:SS readout for the broadcast status bar. */
+function useClock() {
+  const [time, setTime] = useState<string>('');
+  useEffect(() => {
+    const fmt = (d: Date) =>
+      [d.getHours(), d.getMinutes(), d.getSeconds()]
+        .map((n) => String(n).padStart(2, '0'))
+        .join(':');
+    setTime(fmt(new Date()));
+    const id = window.setInterval(() => setTime(fmt(new Date())), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+  return time;
+}
 
 export default function VideotvorbaPage() {
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [hoveredVideo, setHoveredVideo] = useState<string | null>(null);
-  const [activeCategory, setActiveCategory] = useState<string>('all');
-  const heroRef = useRef<HTMLDivElement>(null);
-  const [scrollY, setScrollY] = useState(0);
+  const [activeCategory, setActiveCategory] = useState<CategoryKey>('all');
+  const rootRef = useRef<HTMLDivElement>(null);
+  const time = useClock();
 
+  const filteredVideos = useMemo(() => {
+    const list = activeCategory === 'all'
+      ? allVideosWithCategory
+      : allVideosWithCategory.filter((v) => v.category === activeCategory);
+    return list.filter((v) => !v.featured);
+  }, [activeCategory]);
+
+  // One IntersectionObserver for every .vt-reveal — adds `is-in` once.
   useEffect(() => {
-    setIsLoaded(true);
-
-    const handleScroll = () => {
-      setScrollY(window.scrollY);
-    };
-
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
-
-  // Featured videos organized by category
-  const videoCategories = {
-    latest: {
-      title: 'Nejnovější',
-      videos: [
-        {
-          id: '5CnFK-7bRQc',
-          title: 'Best way to play Retro Wrestling Games on Windows',
-          description: 'Návod jak hrát retro wrestlingové hry na Windows',
-          views: '118',
-          featured: true
-        }
-      ]
-    },
-    retro: {
-      title: 'Retro Gaming',
-      videos: [
-        {
-          id: '5UwzVCNvFvE',
-          title: 'WWF Smackdown! Just Bring It - Royal Rumble',
-          description: 'Retro wrestling gameplay v 1440p - epický Royal Rumble match',
-          platform: 'PS2'
-        },
-        {
-          id: 'C4oJaAkDE4U',
-          title: 'WWF Smackdown! 2 Know Your Role - Royal Rumble',
-          description: 'PSX retro klasika s 3.2K views - Royal Rumble v 1440p',
-          platform: 'PSX'
-        }
-      ]
-    },
-    gaming: {
-      title: 'Modern Gaming',
-      videos: [
-        {
-          id: 'i3KL5t-EXPw',
-          title: 'Komplexáci Gaming Intro (2025)',
-          description: 'Nové intro našeho herního klanu pro rok 2025'
-        },
-        {
-          id: 'danDl9fUwAM',
-          title: 'Trackmania Epic Battle',
-          description: 'Napínavé závodní souboje v Trackmania'
-        },
-        {
-          id: '2l-ZlM1rixM',
-          title: 'KompG - Rocket League 2023',
-          description: 'Rocket League highlights našeho klanu v 1440p'
-        },
-        {
-          id: 'yQCLwKLRGWg',
-          title: 'KompG - U.R.F Montage',
-          description: 'League of Legends montáž s nejlepšími momenty'
-        }
-      ]
-    }
-  };
-
-  // Flatten all videos for "all" category
-  const allVideos = Object.values(videoCategories).flatMap(cat => cat.videos);
-
-  const getFilteredVideos = () => {
-    if (activeCategory === 'all') return allVideos;
-    return videoCategories[activeCategory as keyof typeof videoCategories]?.videos || [];
-  };
-
-  const filteredVideos = getFilteredVideos();
-  const featuredVideo = videoCategories.latest.videos[0];
+    const root = rootRef.current;
+    if (!root || typeof IntersectionObserver === 'undefined') return;
+    const targets = Array.from(root.querySelectorAll<HTMLElement>('.vt-reveal'));
+    if (!targets.length) return;
+    const io = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('is-in');
+            io.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.12, rootMargin: '0px 0px -8% 0px' }
+    );
+    targets.forEach((el) => io.observe(el));
+    return () => io.disconnect();
+  }, [filteredVideos.length, activeCategory]);
 
   return (
-    <div className="min-h-screen bg-black text-white" style={{ fontFamily: '-apple-system, BlinkMacSystemFont, "Inter", "SF Pro Display", "Segoe UI", Roboto, sans-serif' }}>
-      {/* Header */}
+    <div ref={rootRef} className="videotvorba-page">
       <Header />
 
-      <main className="relative">
-        {/* Hero Section - Full Viewport */}
-        <section
-          ref={heroRef}
-          className="relative min-h-screen flex items-center justify-center overflow-hidden"
-          style={{
-            paddingTop: '80px',
-            transform: `translateY(${scrollY * 0.5}px)`,
-            transition: 'transform 0.1s ease-out'
-          }}
-        >
-          {/* Background gradient */}
-          <div
-            className="absolute inset-0 z-0"
-            style={{
-              background: 'radial-gradient(ellipse at center, #1d1d1f 0%, #000000 100%)',
-              opacity: isLoaded ? 1 : 0,
-              transition: 'opacity 1.5s ease-in-out'
-            }}
-          />
+      {/* ============ BROADCAST STATUS BAR ============ */}
+      <div className="vt-status" role="status" aria-label="Broadcast status">
+        <div className="vt-status-left">
+          <span className="vt-status-rec">
+            <span className="vt-rec-dot" aria-hidden /> REC
+          </span>
+          <span className="vt-status-mono hide-sm">CH 01 · KOMPG TV</span>
+          <span className="vt-status-mono">FREQ 89.2</span>
+        </div>
+        <div className="vt-status-right">
+          <span className="vt-status-mono hide-sm">SIGNAL</span>
+          <span className="vt-status-sig" aria-hidden>
+            <span /><span /><span /><span />
+          </span>
+          <span className="vt-status-mono">{time || '--:--:--'}</span>
+        </div>
+      </div>
 
-          {/* Subtle grid overlay */}
-          <div
-            className="absolute inset-0 z-0 opacity-5"
-            style={{
-              backgroundImage: 'linear-gradient(rgba(255,255,255,0.05) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.05) 1px, transparent 1px)',
-              backgroundSize: '100px 100px'
-            }}
-          />
-
-          <div className="relative z-10 max-w-5xl mx-auto px-6 text-center">
-            {/* Badge */}
-            <div
-              className={`inline-flex items-center gap-2 px-4 py-2 rounded-full mb-8 backdrop-blur-xl transition-all duration-1000 ${
-                isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4'
-              }`}
-              style={{
-                background: 'rgba(255, 255, 255, 0.05)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                transitionDelay: '200ms'
-              }}
-            >
-              <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              <span className="text-sm font-medium text-gray-400">Gaming obsah pro Komplexáce</span>
+      <main>
+        {/* ============ HERO ============ */}
+        <section className="vt-hero">
+          <div className="vt-hero-content">
+            <div className="vt-channel vt-reveal" style={{ animationDelay: '60ms' }}>
+              KOMPG · TV · CH 01
+              <span className="vt-on-air">
+                <span className="vt-rec-dot-sm" aria-hidden /> ON AIR
+              </span>
             </div>
 
-            {/* Main Headline - Apple Style */}
-            <h1
-              className={`text-6xl sm:text-7xl md:text-8xl lg:text-9xl font-bold mb-8 leading-none tracking-tight transition-all duration-1000 ${
-                isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-              }`}
-              style={{
-                fontWeight: 700,
-                letterSpacing: '-0.02em',
-                transitionDelay: '400ms'
-              }}
-            >
-              Videotvorba
+            <h1 className="vt-hero-headline vt-reveal" style={{ animationDelay: '140ms' }}>
+              VIDEO<span className="vt-tv">TVORBA</span>
             </h1>
 
-            {/* Subtitle */}
-            <p
-              className={`text-xl sm:text-2xl md:text-3xl font-light text-gray-400 mb-12 max-w-3xl mx-auto leading-relaxed transition-all duration-1000 ${
-                isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-              }`}
-              style={{
-                fontWeight: 300,
-                transitionDelay: '600ms'
-              }}
-            >
-              Sleduj náš YouTube kanál plný herního obsahu, vtipných momentů a nostalgických vzpomínek
+            <p className="vt-hero-subtitle vt-reveal" style={{ animationDelay: '220ms' }}>
+              ▌ TUNED IN SINCE 2016
             </p>
 
-            {/* CTA */}
-            <div
-              className={`flex flex-col sm:flex-row items-center justify-center gap-4 transition-all duration-1000 ${
-                isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-              }`}
-              style={{ transitionDelay: '800ms' }}
-            >
+            <p className="vt-hero-desc vt-reveal" style={{ animationDelay: '300ms' }}>
+              Český YouTube kanál Komplexáků. Herní obsah, vtipné momenty a nostalgické vzpomínky —
+              od League of Legends a CS přes Trackmanii až po retro wrestling.
+            </p>
+
+            <div className="vt-cta-row vt-reveal" style={{ animationDelay: '380ms' }}>
               <a
+                className="vt-btn-primary"
                 href="https://www.youtube.com/@MartinPenkava1337?sub_confirmation=1"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="group inline-flex items-center justify-center px-8 py-4 rounded-full text-base font-medium text-white bg-blue-600 hover:bg-blue-500 transition-all duration-200"
-                style={{
-                  boxShadow: '0 4px 16px rgba(0, 113, 227, 0.3)'
-                }}
               >
-                <span>Odebírat kanál</span>
-                <svg className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
+                Subscribe ▸
               </a>
-
               <a
+                className="vt-btn-ghost"
                 href="https://www.youtube.com/@MartinPenkava1337/videos"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center justify-center px-8 py-4 rounded-full text-base font-medium text-white backdrop-blur-xl transition-all duration-200 hover:bg-white hover:bg-opacity-10"
-                style={{
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  border: '1px solid rgba(255, 255, 255, 0.1)'
-                }}
               >
-                Procházet videa
+                Browse archive
               </a>
             </div>
-
-            {/* Scroll indicator */}
-            <div
-              className={`absolute bottom-12 left-1/2 -translate-x-1/2 transition-all duration-1000 ${
-                isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-8'
-              }`}
-              style={{ transitionDelay: '1000ms' }}
-            >
-              <div className="flex flex-col items-center gap-2 text-gray-500 animate-bounce">
-                <span className="text-xs uppercase tracking-widest">Scroll</span>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                </svg>
-              </div>
-            </div>
           </div>
         </section>
 
-        {/* Featured Video Section */}
-        <section className="relative py-32 px-6" style={{ background: '#000' }}>
-          <div className="max-w-6xl mx-auto">
-            {/* Section Title */}
-            <div className="text-center mb-16">
-              <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 tracking-tight">
-                Nejnovější video
-              </h2>
-              <p className="text-lg text-gray-400 font-light">
-                Podívejte se na náš nejčerstvější obsah
-              </p>
-            </div>
+        {/* ============ FEATURED — TAPE DECK ============ */}
+        <section className="vt-section">
+          <div className="vt-container">
+            <header className="vt-section-head">
+              <span className="vt-eyebrow">PLAYBACK · TAPE 01</span>
+              <h2 className="vt-section-title">Aktuálně se přehrává</h2>
+              <p className="vt-section-subtitle">Náš nejčerstvější obsah na kanálu</p>
+            </header>
 
-            {/* Featured Video Card */}
-            <div
-              className="group relative rounded-3xl overflow-hidden backdrop-blur-xl transition-all duration-500 hover:scale-[1.02]"
-              style={{
-                background: 'rgba(29, 29, 31, 0.6)',
-                border: '1px solid rgba(255, 255, 255, 0.1)',
-                boxShadow: '0 20px 60px rgba(0, 0, 0, 0.5)'
-              }}
-            >
-              {/* Video Container */}
-              <div className="relative aspect-video overflow-hidden">
+            <article className="vt-deck vt-reveal">
+              <div className="vt-deck-spine">
+                <span><span className="vt-deck-spine-id">№ 01</span> · TAPE-LATEST · KOMPG-TV</span>
+                <span className="vt-bars" aria-hidden />
+                <span>RUNTIME · {featuredVideo.views ?? '—'} VIEWS</span>
+              </div>
+
+              <div className="vt-deck-screen">
+                <span className="vt-reel left" aria-hidden />
+                <span className="vt-reel right" aria-hidden />
                 <iframe
                   src={`https://www.youtube.com/embed/${featuredVideo.id}`}
-                  className="w-full h-full"
+                  title={featuredVideo.title}
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
                   allowFullScreen
-                  title={featuredVideo.title}
-                ></iframe>
+                />
               </div>
 
-              {/* Content */}
-              <div className="p-8 sm:p-12">
-                <div className="flex items-center gap-3 mb-6">
-                  <span className="px-3 py-1 rounded-full text-xs font-semibold uppercase tracking-wider text-white bg-red-600">
-                    Nové
+              <div className="vt-console">
+                <div className="vt-console-row">
+                  <span>Channel</span>
+                  <span className="vt-console-val">KOMPG TV / 01</span>
+                </div>
+                <div className="vt-console-row">
+                  <span>Signal</span>
+                  <span className="vt-eq" aria-hidden>
+                    <span /><span /><span /><span /><span /><span />
                   </span>
-                  <span className="text-sm text-gray-400">{featuredVideo.views} zhlédnutí</span>
+                </div>
+                <div className="vt-console-row">
+                  <span>Tape</span>
+                  <span className="vt-console-val">A-SIDE / LATEST DROP</span>
                 </div>
 
-                <h3 className="text-3xl sm:text-4xl font-bold mb-4 tracking-tight">
-                  {featuredVideo.title}
-                </h3>
+                <h3 className="vt-deck-title">{featuredVideo.title}</h3>
+                <p className="vt-deck-desc">{featuredVideo.description}</p>
 
-                <p className="text-lg text-gray-400 font-light mb-8 leading-relaxed">
-                  {featuredVideo.description}
-                </p>
+                <div className="vt-deck-actions">
+                  <a
+                    className="vt-btn-primary"
+                    href={`https://youtu.be/${featuredVideo.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    ▶ Play on YouTube
+                  </a>
+                </div>
+              </div>
+            </article>
+          </div>
+        </section>
 
-                <a
-                  href={`https://youtu.be/${featuredVideo.id}`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center text-blue-500 hover:text-blue-400 font-medium transition-colors"
-                >
-                  <span>Přehrát na YouTube</span>
-                  <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                  </svg>
-                </a>
+        {/* ============ STATS — broadcast readout ============ */}
+        <section className="vt-section alt">
+          <div className="vt-container">
+            <div className="vt-readout vt-reveal" role="group" aria-label="Channel readout">
+              <div className="vt-readout-cell">
+                <span className="vt-readout-key">Tapes Archived</span>
+                <span className="vt-readout-val">{allVideosWithCategory.length}+</span>
+              </div>
+              <div className="vt-readout-cell">
+                <span className="vt-readout-key">Channels</span>
+                <span className="vt-readout-val">03</span>
+              </div>
+              <div className="vt-readout-cell">
+                <span className="vt-readout-key">Signal Strength</span>
+                <span className="vt-readout-bars" aria-hidden>
+                  <span /><span /><span /><span /><span />
+                </span>
+              </div>
+              <div className="vt-readout-cell">
+                <span className="vt-readout-key">On Air Since</span>
+                <span className="vt-readout-val phosphor">2016</span>
               </div>
             </div>
           </div>
         </section>
 
-        {/* Stats Section */}
-        <section className="relative py-32 px-6" style={{ background: '#1d1d1f' }}>
-          <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-              {[
-                { label: "Video obsah", value: "Gaming & Zábava" },
-                { label: "Zaměření", value: "Retro & Modern" },
-                { label: "Komunita", value: "Komplexáci" }
-              ].map((stat, index) => (
-                <div
-                  key={index}
-                  className="text-center p-12 rounded-3xl backdrop-blur-xl transition-all duration-300 hover:scale-105"
-                  style={{
-                    background: 'rgba(0, 0, 0, 0.3)',
-                    border: '1px solid rgba(255, 255, 255, 0.05)'
-                  }}
-                >
-                  <div className="text-5xl font-bold mb-4 tracking-tight">
-                    {stat.value}
-                  </div>
-                  <div className="text-sm text-gray-400 uppercase tracking-widest font-medium">
-                    {stat.label}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* ============ GALLERY — TAPE COVERS ============ */}
+        <section className="vt-section">
+          <div className="vt-container">
+            <header className="vt-section-head">
+              <span className="vt-eyebrow">VIDEOTÉKA · TAPE LIBRARY</span>
+              <h2 className="vt-section-title">Archív vysílání</h2>
+              <p className="vt-section-subtitle">Vyber kanál a nalaď se</p>
+            </header>
 
-        {/* Video Gallery Section */}
-        <section className="relative py-32 px-6" style={{ background: '#000' }}>
-          <div className="max-w-6xl mx-auto">
-            {/* Section Header */}
-            <div className="text-center mb-16">
-              <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-4 tracking-tight">
-                Videotéka
-              </h2>
-              <p className="text-lg text-gray-400 font-light">
-                Nejlepší momenty z našeho kanálu
-              </p>
-            </div>
-
-            {/* Category Filter */}
-            <div className="flex flex-wrap justify-center gap-3 mb-16">
-              {[
-                { key: 'all', label: 'Všechny' },
-                { key: 'latest', label: 'Nejnovější' },
-                { key: 'retro', label: 'Retro Gaming' },
-                { key: 'gaming', label: 'Modern Gaming' }
-              ].map((category) => (
+            <div className="vt-cat-row" role="tablist" aria-label="Filtr kategorií">
+              {CATEGORY_FILTERS.map((c) => (
                 <button
-                  key={category.key}
-                  onClick={() => setActiveCategory(category.key)}
-                  className={`px-6 py-3 rounded-full text-sm font-medium transition-all duration-200 ${
-                    activeCategory === category.key
-                      ? 'bg-white text-black'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                  style={{
-                    background: activeCategory === category.key ? '#ffffff' : 'rgba(255, 255, 255, 0.05)',
-                    border: activeCategory === category.key ? 'none' : '1px solid rgba(255, 255, 255, 0.1)'
-                  }}
+                  key={c.key}
+                  type="button"
+                  role="tab"
+                  aria-selected={activeCategory === c.key}
+                  className={`vt-cat-pill${activeCategory === c.key ? ' is-active' : ''}`}
+                  onClick={() => setActiveCategory(c.key)}
                 >
-                  {category.label}
+                  <span className="vt-led" aria-hidden />
+                  {c.label}
                 </button>
               ))}
             </div>
 
-            {/* Video Grid */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-              {filteredVideos.filter(v => !v.featured).map((video, index) => (
-                <div
-                  key={video.id}
-                  onMouseEnter={() => setHoveredVideo(video.id)}
-                  onMouseLeave={() => setHoveredVideo(null)}
-                  className="group relative rounded-2xl overflow-hidden backdrop-blur-xl transition-all duration-300 hover:scale-[1.03]"
-                  style={{
-                    background: 'rgba(29, 29, 31, 0.6)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)'
-                  }}
-                >
-                  {/* Video Thumbnail */}
-                  <div className="relative aspect-video overflow-hidden bg-gray-900">
-                    <iframe
-                      src={`https://www.youtube.com/embed/${video.id}`}
-                      className="w-full h-full"
-                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                      allowFullScreen
-                      title={video.title}
-                    ></iframe>
-                  </div>
-
-                  {/* Content */}
-                  <div className="p-6">
-                    <h3 className="text-lg font-semibold mb-2 tracking-tight line-clamp-2">
-                      {video.title}
-                    </h3>
-
-                    <p className="text-sm text-gray-400 font-light mb-4 line-clamp-2 leading-relaxed">
-                      {video.description}
-                    </p>
-
-                    <a
-                      href={`https://youtu.be/${video.id}`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="inline-flex items-center text-sm text-blue-500 hover:text-blue-400 font-medium transition-colors"
+            {filteredVideos.length > 0 ? (
+              <div className="vt-grid">
+                {filteredVideos.map((video, i) => {
+                  const num = String(i + 2).padStart(2, '0');
+                  const tag = CATEGORY_TAG_LABEL[video.category as Exclude<CategoryKey, 'all'>];
+                  return (
+                    <article
+                      key={video.id}
+                      className="vt-tape vt-reveal"
+                      style={{ animationDelay: `${i * 80}ms` }}
                     >
-                      <span>Přehrát</span>
-                      <svg className="w-4 h-4 ml-1 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                      </svg>
-                    </a>
-                  </div>
-                </div>
-              ))}
+                      <div className="vt-tape-spine">
+                        <span><span className="vt-tape-no">№ {num}</span> · <span className="vt-tape-cat">{tag}</span></span>
+                        {video.platform && <span className="vt-tape-platform">{video.platform}</span>}
+                      </div>
+                      <div className="vt-tape-screen">
+                        <iframe
+                          src={`https://www.youtube.com/embed/${video.id}`}
+                          title={video.title}
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                          allowFullScreen
+                          loading="lazy"
+                        />
+                      </div>
+                      <div className="vt-tape-body">
+                        <h3 className="vt-tape-title">{video.title}</h3>
+                        <p className="vt-tape-desc">{video.description}</p>
+                      </div>
+                      <div className="vt-tape-foot">
+                        <span className="vt-barcode" aria-hidden />
+                        <a
+                          className="vt-link"
+                          href={`https://youtu.be/${video.id}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          ▶ Play
+                        </a>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+            ) : (
+              <p className="vt-section-subtitle" style={{ textAlign: 'center' }}>
+                V této kategorii zatím nejsou žádné záznamy.
+              </p>
+            )}
+          </div>
+        </section>
+
+        {/* ============ ABOUT ============ */}
+        <section className="vt-section alt">
+          <div className="vt-container">
+            <div className="vt-about-grid">
+              <div className="vt-reveal">
+                <span className="vt-eyebrow">CHANNEL INFO</span>
+                <h2 className="vt-section-title" style={{ textAlign: 'left' }}>O kanálu</h2>
+                <p className="vt-about-copy">
+                  Vítej na YouTube kanálu Komplexáců. Najdeš tu herní obsah, vtipné momenty z našich
+                  her, retro gaming vzpomínky a mnoho dalšího — od League of Legends přes
+                  Counter Strike až po wrestlingové hry. Všechno, co se týká našeho klanu.
+                </p>
+              </div>
+
+              <div className="vt-tags-grid vt-reveal" style={{ animationDelay: '120ms' }} aria-label="Žánry">
+                {TAGS.map((t) => (
+                  <span key={t} className="vt-chip">{t}</span>
+                ))}
+              </div>
             </div>
           </div>
         </section>
 
-        {/* About Section */}
-        <section className="relative py-32 px-6" style={{ background: '#1d1d1f' }}>
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-4xl sm:text-5xl font-bold mb-8 tracking-tight">
-              O kanálu
+        {/* ============ FINAL CTA — TUNE IN ============ */}
+        <section className="vt-tune">
+          <div className="vt-tune-inner">
+            <h2 className="vt-tune-title vt-reveal">
+              TUNE <span className="vt-slash">//</span> IN
             </h2>
-
-            <p className="text-xl text-gray-400 font-light leading-relaxed mb-12">
-              Vítejte na YouTube kanálu Komplexáců! Zde najdete herní obsah, vtipné momenty z našich her,
-              retro gaming vzpomínky a mnoho dalšího. Od League of Legends přes Counter Strike až po
-              wrestlingové hry - máme tu pro vás vše, co se týká našeho klanu.
+            <p className="vt-tune-desc vt-reveal" style={{ animationDelay: '120ms' }}>
+              Odebírej náš kanál a zapni zvoneček, ať ti neunikne žádné nové vysílání.
             </p>
 
-            <div className="flex flex-wrap justify-center gap-3">
-              {['Gaming', 'League of Legends', 'Counter Strike', 'WWE Games', 'Retro', 'Komplexáci'].map((tag, index) => (
-                <span
-                  key={index}
-                  className="px-4 py-2 rounded-full text-sm font-medium backdrop-blur-xl transition-all duration-200 hover:scale-105"
-                  style={{
-                    background: 'rgba(255, 255, 255, 0.05)',
-                    border: '1px solid rgba(255, 255, 255, 0.1)',
-                    color: '#86868b'
-                  }}
-                >
-                  {tag}
-                </span>
-              ))}
+            <div className="vt-dial vt-reveal" aria-hidden style={{ animationDelay: '200ms' }}>
+              <span className="vt-dial-freq">FM 89.2 · KOMPG TV</span>
+              <div className="vt-dial-ticks" />
+              <span className="vt-dial-needle" />
             </div>
-          </div>
-        </section>
 
-        {/* Final CTA Section */}
-        <section className="relative py-32 px-6" style={{ background: '#000' }}>
-          <div className="max-w-4xl mx-auto text-center">
-            <h2 className="text-5xl sm:text-6xl md:text-7xl font-bold mb-8 tracking-tight leading-none">
-              Nepromeškej<br />nový obsah
-            </h2>
-
-            <p className="text-xl text-gray-400 font-light mb-12 leading-relaxed max-w-2xl mx-auto">
-              Odebírej náš kanál a zapni zvonečkem, aby ti neuniklo žádné nové video z našeho klanu.
-            </p>
-
-            <a
-              href="https://www.youtube.com/@MartinPenkava1337?sub_confirmation=1"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="group inline-flex items-center justify-center px-10 py-5 rounded-full text-lg font-medium text-white bg-blue-600 hover:bg-blue-500 transition-all duration-200"
-              style={{
-                boxShadow: '0 8px 24px rgba(0, 113, 227, 0.4)'
-              }}
-            >
-              <span>Odebírat teď</span>
-              <svg className="w-6 h-6 ml-2 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </a>
+            <div className="vt-cta-row vt-reveal" style={{ animationDelay: '260ms', justifyContent: 'center', display: 'flex' }}>
+              <a
+                className="vt-btn-primary"
+                href="https://www.youtube.com/@MartinPenkava1337?sub_confirmation=1"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Subscribe ▸
+              </a>
+            </div>
           </div>
         </section>
       </main>
 
-      {/* Footer */}
-      <footer className="relative py-12 px-6 border-t" style={{ background: '#1d1d1f', borderColor: 'rgba(255, 255, 255, 0.1)' }}>
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row justify-between items-center gap-6">
-            <p className="text-sm text-gray-400">
-              © 2025 Komplexáci. Všechna práva vyhrazena.
-            </p>
-
-            <div className="flex gap-8">
-              <Link
-                href="/"
-                className="text-sm text-gray-400 hover:text-white transition-colors"
-              >
-                Hlavní stránka
-              </Link>
-              <a
-                href="https://www.youtube.com/@MartinPenkava1337"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-gray-400 hover:text-white transition-colors"
-              >
-                YouTube
-              </a>
-              <a
-                href="https://discord.gg/e6BEQpQRBA"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="text-sm text-gray-400 hover:text-white transition-colors"
-              >
-                Discord
-              </a>
-            </div>
+      <footer className="vt-footer">
+        <div className="vt-footer-inner">
+          <Image
+            src="https://cdn.komplexaci.cz/komplexaci/img/logo.png"
+            alt="Komplexáci"
+            width={72}
+            height={72}
+            unoptimized
+            className="vt-footer-logo"
+            style={{ height: 'auto', width: '72px' }}
+          />
+          <p className="vt-footer-copy">© 2025 Komplexáci · Všechna práva vyhrazena</p>
+          <p className="vt-footer-credit">S láskou vytvořil Martin Pěnkava ⚡ Next.js</p>
+          <div className="vt-footer-links">
+            <Link href="/">Hlavní stránka</Link>
+            <a href="https://www.youtube.com/@MartinPenkava1337" target="_blank" rel="noopener noreferrer">YouTube</a>
+            <a href="https://discord.gg/e6BEQpQRBA" target="_blank" rel="noopener noreferrer">Discord</a>
           </div>
         </div>
       </footer>
-
-      <style jsx>{`
-        @keyframes bounce {
-          0%, 100% {
-            transform: translateY(0);
-          }
-          50% {
-            transform: translateY(8px);
-          }
-        }
-
-        .animate-bounce {
-          animation: bounce 2s infinite;
-        }
-
-        @keyframes pulse {
-          0%, 100% {
-            opacity: 1;
-          }
-          50% {
-            opacity: 0.5;
-          }
-        }
-
-        .animate-pulse {
-          animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-      `}</style>
     </div>
   );
 }
