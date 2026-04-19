@@ -124,11 +124,6 @@ const Header = () => {
       return;
     }
 
-    if (typeof window !== 'undefined' && window.innerWidth <= 768) {
-      setActiveSection('hero');
-      return;
-    }
-
     const sections = NAV_ITEMS.map((n) => n.id);
     let currentIntersecting: { id: string; ratio: number }[] = [];
 
