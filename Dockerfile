@@ -57,11 +57,11 @@ USER nextjs
 
 EXPOSE 3000
 
-# Liveness probe — uses the lightweight HEAD handler at /api/health so it
-# doesn't pay the cost of spinning up Discord gateway / analytics introspection
-# on every interval. Compose can still use GET for readiness.
+# Liveness probe — Alpine ships BusyBox wget which only supports a tiny flag
+# set: --spider performs a HEAD-style existence check ($? == 0 if the URL is
+# reachable). The GNU-only --no-verbose / --tries / --method flags break here.
 HEALTHCHECK --interval=30s --timeout=10s --start-period=90s --retries=3 \
-  CMD wget --no-verbose --tries=1 --spider --method=HEAD http://127.0.0.1:3000/api/health || exit 1
+  CMD wget -q --spider http://127.0.0.1:3000/api/health || exit 1
 
 # Direct exec so SIGTERM reaches Node and Next shuts down gracefully.
 CMD ["node", "server.js"]

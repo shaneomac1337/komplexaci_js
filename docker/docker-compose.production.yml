@@ -19,7 +19,9 @@ services:
       - /etc/localtime:/etc/localtime:ro
       - analytics-data:/app/data
     healthcheck:
-      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "--method=HEAD", "http://127.0.0.1:3000/api/health"]
+      # Alpine ships BusyBox wget — --spider does a HEAD-style existence check.
+      # The GNU --no-verbose / --tries / --method flags break under BusyBox.
+      test: ["CMD", "wget", "-q", "--spider", "http://127.0.0.1:3000/api/health"]
       interval: 30s
       timeout: 10s
       retries: 3
