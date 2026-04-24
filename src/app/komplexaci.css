@@ -2255,486 +2255,548 @@
 }
 
 /* KOMPG Trax Widget - EXACT Recreation */
-.trax-widget {
+/* ======================================================
+   KOMPG TRAX — redesigned widget (panel + mini icon)
+   ====================================================== */
+.trax-root {
     position: fixed;
-    bottom: 20px;
     right: 20px;
-    width: 420px;
-    height: 170px;
-    background-color: rgba(0, 0, 0, 0.8);
+    bottom: 20px;
+    z-index: 9000;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* ---- Mini icon (always visible) ---- */
+.trax-mini-icon {
+    position: relative;
+    width: 44px;
+    height: 44px;
     border-radius: 12px;
-    box-shadow: 0 0 15px 3px var(--accent-color),
-                inset 0 0 3px 1px var(--accent-color);
-    color: white;
-    display: flex;
-    flex-direction: column;
-    padding: 15px;
-    z-index: 9999;
-    transition: all 0.3s ease;
-    overflow: visible;
-    opacity: 0;
-    transform: translateY(20px);
-    pointer-events: none;
-    visibility: hidden;
-}
-
-.trax-widget.active {
-    opacity: 0.95;
-    transform: translateY(0);
-    pointer-events: auto;
-    visibility: visible;
-}
-
-.trax-widget:hover {
-    opacity: 1;
-    box-shadow: 0 0 15px 3px var(--accent-color),
-                inset 0 0 3px 1px var(--accent-color);
-}
-
-.trax-widget.pulsating {
-    animation: glow-pulse 3s infinite alternate;
-    will-change: box-shadow;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-}
-
-@keyframes glow-pulse {
-    0% {
-        box-shadow: 0 0 15px 3px var(--accent-color),
-                  inset 0 0 3px 1px var(--accent-color);
-    }
-    100% {
-        box-shadow: 0 0 25px 5px var(--accent-color),
-                  inset 0 0 5px 2px var(--accent-color);
-    }
-}
-
-.trax-title {
-    font-family: 'Exo 2', sans-serif;
-    font-weight: 800;
-    font-size: 1.4rem;
-    color: var(--accent-color);
-    text-shadow: 0 0 8px var(--accent-color);
-    text-align: center;
-    margin-bottom: 5px;
-    letter-spacing: 2px;
-}
-
-.trax-widget.pulsating .trax-title {
-    animation: text-glow 3s infinite alternate;
-    will-change: text-shadow;
-}
-
-@keyframes text-glow {
-    0% {
-        text-shadow: 0 0 8px var(--accent-color);
-    }
-    100% {
-        text-shadow: 0 0 15px var(--accent-color);
-    }
-}
-
-.trax-content {
+    background: rgba(11, 11, 18, 0.88);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid rgba(255, 255, 255, 0.16);
     display: flex;
     align-items: center;
-    margin-bottom: 10px;
-    flex-grow: 1;
-    flex-wrap: nowrap;
+    justify-content: center;
+    color: #9b9bb0;
+    cursor: pointer;
+    transition: border-color .2s, color .2s, box-shadow .2s, transform .15s;
+    box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    z-index: 9001;
+    /* Apple-style spring entrance on first mount */
+    animation: trax-icon-appear .5s cubic-bezier(.34, 1.56, .64, 1) both;
+}
+
+@keyframes trax-icon-appear {
+    0%   { opacity: 0; transform: scale(0.6) translateY(10px); }
+    100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+.trax-mini-icon:hover {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    transform: scale(1.06);
+}
+
+.trax-mini-icon:active {
+    transform: scale(0.93);
+    transition: transform .08s;
+}
+
+.trax-mini-icon.playing {
+    border-color: var(--accent-color);
+    color: var(--accent-color);
+    box-shadow: 0 0 0 1px var(--accent-color), 0 8px 24px rgba(0, 0, 0, 0.4);
+    /* Chain: spring in, then pulse forever (delay lets spring settle) */
+    animation: trax-icon-appear .5s cubic-bezier(.34, 1.56, .64, 1) both,
+               trax-icon-pulse 2.4s .5s ease-in-out infinite;
+}
+
+@keyframes trax-icon-pulse {
+    0%, 100% {
+        box-shadow: 0 0 0 1px var(--accent-color), 0 8px 24px rgba(0, 0, 0, 0.4);
+    }
+    50% {
+        box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-color) 35%, transparent),
+                    0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+}
+
+.trax-mini-icon.other-tab-playing {
+    border-color: #ff9500;
+    color: #ff9500;
+    box-shadow: 0 0 0 1px #ff9500, 0 8px 24px rgba(0, 0, 0, 0.4);
+    animation: trax-icon-pulse 2.4s ease-in-out infinite;
+}
+
+.trax-mini-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Animated playing bars on the mini icon */
+.trax-bars {
+    position: absolute;
+    top: -6px;
+    right: -6px;
+    display: flex;
+    gap: 2px;
+    align-items: flex-end;
+    height: 14px;
+    opacity: 0;
+    transition: opacity .2s;
+    pointer-events: none;
+}
+
+.trax-mini-icon.playing .trax-bars {
+    opacity: 1;
+}
+
+.trax-bars span {
+    width: 3px;
+    background: var(--accent-color);
+    border-radius: 1px;
+    animation: trax-bar 1s ease-in-out infinite;
+}
+
+.trax-bars span:nth-child(1) { height: 6px;  animation-delay: 0s;   }
+.trax-bars span:nth-child(2) { height: 10px; animation-delay: .2s;  }
+.trax-bars span:nth-child(3) { height: 7px;  animation-delay: .4s;  }
+
+@keyframes trax-bar {
+    0%, 100% { transform: scaleY(0.4); }
+    50%      { transform: scaleY(1);   }
+}
+
+.trax-link-dot {
+    position: absolute;
+    top: -4px;
+    right: -4px;
+    width: 14px;
+    height: 14px;
+    background: #ff0000;
+    border-radius: 50%;
+    border: 2px solid white;
+    font-size: 8px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+}
+
+/* ---- Panel ---- */
+/* Base = the hidden/gone state. Transitions animate AWAY from here into the
+   .trax-widget.open state and BACK to here on close. No keyframe animation
+   is involved — transitions fire reliably on every class change. */
+.trax-widget {
+    position: absolute;
+    right: 0;
+    bottom: 56px;
+    width: 320px;
+    background: rgba(10, 10, 18, 0.94);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    border-radius: 14px;
+    overflow: hidden;
+    box-shadow: 0 24px 48px -12px rgba(0, 0, 0, 0.7),
+                0 0 0 1px rgba(255, 255, 255, 0.04);
+    transform-origin: bottom right;
+    color: #ffffff;
+    z-index: 9000;
+    will-change: transform, opacity, filter;
+    /* Exit state (also initial state right before .open is applied) */
+    opacity: 0;
+    transform: scale(0.88) translateY(8px);
+    filter: blur(6px);
+    pointer-events: none;
+    /* Snappy exit curve by default; overridden with spring on entrance */
+    transition:
+        opacity .28s cubic-bezier(.4, 0, 1, 1),
+        transform .28s cubic-bezier(.4, 0, 1, 1),
+        filter .28s cubic-bezier(.4, 0, 1, 1);
+}
+
+.trax-widget.open {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+    filter: blur(0);
+    pointer-events: auto;
+    /* Spring enter curve */
+    transition:
+        opacity .42s cubic-bezier(.34, 1.56, .64, 1),
+        transform .42s cubic-bezier(.34, 1.56, .64, 1),
+        filter .42s cubic-bezier(.34, 1.56, .64, 1);
+}
+
+/* Staggered children fade-in on enter */
+.trax-widget.open .trax-header   { animation: trax-child .35s .08s cubic-bezier(.2, .8, .2, 1) both; }
+.trax-widget.open .trax-now      { animation: trax-child .35s .14s cubic-bezier(.2, .8, .2, 1) both; }
+.trax-widget.open .trax-progress { animation: trax-child .35s .18s cubic-bezier(.2, .8, .2, 1) both; }
+.trax-widget.open .trax-controls { animation: trax-child .35s .22s cubic-bezier(.2, .8, .2, 1) both; }
+
+@keyframes trax-child {
+    0%   { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Accent gradient strip at top */
+.trax-widget::before {
+    content: '';
+    display: block;
+    height: 2px;
+    background: linear-gradient(90deg,
+        var(--accent-color),
+        #ff6ec7,
+        #FF8C00);
+}
+
+/* Header */
+.trax-widget .trax-header {
+    display: flex;
+    align-items: center;
     justify-content: space-between;
+    padding: 12px 16px 10px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.trax-widget .trax-header-left {
+    display: flex;
+    align-items: center;
+    gap: 10px;
 }
 
 .trax-widget .trax-logo {
-    width: 70px;
-    height: 70px;
-    background-color: var(--primary-color);
-    border-radius: 50%;
-    margin: 0 15px;
+    width: 28px;
+    height: 28px;
+    border-radius: 6px;
+    background: linear-gradient(135deg, var(--accent-color), #ff6ec7);
     display: flex;
     align-items: center;
     justify-content: center;
-    flex-shrink: 0;
-    border: 3px solid rgba(255, 255, 255, 0.8);
-    box-shadow: 0 0 12px rgba(110, 79, 246, 0.8);
-    position: relative;
-    overflow: hidden;
-}
-
-/* Rotating progress ring around logo */
-.trax-widget .trax-logo::before {
-    content: '';
-    position: absolute;
-    top: -3px;
-    left: -3px;
-    right: -3px;
-    bottom: -3px;
-    border-radius: 50%;
-    background: conic-gradient(
-        from 0deg,
-        var(--accent-color) 0deg,
-        var(--accent-color) var(--progress, 0deg),
-        transparent var(--progress, 0deg),
-        transparent 360deg
-    );
-    z-index: -1;
-    transition: --progress 0.3s ease;
-}
-
-/* Animated rotating ring when playing */
-.trax-widget.pulsating .trax-logo::before {
-    animation: progressRotate 3s linear infinite;
-}
-
-@keyframes progressRotate {
-    0% {
-        transform: rotate(0deg);
-    }
-    100% {
-        transform: rotate(360deg);
-    }
-}
-
-.trax-widget.pulsating .trax-logo {
-    animation: logo-pulse 3s infinite alternate;
-    will-change: transform, box-shadow;
-    -webkit-backface-visibility: hidden;
-    backface-visibility: hidden;
-}
-
-@keyframes logo-pulse {
-    0% {
-        box-shadow: 0 0 12px rgba(110, 79, 246, 0.8);
-        transform: scale(1);
-    }
-    100% {
-        box-shadow: 0 0 20px rgba(110, 79, 246, 1);
-        transform: scale(1.05);
-    }
-}
-
-.trax-widget .logo-text {
-    font-family: 'Exo 2', sans-serif;
-    font-weight: 800;
-    font-size: 36px;
-    color: white;
-    text-shadow: 0 0 8px rgba(255, 255, 255, 0.8);
-}
-
-.trax-widget .trax-track-info {
-    flex-grow: 1;
-    padding: 0 8px;
-    overflow: hidden;
-    min-width: 0;
-    max-width: 60%;
-    position: relative;
-}
-
-.trax-widget .track-name {
-    font-family: 'Exo 2', sans-serif;
-    font-weight: 600;
-    font-size: 1.2rem;
-    color: white;
-    margin: 0;
-    text-shadow: 0 0 3px rgba(255, 255, 255, 0.5);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    position: relative;
-    display: block;
-    width: 100%;
-}
-
-.trax-widget .track-artist {
-    font-size: 1rem;
-    color: var(--accent-color);
-    margin: 5px 0 0;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-}
-
-.trax-widget .track-debug {
-    font-size: 0.7rem !important;
-    color: #ffcc00 !important;
-    margin: 2px 0 !important;
-    line-height: 1 !important;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    max-width: 100%;
-    font-family: 'Courier New', monospace;
-    letter-spacing: -0.5px;
-}
-
-.trax-widget .trax-buttons {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    background: transparent;
-    padding: 5px 0;
-    margin-left: auto;
+    font-family: 'Exo 2', system-ui, sans-serif;
+    font-weight: 900;
+    font-size: 12px;
+    color: #000;
     flex-shrink: 0;
 }
 
-.trax-widget .trax-button {
-    background-color: rgba(0, 0, 0, 0.7);
-    border: 2px solid var(--accent-color);
-    border-radius: 50%;
-    color: white;
-    font-size: 1rem;
-    width: 36px;
-    height: 36px;
-    cursor: pointer;
-    transition: all 0.2s ease;
-    padding: 0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    margin: 0;
-    box-shadow: 0 0 8px var(--accent-color);
-    position: relative;
-    z-index: 1;
+.trax-widget .trax-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #ffffff;
 }
 
-.trax-widget .trax-button.playing {
-    color: var(--accent-color);
-    text-shadow: 0 0 8px var(--accent-color);
-    background-color: rgba(0, 0, 0, 0.9);
-    border-color: var(--accent-color);
-    box-shadow: 0 0 15px var(--accent-color), inset 0 0 10px rgba(0, 255, 255, 0.3);
-    animation: button-pulse 3s infinite alternate;
-    will-change: box-shadow;
-}
-
-@keyframes button-pulse {
-    0% {
-        box-shadow: 0 0 12px var(--accent-color), inset 0 0 8px rgba(0, 255, 255, 0.3);
-    }
-    100% {
-        box-shadow: 0 0 20px var(--accent-color), inset 0 0 15px rgba(0, 255, 255, 0.5);
-    }
-}
-
-.trax-widget .trax-button:hover {
-    transform: scale(1.1);
-    background-color: rgba(0, 0, 0, 0.8);
-    border-color: var(--accent-color);
-    box-shadow: 0 0 15px var(--accent-color);
+.trax-widget .trax-label span {
     color: var(--accent-color);
 }
 
-.trax-widget .volume-control {
-    display: flex;
-    align-items: center;
-    justify-content: flex-end;
-    gap: 8px;
-    color: var(--medium-text);
-    background: rgba(0, 0, 0, 0.5);
-    padding: 4px 8px;
-    border-radius: 15px;
-    border: 1px solid rgba(0, 255, 255, 0.1);
-    width: 100%;
-    margin-top: auto;
-    position: relative;
-    z-index: 10;
-    min-height: 28px;
+.trax-widget .trax-count {
+    font-size: 10px;
+    color: #6b6b80;
+    letter-spacing: 0.1em;
+    margin-top: 2px;
 }
 
-/* Trax Close Button - Smooth Animation */
-.trax-close-button {
-    background: rgba(0, 0, 0, 0.7);
-    border: 1px solid rgba(255, 255, 255, 0.3);
-    border-radius: 50%;
-    color: rgba(255, 255, 255, 0.8);
+.trax-widget .trax-close {
     width: 24px;
     height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    font-size: 12px;
-    font-weight: bold;
-    transition: all 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
-    z-index: 20;
-}
-
-.trax-close-button:hover {
-    background: rgba(255, 0, 0, 0.8);
-    border-color: rgba(255, 255, 255, 0.6);
-    color: white;
-    transform: scale(1.1) rotate(90deg);
-    box-shadow: 0 0 10px rgba(255, 0, 0, 0.5);
-}
-
-.trax-close-button:active {
-    transform: scale(0.95) rotate(90deg);
-    transition: all 0.1s ease;
-}
-
-.trax-mini-icon {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    width: 45px;
-    height: 45px;
-    background: linear-gradient(135deg, var(--primary-color), var(--accent-color));
     border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     display: flex;
     align-items: center;
     justify-content: center;
-    color: white;
-    font-size: 1.2rem;
+    color: #6b6b80;
     cursor: pointer;
-    z-index: 999;
-    transition: all 0.3s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    font-size: 10px;
+    transition: background .15s, color .15s, transform .15s;
+    padding: 0;
 }
 
-.trax-mini-icon:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.4);
+.trax-widget .trax-close:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    transform: scale(1.05);
 }
 
-/* Responsive adjustments */
+/* Now playing */
+.trax-widget .trax-now {
+    padding: 14px 16px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.trax-widget .trax-now-label {
+    font-size: 9px;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--accent-color);
+    text-shadow: 0 0 12px color-mix(in srgb, var(--accent-color) 55%, transparent);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.trax-widget .trax-now-label .dot {
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    box-shadow: 0 0 8px var(--accent-color);
+    animation: trax-dot 1.6s ease-in-out infinite;
+}
+
+@keyframes trax-dot {
+    0%, 100% { opacity: 1;   }
+    50%      { opacity: 0.3; }
+}
+
+.trax-widget .trax-title-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 8px;
+}
+
+.trax-widget .trax-title-text {
+    flex: 1;
+    min-width: 0;
+}
+
+.trax-widget .trax-track-title {
+    font-family: 'Exo 2', system-ui, sans-serif;
+    font-weight: 700;
+    font-size: 18px;
+    color: #ffffff;
+    line-height: 1.1;
+    letter-spacing: -0.01em;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.trax-widget .trax-track-artist {
+    font-size: 12px;
+    color: #9b9bb0;
+    margin-top: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.trax-widget .trax-tag {
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 3px 7px;
+    border-radius: 999px;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: #6b6b80;
+    margin-top: 2px;
+}
+
+/* Progress bar */
+.trax-widget .trax-progress {
+    padding: 8px 16px 0;
+}
+
+.trax-widget .trax-progress-track {
+    height: 3px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 2px;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+}
+
+.trax-widget .trax-progress-fill {
+    height: 100%;
+    background: var(--accent-color);
+    border-radius: 2px;
+    transition: width .5s linear;
+    box-shadow: 0 0 6px color-mix(in srgb, var(--accent-color) 70%, transparent);
+}
+
+.trax-widget .trax-progress-times {
+    display: flex;
+    justify-content: space-between;
+    font-size: 9px;
+    color: #6b6b80;
+    margin-top: 5px;
+    letter-spacing: 0.06em;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Controls */
+.trax-widget .trax-controls {
+    padding: 12px 16px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.trax-widget .trax-btn-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.trax-widget .trax-btn {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    cursor: pointer;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #d8d8e8;
+    transition: all .15s;
+    padding: 0;
+}
+
+.trax-widget .trax-btn:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.16);
+}
+
+.trax-widget .trax-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.trax-widget .trax-btn.play {
+    width: 44px;
+    height: 44px;
+    background: var(--accent-color);
+    border-color: var(--accent-color);
+    color: #000;
+    box-shadow: 0 6px 20px -4px color-mix(in srgb, var(--accent-color) 60%, transparent);
+}
+
+.trax-widget .trax-btn.play:hover {
+    filter: brightness(1.15);
+    color: #000;
+}
+
+.trax-widget .trax-btn.play svg {
+    width: 18px;
+    height: 18px;
+}
+
+.trax-widget .trax-btn.shuffle.on {
+    color: var(--accent-color);
+    border-color: color-mix(in srgb, var(--accent-color) 45%, rgba(255, 255, 255, 0.08));
+}
+
+/* Volume */
+.trax-widget .trax-volume {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.trax-widget .trax-vol-icon {
+    cursor: pointer;
+    color: #6b6b80;
+    transition: color .15s;
+    background: transparent;
+    border: 0;
+    padding: 0;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.trax-widget .trax-vol-icon:hover {
+    color: #ffffff;
+}
+
+.trax-widget .trax-vol-icon svg {
+    width: 14px;
+    height: 14px;
+}
+
+.trax-widget .trax-volume input[type="range"] {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 72px;
+    height: 3px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: 2px;
+    cursor: pointer;
+    outline: none;
+    padding: 0;
+    margin: 0;
+    border: 0;
+}
+
+.trax-widget .trax-volume input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    cursor: pointer;
+    border: 0;
+    box-shadow: 0 0 6px color-mix(in srgb, var(--accent-color) 70%, transparent);
+}
+
+.trax-widget .trax-volume input[type="range"]::-moz-range-thumb {
+    width: 11px;
+    height: 11px;
+    border-radius: 50%;
+    background: var(--accent-color);
+    cursor: pointer;
+    border: 0;
+    box-shadow: 0 0 6px color-mix(in srgb, var(--accent-color) 70%, transparent);
+}
+
+/* Demo badge */
+.trax-widget .trax-demo {
+    padding: 6px 16px 10px;
+    font-size: 9px;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #6b6b80;
+    text-align: center;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.trax-widget .trax-demo span {
+    color: #FF8C00;
+    font-weight: 700;
+}
+
+/* Responsive */
 @media (max-width: 768px) {
+    .trax-root {
+        right: 16px;
+        bottom: 16px;
+    }
+
     .trax-widget {
-        width: calc(100vw - 40px);
-        max-width: 380px;
-        right: 20px;
-        left: 20px;
-        margin: 0 auto;
+        width: calc(100vw - 32px);
+        max-width: 340px;
     }
 
-    .trax-widget .trax-track-info {
-        max-width: 65%;
-        padding: 0 6px;
+    .trax-widget .trax-track-title {
+        font-size: 16px;
     }
 
-    .trax-widget .track-debug {
-        font-size: 0.65rem !important;
-        letter-spacing: -0.8px;
-    }
-
-    .trax-widget .track-name {
-        font-size: 1.1rem;
-    }
-
-    .trax-widget .trax-logo {
+    .trax-widget .trax-volume input[type="range"] {
         width: 60px;
-        height: 60px;
-        margin: 0 10px;
-    }
-
-    .trax-widget .logo-text {
-        font-size: 30px;
-    }
-}
-
-/* Large screen adjustments - ensure scrolling works on big displays */
-@media (min-width: 1200px) {
-    .track-name .scrolling-text-container,
-    .track-artist .scrolling-text-container {
-        max-width: 140px; /* Slightly larger on very big screens but still constrained */
-    }
-}
-
-/* Extra large screen adjustments */
-@media (min-width: 1600px) {
-    .track-name .scrolling-text-container,
-    .track-artist .scrolling-text-container {
-        max-width: 160px; /* Even larger screens get a bit more space */
-    }
-}
-
-/* Smart Hide Functionality - Complete Hide to Mini Icon */
-.trax-widget {
-    transition: transform 0.5s ease-in-out, opacity 0.3s ease;
-    transform: translateY(0);
-    opacity: 1;
-}
-
-.trax-widget.auto-hidden {
-    transform: translateY(100%); /* Hide completely */
-    opacity: 0;
-    pointer-events: none; /* Disable interactions when hidden */
-}
-
-/* Enhanced show-briefly animation for music start */
-.trax-widget.show-briefly {
-    transform: translateY(0) !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    animation: musicStartShow 5s ease-in-out;
-    z-index: 1000; /* Ensure it's above other content */
-    box-shadow:
-        0 0 25px 5px rgba(0, 255, 255, 0.6),
-        inset 0 0 10px 2px rgba(0, 255, 255, 0.2);
-}
-
-.trax-widget.show-briefly {
-    transform: translateY(0) !important;
-    opacity: 1 !important;
-    pointer-events: auto !important;
-    animation: musicStartShow 5s ease-in-out;
-    z-index: 1000; /* Ensure it's above other content */
-}
-
-@keyframes musicStartShow {
-    0% {
-        transform: translateY(0) scale(1.02);
-        box-shadow: 0 10px 40px rgba(0, 255, 255, 0.3);
-    }
-    10% {
-        transform: translateY(0) scale(1);
-        box-shadow: 0 8px 30px rgba(0, 255, 255, 0.2);
-    }
-    90% {
-        transform: translateY(0) scale(1);
-        box-shadow: 0 8px 30px rgba(0, 255, 255, 0.2);
-    }
-    100% {
-        transform: translateY(0) scale(1);
-        box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-    }
-}
-
-/* Mini icon - always visible with smart states */
-.trax-mini-icon {
-    transition: all 0.3s ease;
-    opacity: 0.6;
-    transform: scale(0.9);
-    pointer-events: auto;
-    display: flex !important; /* Always visible */
-}
-
-/* Enhanced mini icon when widget is auto-hidden */
-.trax-widget.auto-hidden ~ .trax-mini-icon {
-    opacity: 1;
-    transform: scale(1);
-    box-shadow: 0 6px 25px rgba(0, 255, 255, 0.4);
-    animation: miniIconPulse 3s ease-in-out infinite;
-}
-
-/* Mini icon when widget is visible - subtle presence */
-.trax-widget.active:not(.auto-hidden) ~ .trax-mini-icon {
-    opacity: 0.6;
-    transform: scale(0.9);
-}
-
-
-
-/* Mini icon hover effect */
-.trax-mini-icon:hover {
-    transform: scale(1.1) !important;
-    box-shadow: 0 8px 30px rgba(0, 255, 255, 0.6) !important;
-}
-
-@keyframes miniIconPulse {
-    0%, 100% {
-        box-shadow: 0 6px 25px rgba(0, 255, 255, 0.4);
-    }
-    50% {
-        box-shadow: 0 8px 30px rgba(0, 255, 255, 0.6);
     }
 }
 
