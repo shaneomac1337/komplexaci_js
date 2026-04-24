@@ -51,6 +51,7 @@ const WWEMusicPlayer: React.FC<WWEMusicPlayerProps> = ({ className = '' }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrack, setCurrentTrack] = useState(0);
   const [volume, setVolume] = useState(0.5);
+  const [muted, setMuted] = useState(false);
   const [isPlayerVisible, setIsPlayerVisible] = useState(false);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false);
@@ -59,6 +60,18 @@ const WWEMusicPlayer: React.FC<WWEMusicPlayerProps> = ({ className = '' }) => {
   const [isPlayerAutoHidden, setIsPlayerAutoHidden] = useState(false);
   const [showBriefly, setShowBriefly] = useState(false);
   const [lastScrollY, setLastScrollY] = useState(0);
+  const [progress, setProgress] = useState(0);
+  const [elapsed, setElapsed] = useState(0);
+  const [duration, setDuration] = useState(0);
+  // Panel mount + reveal gates so enter/exit CSS transitions play cleanly
+  const [panelMounted, setPanelMounted] = useState(false);
+  const [panelRevealed, setPanelRevealed] = useState(false);
+  const panelExitTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const panelRevealRafRef = useRef<number | null>(null);
+  const wweMountedRef = useRef(true);
+  // Shared timer for the auto-hide-after-N-seconds behavior so rapid
+  // skips/toggles don't leave a stale timeout closing the panel early
+  const showBrieflyTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Smart hide timeouts
   const [scrollDownTimeout, setScrollDownTimeout] = useState<NodeJS.Timeout | null>(null);
@@ -174,8 +187,22 @@ const WWEMusicPlayer: React.FC<WWEMusicPlayerProps> = ({ className = '' }) => {
       setIsDemoMode(false);
     };
 
+    const handleTimeUpdate = () => {
+      const d = audio.duration || 0;
+      setElapsed(audio.currentTime || 0);
+      setDuration(d);
+      setProgress(d ? (audio.currentTime / d) * 100 : 0);
+    };
+    const handleLoadedMetadata = () => {
+      setDuration(audio.duration || 0);
+      setElapsed(0);
+      setProgress(0);
+    };
+
     audio.addEventListener('error', handleError);
     audio.addEventListener('canplay', handleCanPlay);
+    audio.addEventListener('timeupdate', handleTimeUpdate);
+    audio.addEventListener('loadedmetadata', handleLoadedMetadata);
 
     setAudioElement(audio);
 
@@ -192,7 +219,22 @@ const WWEMusicPlayer: React.FC<WWEMusicPlayerProps> = ({ className = '' }) => {
         audio.src = '';
         audio.removeEventListener('error', handleError);
         audio.removeEventListener('canplay', handleCanPlay);
+        audio.removeEventListener('timeupdate', handleTimeUpdate);
+        audio.removeEventListener('loadedmetadata', handleLoadedMetadata);
       }
+    };
+  }, []);
+
+  // Sync volume + muted to audio
+  useEffect(() => {
+    if (audioElement) audioElement.volume = muted ? 0 : volume;
+  }, [audioElement, volume, muted]);
+
+  // Track unmount so timers can no-op safely
+  useEffect(() => {
+    wweMountedRef.current = true;
+    return () => {
+      wweMountedRef.current = false;
     };
   }, []);
 
@@ -357,10 +399,14 @@ const WWEMusicPlayer: React.FC<WWEMusicPlayerProps> = ({ className = '' }) => {
     setIsPlayerVisible(true);
     setIsPlayerAutoHidden(false);
     setShowBriefly(true);
-    
-    setTimeout(() => {
-      setShowBriefly(false);
-      setIsPlayerAutoHidden(true);
+
+    if (showBrieflyTimerRef.current) clearTimeout(showBrieflyTimerRef.current);
+    showBrieflyTimerRef.current = setTimeout(() => {
+      if (wweMountedRef.current) {
+        setShowBriefly(false);
+        setIsPlayerAutoHidden(true);
+      }
+      showBrieflyTimerRef.current = null;
     }, 4000);
   };
 
@@ -490,94 +536,198 @@ const WWEMusicPlayer: React.FC<WWEMusicPlayerProps> = ({ className = '' }) => {
     }
   };
 
+  const seekTo = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (!audioElement || !audioElement.duration || isDemoMode) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+    audioElement.currentTime = pct * audioElement.duration;
+    setProgress(pct * 100);
+    setElapsed(pct * audioElement.duration);
+  };
+
+  const fmt = (s: number) => {
+    if (!s || isNaN(s) || !isFinite(s)) return '0:00';
+    const m = Math.floor(s / 60);
+    const sec = Math.floor(s % 60);
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  };
+
+  const panelOpen = (isPlayerVisible && !isPlayerAutoHidden) || showBriefly;
+
+  // Gate panel mount + reveal so enter/exit CSS transitions fire cleanly.
+  useEffect(() => {
+    if (panelOpen) {
+      if (panelExitTimerRef.current) {
+        clearTimeout(panelExitTimerRef.current);
+        panelExitTimerRef.current = null;
+      }
+      setPanelMounted(true);
+      if (panelRevealRafRef.current != null) cancelAnimationFrame(panelRevealRafRef.current);
+      panelRevealRafRef.current = requestAnimationFrame(() => {
+        panelRevealRafRef.current = requestAnimationFrame(() => {
+          if (wweMountedRef.current) setPanelRevealed(true);
+        });
+      });
+    } else {
+      if (panelRevealRafRef.current != null) cancelAnimationFrame(panelRevealRafRef.current);
+      setPanelRevealed(false);
+      if (panelExitTimerRef.current) clearTimeout(panelExitTimerRef.current);
+      panelExitTimerRef.current = setTimeout(() => {
+        if (wweMountedRef.current) setPanelMounted(false);
+      }, 320);
+    }
+    return () => {
+      if (panelExitTimerRef.current) clearTimeout(panelExitTimerRef.current);
+      if (panelRevealRafRef.current != null) cancelAnimationFrame(panelRevealRafRef.current);
+    };
+  }, [panelOpen]);
+
   return (
     <>
-      {/* WWE Music Player Widget */}
-      <div
-        className={`trax-widget ${isPlayerVisible ? 'active' : ''} ${isPlaying ? 'pulsating' : ''} ${isPlayerAutoHidden ? 'auto-hidden' : ''} ${showBriefly ? 'show-briefly' : ''} ${className}`}
-      >
-        <button
-          className="trax-close-button"
-          onClick={() => setIsPlayerAutoHidden(true)}
-        >
-          ✕
-        </button>
-
-        <div className="trax-title">WWE Trax</div>
-
-        <div className="trax-content">
-          <div className="trax-logo">
-            <span className="logo-text">W</span>
-          </div>
-
-          <div className="trax-track-info">
-            <ScrollingText
-              text={wwePlaylist[currentTrack]?.title || 'WWF SmackDown! 2 Theme'}
-              className="track-name"
-              maxWidth={120}
-            />
-            <p className="track-debug">
-              {isDemoMode ? '🎮 DEMO' : '🎵'}
-              {' '}
-              Track: 1/1
-            </p>
-            <ScrollingText
-              text={wwePlaylist[currentTrack]?.artist || 'WWF SmackDown! 2 OST'}
-              className="track-artist"
-              maxWidth={120}
-            />
-          </div>
-
-          <div className="trax-buttons">
+      <div className="trax-root">
+        {/* WWE Music Player Widget */}
+        {panelMounted && (
+        <div className={`trax-widget ${panelRevealed ? 'open' : ''} ${className}`}>
+          {/* Header */}
+          <div className="trax-header">
+            <div className="trax-header-left">
+              <div className="trax-logo">W</div>
+              <div>
+                <div className="trax-label"><span>WWE</span> Trax</div>
+                <div className="trax-count">
+                  {currentTrack + 1} / {wwePlaylist.length} · SmackDown! 2
+                </div>
+              </div>
+            </div>
             <button
-              className={`trax-button ${isPlaying ? 'playing' : ''}`}
-              onClick={togglePlay}
+              className="trax-close"
+              onClick={() => setIsPlayerAutoHidden(true)}
+              aria-label="Close"
             >
-              {isPlaying ? (
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
-              )}
+              ✕
             </button>
           </div>
-        </div>
 
-        <div className="volume-control">
-          <svg className="w-4 h-4" style={{ color: 'var(--medium-text)' }} fill="currentColor" viewBox="0 0 24 24">
-            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
+          {/* Now playing */}
+          <div className="trax-now">
+            <div className="trax-now-label">
+              {isPlaying && <span className="dot" />}
+              {isPlaying ? (isDemoMode ? 'Now playing · DEMO' : 'Now playing') : 'Paused'}
+            </div>
+            <div className="trax-title-row">
+              <div className="trax-title-text">
+                <div
+                  className="trax-track-title"
+                  title={wwePlaylist[currentTrack]?.title || 'WWF SmackDown! 2 Theme'}
+                >
+                  {wwePlaylist[currentTrack]?.title || 'WWF SmackDown! 2 Theme'}
+                </div>
+                <div className="trax-track-artist">
+                  {wwePlaylist[currentTrack]?.artist || 'WWF SmackDown! 2 OST'}
+                </div>
+              </div>
+              <span className="trax-tag">WWE</span>
+            </div>
+          </div>
+
+          {/* Progress */}
+          <div className="trax-progress">
+            <div className="trax-progress-track" onClick={seekTo}>
+              <div className="trax-progress-fill" style={{ width: `${progress}%` }} />
+            </div>
+            <div className="trax-progress-times">
+              <span>{fmt(elapsed)}</span>
+              <span>{fmt(duration)}</span>
+            </div>
+          </div>
+
+          {/* Controls */}
+          <div className="trax-controls">
+            <div className="trax-btn-group">
+              <button className="trax-btn" onClick={prevTrack} title="Previous">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" />
+                </svg>
+              </button>
+              <button
+                className={`trax-btn play ${isPlaying ? 'playing' : ''}`}
+                onClick={togglePlay}
+                title="Play / Pause"
+              >
+                {isPlaying ? (
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </button>
+              <button className="trax-btn" onClick={nextTrack} title="Next">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+                </svg>
+              </button>
+            </div>
+
+            <div className="trax-volume">
+              <button
+                type="button"
+                className="trax-vol-icon"
+                onClick={() => setMuted((m) => !m)}
+                title={muted ? 'Unmute' : 'Mute'}
+                aria-label={muted ? 'Unmute' : 'Mute'}
+              >
+                {muted || volume === 0 ? (
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4 9.91 6.09 12 8.18V4z" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
+                  </svg>
+                )}
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={muted ? 0 : volume}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  setMuted(false);
+                  setVolume(v);
+                  if (audioElement) audioElement.volume = v;
+                }}
+              />
+            </div>
+          </div>
+
+          {isDemoMode && (
+            <div className="trax-demo">
+              <span>DEMO</span> — audio files not reachable
+            </div>
+          )}
+        </div>
+        )}
+
+        {/* WWE Music Mini Icon */}
+        <div
+          className={`trax-mini-icon ${isPlaying ? 'playing' : ''}`}
+          onClick={togglePlayerWidget}
+          title="Toggle WWE Music Player"
+        >
+          <div className="trax-bars" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
           </svg>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.1"
-            value={volume}
-            onChange={handleVolumeChange}
-            style={{
-              width: '80px',
-              height: '4px',
-              background: 'rgba(0, 255, 255, 0.3)',
-              borderRadius: '2px',
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-          />
         </div>
-      </div>
-
-      {/* WWE Music Mini Icon */}
-      <div
-        className="trax-mini-icon"
-        onClick={togglePlayerWidget}
-        title="Toggle WWE Music Player"
-      >
-        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-        </svg>
       </div>
 
       {/* Auto-play hint */}

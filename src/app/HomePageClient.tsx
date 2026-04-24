@@ -269,6 +269,7 @@ export default function HomePageClient({
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTrack, setCurrentTrack] = useState(0); // Will be set to random in useEffect
   const [volume, setVolume] = useState(0.5);
+  const [muted, setMuted] = useState(false);
   const [isTraxVisible, setIsTraxVisible] = useState(false);
   const [audioElement, setAudioElement] = useState<HTMLAudioElement | null>(null);
   const [isDemoMode, setIsDemoMode] = useState(false); // Start by trying real audio first
@@ -276,6 +277,22 @@ export default function HomePageClient({
   const [isShuffleMode, setIsShuffleMode] = useState(true); // Enable shuffle by default, like original
   const [isTraxAutoHidden, setIsTraxAutoHidden] = useState(false);
   const [showBriefly, setShowBriefly] = useState(false);
+  const [progress, setProgress] = useState(0); // 0-100
+  const [elapsed, setElapsed] = useState(0); // seconds
+  const [duration, setDuration] = useState(0); // seconds
+  // Panel mount + reveal gates.
+  //   panelMounted  = panel is in the DOM (stays true through exit transition)
+  //   panelRevealed = panel has the .open class (triggers enter/exit transition)
+  // We mount first, wait one frame so the "closed" styles paint, THEN add .open
+  // so the browser sees a property change and fires the transition.
+  const [panelMounted, setPanelMounted] = useState(false);
+  const [panelRevealed, setPanelRevealed] = useState(false);
+  const panelExitTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const panelRevealRafRef = useRef<number | null>(null);
+  // Single timer for the auto-hide-after-N-seconds behavior — reset on every
+  // skip/play/auto-advance so rapid actions don't leave a stale timer
+  // waiting to close the panel prematurely.
+  const showBrieflyTimerRef = useRef<NodeJS.Timeout | null>(null);
 
   // Cross-tab coordination state
   const [tabId] = useState(() => `tab_${Date.now()}_${Math.random().toString(36).substring(2, 11)}`);
@@ -305,6 +322,87 @@ export default function HomePageClient({
       isMountedRef.current = false;
     };
   }, []);
+
+  // Hydrate volume + muted from localStorage on mount
+  useEffect(() => {
+    try {
+      const v = parseFloat(localStorage.getItem('trax-vol') || '');
+      if (!isNaN(v) && v >= 0 && v <= 1) setVolume(v);
+      const m = localStorage.getItem('trax-muted');
+      if (m === 'true') setMuted(true);
+    } catch {}
+  }, []);
+
+  // Persist volume + muted, sync with audio element
+  useEffect(() => {
+    try {
+      localStorage.setItem('trax-vol', String(volume));
+      localStorage.setItem('trax-muted', muted ? 'true' : 'false');
+    } catch {}
+    if (audioElement) audioElement.volume = muted ? 0 : volume;
+  }, [volume, muted, audioElement]);
+
+  // Wire audio progress events
+  useEffect(() => {
+    if (!audioElement) return;
+    const onTimeUpdate = () => {
+      if (!isMountedRef.current) return;
+      const d = audioElement.duration || 0;
+      setElapsed(audioElement.currentTime || 0);
+      setDuration(d);
+      setProgress(d ? (audioElement.currentTime / d) * 100 : 0);
+    };
+    const onLoadedMetadata = () => {
+      if (!isMountedRef.current) return;
+      setDuration(audioElement.duration || 0);
+      setElapsed(0);
+      setProgress(0);
+    };
+    audioElement.addEventListener('timeupdate', onTimeUpdate);
+    audioElement.addEventListener('loadedmetadata', onLoadedMetadata);
+    return () => {
+      audioElement.removeEventListener('timeupdate', onTimeUpdate);
+      audioElement.removeEventListener('loadedmetadata', onLoadedMetadata);
+    };
+  }, [audioElement]);
+
+  // Reset progress when track changes
+  useEffect(() => {
+    setProgress(0);
+    setElapsed(0);
+  }, [currentTrack]);
+
+  // Manage panel mount + reveal so enter/exit CSS transitions play cleanly.
+  // panelOpen is derived from isTraxVisible / isTraxAutoHidden / showBriefly.
+  const traxPanelOpen = (isTraxVisible && !isTraxAutoHidden) || showBriefly;
+  useEffect(() => {
+    if (traxPanelOpen) {
+      if (panelExitTimerRef.current) {
+        clearTimeout(panelExitTimerRef.current);
+        panelExitTimerRef.current = null;
+      }
+      setPanelMounted(true);
+      // Defer .open to the next frame so the initial "closed" styles paint
+      // first; the subsequent class change then fires the enter transition.
+      if (panelRevealRafRef.current != null) cancelAnimationFrame(panelRevealRafRef.current);
+      panelRevealRafRef.current = requestAnimationFrame(() => {
+        panelRevealRafRef.current = requestAnimationFrame(() => {
+          if (isMountedRef.current) setPanelRevealed(true);
+        });
+      });
+    } else {
+      if (panelRevealRafRef.current != null) cancelAnimationFrame(panelRevealRafRef.current);
+      setPanelRevealed(false); // drops .open class → exit transition fires
+      if (panelExitTimerRef.current) clearTimeout(panelExitTimerRef.current);
+      panelExitTimerRef.current = setTimeout(() => {
+        if (isMountedRef.current) setPanelMounted(false);
+      }, 320); // slightly longer than transition (280ms) so exit plays fully
+    }
+    return () => {
+      if (panelExitTimerRef.current) clearTimeout(panelExitTimerRef.current);
+      if (panelRevealRafRef.current != null) cancelAnimationFrame(panelRevealRafRef.current);
+    };
+  }, [traxPanelOpen]);
 
   // Shuffle members on component mount
   useEffect(() => {
@@ -786,13 +884,15 @@ export default function HomePageClient({
             setShowBriefly(true);
             devLog('🎵 Auto-advance - showing Kompg Trax for new track:', playlist[next].title);
 
-            // Auto-hide after 4 seconds for auto-advance
-            setTimeout(() => {
+            // Auto-hide after 4 seconds — clear any stale auto-hide first
+            if (showBrieflyTimerRef.current) clearTimeout(showBrieflyTimerRef.current);
+            showBrieflyTimerRef.current = setTimeout(() => {
               if (isMountedRef.current) {
                 setShowBriefly(false);
                 setIsTraxAutoHidden(true);
                 devLog('⏰ Auto-hiding Kompg Trax after auto-advance');
               }
+              showBrieflyTimerRef.current = null;
             }, 4000);
           })
           .catch((error) => {
@@ -809,13 +909,15 @@ export default function HomePageClient({
         setShowBriefly(true);
         devLog('🎮 Demo auto-advance - showing Kompg Trax for new track:', playlist[next]?.title);
 
-        // Auto-hide after 4 seconds for demo auto-advance
-        setTimeout(() => {
+        // Auto-hide after 4 seconds — clear any stale auto-hide first
+        if (showBrieflyTimerRef.current) clearTimeout(showBrieflyTimerRef.current);
+        showBrieflyTimerRef.current = setTimeout(() => {
           if (isMountedRef.current) {
             setShowBriefly(false);
             setIsTraxAutoHidden(true);
             devLog('⏰ Auto-hiding Kompg Trax after demo auto-advance');
           }
+          showBrieflyTimerRef.current = null;
         }, 4000);
       }
     };
@@ -1029,6 +1131,23 @@ export default function HomePageClient({
     return randomTrack;
   };
 
+  // Show the Trax panel briefly, then auto-hide.
+  // The timer is cancelled on every new call so rapid skips don't fire a
+  // stale timeout from an earlier click and close the panel too early.
+  const showTraxBriefly = (ms: number) => {
+    setIsTraxVisible(true);
+    setIsTraxAutoHidden(false);
+    setShowBriefly(true);
+    if (showBrieflyTimerRef.current) clearTimeout(showBrieflyTimerRef.current);
+    showBrieflyTimerRef.current = setTimeout(() => {
+      if (isMountedRef.current) {
+        setShowBriefly(false);
+        setIsTraxAutoHidden(true);
+      }
+      showBrieflyTimerRef.current = null;
+    }, ms);
+  };
+
   const nextTrack = () => {
     if (isLoadingTrack || !playlist || playlist.length === 0) {
       devLog('Already loading a track or no playlist available, ignoring next track request');
@@ -1042,6 +1161,7 @@ export default function HomePageClient({
     if (!isDemoMode && audioElement) {
       loadTrack(next);
     }
+    showTraxBriefly(3000);
   };
 
   const prevTrack = () => {
@@ -1057,6 +1177,7 @@ export default function HomePageClient({
     if (!isDemoMode && audioElement) {
       loadTrack(prev);
     }
+    showTraxBriefly(3000);
   };
 
   const loadTrack = async (trackIndex: number) => {
@@ -1174,8 +1295,8 @@ export default function HomePageClient({
         clearTimeout(musicStartTimeout);
       }
 
-      if (scrollDownTimeout) {
-        clearTimeout(scrollDownTimeout);
+      if (scrollDownTimeoutRef.current) {
+        clearTimeout(scrollDownTimeoutRef.current);
       }
 
       devLog('🔼 Manually showing Trax widget');
@@ -1886,177 +2007,213 @@ export default function HomePageClient({
         </div>
       </footer>
 
-      {/* KOMPG Trax Widget - Enhanced with Smart Features */}
-      <div
-        className={`trax-widget ${isTraxVisible ? 'active' : ''} ${isPlaying ? 'pulsating' : ''} ${isTraxAutoHidden ? 'auto-hidden' : ''} ${showBriefly ? 'show-briefly' : ''}`}
-      >
-        <button
-          className="trax-close-button"
-          onClick={() => {
-            // Use auto-hidden instead of just hiding to keep mini icon glowing
-            setIsTraxAutoHidden(true);
-            devLog('❌ Manually closing Trax widget with X');
-          }}
-          style={{
-            position: 'absolute',
-            top: '10px',
-            right: '10px',
-            background: 'rgba(255, 0, 0, 0.2)',
-            border: '1px solid rgba(255, 0, 0, 0.5)',
-            borderRadius: '50%',
-            width: '24px',
-            height: '24px',
-            color: 'white',
-            cursor: 'pointer',
-            fontSize: '12px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
+      {/* KOMPG Trax Widget - Redesigned panel + mini icon */}
+      <div className="trax-root">
+        {panelMounted && (
+        <div
+          className={`trax-widget ${panelRevealed ? 'open' : ''}`}
         >
-          ✕
-        </button>
-
-        <div className="trax-title">KOMPG Trax</div>
-
-        <div className="trax-content">
-          <div className="trax-logo">
-            <span className="logo-text">K</span>
-          </div>
-
-          <div className="trax-track-info">
-            {isPlayingInOtherTab && otherTabInfo ? (
-              <>
-                <ScrollingText
-                  text={`🔗 ${otherTabInfo.track}`}
-                  className="track-name"
-                  maxWidth={120}
-                />
-                <p className="track-debug" style={{ color: '#ff9500' }}>
-                  🎵 Playing in another tab
-                </p>
-                <p className="track-artist" style={{ color: '#ff9500' }}>
-                  Click to take over playback
-                </p>
-              </>
-            ) : (
-              <>
-                <ScrollingText
-                  text={playlist?.[currentTrack]?.title || 'Komplexáci Anthem'}
-                  className="track-name"
-                  maxWidth={120}
-                />
-                <p className="track-debug">
-                  {isDemoMode ? '🎮 DEMO' : '🎵'}
-                  {isShuffleMode ? ' 🔀' : ''}
-                  {' '}
-                  {currentTrack + 1}/{playlist?.length || 0}
-                </p>
-                <ScrollingText
-                  text={playlist?.[currentTrack]?.artist || 'Komplexáci Gaming Clan'}
-                  className="track-artist"
-                  maxWidth={120}
-                />
-              </>
-            )}
-          </div>
-
-          <div className="trax-buttons">
-            <button className="trax-button" onClick={prevTrack}>
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/>
-              </svg>
-            </button>
+          {/* Header */}
+          <div className="trax-header">
+            <div className="trax-header-left">
+              <div className="trax-logo">K</div>
+              <div>
+                <div className="trax-label"><span>KompG</span> Trax</div>
+                <div className="trax-count">
+                  {(currentTrack + 1)} / {playlist?.length || 0} · {isShuffleMode ? 'shuffle' : 'queue'}
+                </div>
+              </div>
+            </div>
             <button
-              className={`trax-button ${isPlaying ? 'playing' : ''}`}
-              onClick={togglePlay}
+              className="trax-close"
+              onClick={() => {
+                setIsTraxAutoHidden(true);
+                setShowBriefly(false);
+                devLog('❌ Manually closing Trax widget with X');
+              }}
+              aria-label="Close"
             >
-              {isPlaying ? (
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/>
-                </svg>
-              ) : (
-                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M8 5v14l11-7z"/>
-                </svg>
+              ✕
+            </button>
+          </div>
+
+          {/* Now playing */}
+          <div className="trax-now">
+            <div className="trax-now-label">
+              {isPlaying && <span className="dot" />}
+              {isPlayingInOtherTab && otherTabInfo
+                ? 'Playing in another tab'
+                : isPlaying
+                ? (isDemoMode ? 'Now playing · DEMO' : 'Now playing')
+                : 'Paused'}
+            </div>
+            <div className="trax-title-row">
+              <div className="trax-title-text">
+                {isPlayingInOtherTab && otherTabInfo ? (
+                  <>
+                    <div className="trax-track-title" title={otherTabInfo.track}>
+                      🔗 {otherTabInfo.track}
+                    </div>
+                    <div className="trax-track-artist">Click play to take over</div>
+                  </>
+                ) : (
+                  <>
+                    <div
+                      className="trax-track-title"
+                      title={playlist?.[currentTrack]?.title || 'Komplexáci Anthem'}
+                    >
+                      {playlist?.[currentTrack]?.title || 'Komplexáci Anthem'}
+                    </div>
+                    <div className="trax-track-artist">
+                      {playlist?.[currentTrack]?.artist || 'Komplexáci Gaming Clan'}
+                    </div>
+                  </>
+                )}
+              </div>
+              {playlist?.[currentTrack]?.tags?.[0] && !isPlayingInOtherTab && (
+                <span className="trax-tag">{playlist[currentTrack].tags[0]}</span>
               )}
-            </button>
-            <button className="trax-button" onClick={nextTrack}>
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/>
-              </svg>
-            </button>
-            <button
-              className={`trax-button ${isShuffleMode ? 'playing' : ''}`}
-              onClick={() => setIsShuffleMode(!isShuffleMode)}
-              title={isShuffleMode ? 'Shuffle ON' : 'Shuffle OFF'}
+            </div>
+          </div>
+
+          {/* Progress */}
+          <div className="trax-progress">
+            <div
+              className="trax-progress-track"
+              onClick={(e) => {
+                if (!audioElement || !audioElement.duration || isDemoMode) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const pct = Math.max(0, Math.min(1, (e.clientX - rect.left) / rect.width));
+                audioElement.currentTime = pct * audioElement.duration;
+                setProgress(pct * 100);
+                setElapsed(pct * audioElement.duration);
+              }}
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
-                <path d="M10.59 9.17L5.41 4 4 5.41l5.17 5.17 1.42-1.41zM14.5 4l2.04 2.04L4 18.59 5.41 20 17.96 7.46 20 9.5V4h-5.5zm.33 9.41l-1.41 1.41 3.13 3.13L14.5 20H20v-5.5l-2.04 2.04-3.13-3.13z"/>
-              </svg>
-            </button>
+              <div className="trax-progress-fill" style={{ width: `${progress}%` }} />
+            </div>
+            <div className="trax-progress-times">
+              <span>{formatTraxTime(elapsed)}</span>
+              <span>{formatTraxTime(duration)}</span>
+            </div>
           </div>
-        </div>
 
-        <div className="volume-control">
-          <svg className="w-4 h-4" style={{ color: 'var(--medium-text)' }} fill="currentColor" viewBox="0 0 24 24">
-            <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02zM14 3.23v2.06c2.89.86 5 3.54 5 6.71s-2.11 5.85-5 6.71v2.06c4.01-.91 7-4.49 7-8.77s-2.99-7.86-7-8.77z"/>
-          </svg>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.1"
-            value={volume}
-            onChange={handleVolumeChange}
-            style={{
-              width: '80px',
-              height: '4px',
-              background: 'rgba(0, 255, 255, 0.3)',
-              borderRadius: '2px',
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-          />
-        </div>
-      </div>
+          {/* Controls */}
+          <div className="trax-controls">
+            <div className="trax-btn-group">
+              <button
+                className={`trax-btn shuffle ${isShuffleMode ? 'on' : ''}`}
+                onClick={() => setIsShuffleMode(!isShuffleMode)}
+                title={isShuffleMode ? 'Shuffle ON' : 'Shuffle OFF'}
+              >
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <polyline points="16 3 21 3 21 8" />
+                  <line x1="4" y1="20" x2="21" y2="3" />
+                  <polyline points="21 16 21 21 16 21" />
+                  <line x1="15" y1="15" x2="21" y2="21" />
+                </svg>
+              </button>
+              <button className="trax-btn" onClick={prevTrack} title="Previous">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 6h2v12H6zm3.5 6 8.5 6V6z" />
+                </svg>
+              </button>
+              <button
+                className={`trax-btn play ${isPlaying ? 'playing' : ''}`}
+                onClick={togglePlay}
+                title="Play / Pause"
+              >
+                {isPlaying ? (
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M8 5v14l11-7z" />
+                  </svg>
+                )}
+              </button>
+              <button className="trax-btn" onClick={nextTrack} title="Next">
+                <svg viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z" />
+                </svg>
+              </button>
+            </div>
 
-      {/* Trax Mini Icon - Always Visible */}
-      <div
-        className={`trax-mini-icon ${isPlayingInOtherTab ? 'other-tab-playing' : ''}`}
-        onClick={toggleTraxWidget}
-        title={isPlayingInOtherTab ? `KOMPG Trax playing in another tab: ${otherTabInfo?.track || 'Unknown'}` : "Toggle KOMPG Trax"}
-        style={isPlayingInOtherTab ? {
-          background: 'linear-gradient(135deg, #ff9500, #ff6b00)',
-          animation: 'pulse 2s infinite'
-        } : {}}
-      >
-        <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-        </svg>
-        {isPlayingInOtherTab && (
-          <div style={{
-            position: 'absolute',
-            top: '-2px',
-            right: '-2px',
-            width: '12px',
-            height: '12px',
-            background: '#ff0000',
-            borderRadius: '50%',
-            border: '2px solid white',
-            fontSize: '8px',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            color: 'white'
-          }}>
-            🔗
+            {/* Volume */}
+            <div className="trax-volume">
+              <button
+                type="button"
+                className="trax-vol-icon"
+                onClick={() => setMuted((m) => !m)}
+                title={muted ? 'Unmute' : 'Mute'}
+                aria-label={muted ? 'Unmute' : 'Mute'}
+              >
+                {muted || volume === 0 ? (
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                    <path d="M16.5 12c0-1.77-1.02-3.29-2.5-4.03v2.21l2.45 2.45c.03-.2.05-.41.05-.63zm2.5 0c0 .94-.2 1.82-.54 2.64l1.51 1.51C20.63 14.91 21 13.5 21 12c0-4.28-2.99-7.86-7-8.77v2.06c2.89.86 5 3.54 5 6.71zM4.27 3 3 4.27 7.73 9H3v6h4l5 5v-6.73l4.25 4.25c-.67.52-1.42.93-2.25 1.18v2.06c1.38-.31 2.63-.95 3.69-1.81L19.73 21 21 19.73l-9-9L4.27 3zM12 4 9.91 6.09 12 8.18V4z" />
+                  </svg>
+                ) : (
+                  <svg viewBox="0 0 24 24" fill="currentColor" width="14" height="14">
+                    <path d="M3 9v6h4l5 5V4L7 9H3zm13.5 3c0-1.77-1.02-3.29-2.5-4.03v8.05c1.48-.73 2.5-2.25 2.5-4.02z" />
+                  </svg>
+                )}
+              </button>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.05"
+                value={muted ? 0 : volume}
+                onChange={(e) => {
+                  const v = parseFloat(e.target.value);
+                  setMuted(false);
+                  setVolume(v);
+                  if (audioElement) audioElement.volume = v;
+                }}
+              />
+            </div>
           </div>
+
+          {isDemoMode && (
+            <div className="trax-demo">
+              <span>DEMO</span> — audio files not reachable
+            </div>
+          )}
+        </div>
         )}
+
+        {/* Mini icon */}
+        <div
+          className={`trax-mini-icon ${isPlaying ? 'playing' : ''} ${isPlayingInOtherTab ? 'other-tab-playing' : ''}`}
+          onClick={toggleTraxWidget}
+          title={
+            isPlayingInOtherTab
+              ? `KOMPG Trax playing in another tab: ${otherTabInfo?.track || 'Unknown'}`
+              : 'Toggle KompG Trax'
+          }
+        >
+          <div className="trax-bars" aria-hidden="true">
+            <span />
+            <span />
+            <span />
+          </div>
+          <svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20">
+            <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+          </svg>
+          {isPlayingInOtherTab && <div className="trax-link-dot">🔗</div>}
+        </div>
       </div>
 
 
       </div>
     </>
   );
+}
+
+// Format seconds as m:ss
+function formatTraxTime(s: number): string {
+  if (!s || isNaN(s) || !isFinite(s)) return '0:00';
+  const m = Math.floor(s / 60);
+  const sec = Math.floor(s % 60);
+  return `${m}:${sec.toString().padStart(2, '0')}`;
 }
