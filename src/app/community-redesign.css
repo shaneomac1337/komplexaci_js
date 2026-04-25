@@ -1,0 +1,576 @@
+/* ================================================================
+   Discord Lounge redesign
+   Scoped to the unified community chapter so legacy card styles stay put.
+   ================================================================ */
+
+.community-redesign {
+  --lounge-bg: #07070d;
+  --lounge-bg-2: #0a0a14;
+  --lounge-panel: rgba(11, 12, 20, 0.86);
+  --lounge-panel-soft: rgba(18, 19, 31, 0.76);
+  --lounge-line: rgba(255, 255, 255, 0.1);
+  --lounge-line-strong: rgba(255, 255, 255, 0.17);
+  --lounge-text: #ffffff;
+  --lounge-muted: #d8d8e8;
+  --lounge-faint: #6b6b80;
+  --lounge-discord: #5865f2;
+  --lounge-cyan: #00ffff;
+  --lounge-pink: #ff6ec7;
+  --lounge-orange: #ff8c00;
+  --lounge-cream: #ffffff;
+  --lounge-sage: #10b981;
+  --lounge-font-display: 'Exo 2', system-ui, sans-serif;
+  --lounge-font-body: 'Roboto', system-ui, sans-serif;
+  --lounge-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+  position: relative;
+  z-index: 10;
+  overflow: hidden;
+  padding: 96px 0;
+  background: var(--lounge-bg);
+  color: var(--lounge-text);
+  font-family: var(--lounge-font-body);
+}
+
+.community-redesign .community-bg,
+.community-redesign .community-bg-image,
+.community-redesign .community-grid {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.community-redesign .community-bg-image {
+  background:
+    linear-gradient(180deg, rgba(7, 7, 13, 0.74), rgba(7, 7, 13, 0.94)),
+    url('https://cdn.komplexaci.cz/komplexaci/img/discord-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  opacity: 0.55;
+  transform: scale(1.02);
+}
+
+.community-redesign .community-bg::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at 18% 18%, rgba(88, 101, 242, 0.22), transparent 34%),
+    radial-gradient(ellipse at 82% 18%, rgba(0, 255, 255, 0.13), transparent 32%),
+    radial-gradient(ellipse at 50% 100%, rgba(255, 110, 199, 0.13), transparent 40%),
+    linear-gradient(180deg, transparent 0%, var(--lounge-bg) 100%);
+}
+
+.community-redesign .community-grid {
+  opacity: 0.22;
+  background-image:
+    linear-gradient(rgba(0, 255, 255, 0.06) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 255, 0.05) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(180deg, transparent, #000 18%, #000 76%, transparent);
+}
+
+.community-redesign .community-shell {
+  position: relative;
+  z-index: 1;
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto;
+}
+
+.community-redesign .community-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  text-align: center;
+  margin-bottom: 34px;
+}
+
+.community-redesign .community-kicker,
+.community-redesign .feature-eyebrow,
+.community-redesign .feature-tag,
+.community-redesign .panel-heading small {
+  font-family: var(--lounge-font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.16em;
+}
+
+.community-redesign .community-kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  width: max-content;
+  padding: 7px 10px;
+  border: 1px solid var(--lounge-line-strong);
+  border-radius: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  color: var(--lounge-muted);
+  font-size: 10px;
+}
+
+.community-redesign .community-live-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--lounge-discord);
+  box-shadow: 0 0 14px var(--lounge-discord);
+  animation: lounge-pulse 2s ease-in-out infinite;
+}
+
+@keyframes lounge-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.45; transform: scale(0.78); }
+}
+
+.community-redesign .community-heading-row h2 {
+  margin: 0;
+  font-family: var(--lounge-font-display);
+  font-size: clamp(44px, 6.4vw, 96px);
+  line-height: 0.94;
+  font-weight: 900;
+  letter-spacing: -0.035em;
+  text-transform: none;
+}
+
+.community-redesign .community-heading-row h2 span {
+  background: linear-gradient(135deg, var(--lounge-cyan) 0%, var(--lounge-pink) 60%, var(--lounge-orange) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.community-redesign .community-heading-row p {
+  max-width: 740px;
+  margin: 18px 0 0;
+  margin-left: auto;
+  margin-right: auto;
+  color: var(--lounge-muted);
+  font-size: 18px;
+  line-height: 1.58;
+}
+
+.community-redesign .lounge-feature-grid,
+.community-redesign .lounge-dashboard {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.community-redesign .lounge-feature {
+  position: relative;
+  min-height: 410px;
+  padding: 24px;
+  border: 1px solid var(--lounge-line-strong);
+  border-radius: 14px;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.025)),
+    var(--lounge-panel);
+  box-shadow:
+    0 24px 55px rgba(0, 0, 0, 0.42),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.community-redesign .lounge-feature::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--lounge-discord), var(--lounge-cyan), var(--lounge-pink));
+}
+
+.community-redesign .lounge-feature::after {
+  content: '';
+  position: absolute;
+  inset: auto -20% -30% 10%;
+  height: 55%;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.08), transparent 62%);
+  transform: rotate(-8deg);
+  pointer-events: none;
+}
+
+.community-redesign .music-feature::before {
+  background: linear-gradient(90deg, var(--lounge-cyan), var(--lounge-pink), var(--lounge-orange));
+}
+
+.community-redesign .feature-topline,
+.community-redesign .feature-footer,
+.community-redesign .panel-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.community-redesign .feature-icon {
+  width: 54px;
+  height: 54px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  flex: 0 0 auto;
+}
+
+.community-redesign .feature-icon svg,
+.community-redesign .lounge-button svg,
+.community-redesign .music-chip svg {
+  width: 20px;
+  height: 20px;
+}
+
+.community-redesign .discord-icon {
+  background: linear-gradient(135deg, #5865f2, #7b86ff);
+  box-shadow: 0 12px 26px rgba(88, 101, 242, 0.32);
+}
+
+.community-redesign .music-icon {
+  color: #07070d;
+  background: linear-gradient(135deg, var(--lounge-cyan), var(--lounge-pink));
+  box-shadow: 0 12px 26px rgba(0, 255, 255, 0.22);
+}
+
+.community-redesign .feature-tag {
+  padding: 6px 8px;
+  border: 1px solid var(--lounge-line);
+  border-radius: 999px;
+  color: var(--lounge-faint);
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 9px;
+}
+
+.community-redesign .feature-copy {
+  position: relative;
+  z-index: 1;
+  margin: 42px 0 24px;
+}
+
+.community-redesign .feature-eyebrow {
+  display: block;
+  color: var(--lounge-cyan);
+  font-size: 10px;
+  margin-bottom: 10px;
+}
+
+.community-redesign .discord-feature .feature-eyebrow {
+  color: #8f98ff;
+}
+
+.community-redesign .feature-copy h3 {
+  margin: 0;
+  max-width: 520px;
+  font-family: var(--lounge-font-display);
+  font-weight: 850;
+  font-size: clamp(30px, 3.8vw, 50px);
+  line-height: 0.98;
+  letter-spacing: -0.025em;
+  text-transform: none;
+}
+
+.community-redesign .feature-copy p {
+  max-width: 540px;
+  margin: 18px 0 0;
+  color: var(--lounge-muted);
+  font-size: 16px;
+  line-height: 1.56;
+}
+
+.community-redesign .music-chip-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 22px;
+}
+
+.community-redesign .music-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  padding: 10px 11px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: #dedff0;
+  font-family: var(--lounge-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+}
+
+.community-redesign .music-chip svg {
+  color: var(--lounge-cyan);
+  flex: 0 0 auto;
+}
+
+.community-redesign .feature-footer {
+  position: relative;
+  z-index: 1;
+  margin-top: auto;
+}
+
+.community-redesign .lounge-button {
+  min-height: 46px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 13px 18px;
+  border-radius: 8px;
+  border: 0;
+  text-decoration: none;
+  color: #fff;
+  font-family: var(--lounge-font-body);
+  font-size: 14px;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  text-transform: none;
+  transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
+}
+
+.community-redesign .lounge-button:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.08);
+}
+
+.community-redesign .discord-button {
+  background: #5865f2;
+  box-shadow: 0 12px 28px rgba(88, 101, 242, 0.32);
+}
+
+.community-redesign .music-button {
+  color: #07070d;
+  background: linear-gradient(135deg, var(--lounge-cyan), var(--lounge-pink), var(--lounge-orange));
+  box-shadow: 0 12px 28px rgba(0, 255, 255, 0.2);
+}
+
+.community-redesign .feature-note {
+  color: var(--lounge-faint);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: right;
+}
+
+.community-redesign .lounge-dashboard {
+  margin-top: 18px;
+  align-items: stretch;
+}
+
+.community-redesign .lounge-panel {
+  padding: 18px;
+  border: 1px solid var(--lounge-line);
+  border-radius: 12px;
+  background: var(--lounge-panel-soft);
+  backdrop-filter: blur(18px) saturate(130%);
+  -webkit-backdrop-filter: blur(18px) saturate(130%);
+  box-shadow: 0 20px 42px rgba(0, 0, 0, 0.32);
+  overflow: hidden;
+}
+
+.community-redesign .panel-large {
+  min-height: 280px;
+}
+
+.community-redesign .panel-heading {
+  padding-bottom: 12px;
+  margin-bottom: 14px;
+  border-bottom: 1px solid var(--lounge-line);
+}
+
+.community-redesign .panel-heading span {
+  font-family: var(--lounge-font-display);
+  font-weight: 800;
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.community-redesign .panel-heading small {
+  color: var(--lounge-faint);
+  font-size: 9px;
+  text-align: right;
+}
+
+.community-redesign .lounge-schedule,
+.community-redesign .status-list {
+  display: grid;
+  gap: 10px;
+}
+
+.community-redesign .lounge-schedule {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.community-redesign .lounge-schedule div,
+.community-redesign .status-list div {
+  padding: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.community-redesign .lounge-schedule strong,
+.community-redesign .status-list strong {
+  display: block;
+  color: #fff;
+  font-family: var(--lounge-font-display);
+  font-weight: 800;
+  font-size: 18px;
+  line-height: 1.1;
+}
+
+.community-redesign .lounge-schedule span,
+.community-redesign .status-list span {
+  display: block;
+  margin-top: 4px;
+  color: var(--lounge-muted);
+  font-family: var(--lounge-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.community-redesign .lounge-rules {
+  display: grid;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: var(--lounge-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
+.community-redesign .lounge-rules li {
+  position: relative;
+  padding: 11px 12px 11px 36px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.045);
+}
+
+.community-redesign .lounge-rules li::before {
+  content: '';
+  position: absolute;
+  left: 14px;
+  top: 17px;
+  width: 7px;
+  height: 7px;
+  border-radius: 999px;
+  background: var(--lounge-cyan);
+  box-shadow: 0 0 12px rgba(0, 255, 255, 0.55);
+}
+
+.community-redesign .status-panel .status-list {
+  margin-bottom: 14px;
+}
+
+/* Restyle imported live widgets only inside this lounge. */
+.community-redesign .lounge-panel > div:not(.panel-heading):not(.lounge-schedule):not(.status-list),
+.community-redesign .lounge-panel .bg-gray-700\/30,
+.community-redesign .lounge-panel .bg-gray-800\/30 {
+  border-color: rgba(255, 255, 255, 0.11) !important;
+  background: rgba(255, 255, 255, 0.045) !important;
+  box-shadow: none !important;
+}
+
+.community-redesign .lounge-panel .rounded-xl {
+  border-radius: 10px !important;
+}
+
+.community-redesign .lounge-panel .rounded-lg {
+  border-radius: 8px !important;
+}
+
+.community-redesign .lounge-panel h4,
+.community-redesign .lounge-panel h5 {
+  font-family: var(--lounge-font-display);
+  letter-spacing: 0.01em;
+}
+
+.community-redesign .lounge-panel img {
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.14);
+}
+
+.community-redesign .lounge-panel [role="button"] {
+  transition: background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.community-redesign .lounge-panel [role="button"]:hover {
+  transform: translateY(-1px);
+}
+
+@media (max-width: 980px) {
+  .community-redesign {
+    padding: 78px 0;
+  }
+
+  .community-redesign .community-header,
+  .community-redesign .lounge-feature-grid,
+  .community-redesign .lounge-dashboard {
+    grid-template-columns: 1fr;
+  }
+
+  .community-redesign .community-header {
+    gap: 14px;
+  }
+}
+
+@media (max-width: 640px) {
+  .community-redesign {
+    padding: 64px 0;
+  }
+
+  .community-redesign .community-shell {
+    width: min(100% - 28px, 1180px);
+  }
+
+  .community-redesign .community-heading-row h2 {
+    font-size: clamp(36px, 13vw, 56px);
+  }
+
+  .community-redesign .community-heading-row p,
+  .community-redesign .feature-copy p {
+    font-size: 15px;
+  }
+
+  .community-redesign .lounge-feature {
+    min-height: auto;
+    padding: 18px;
+  }
+
+  .community-redesign .feature-copy {
+    margin: 30px 0 20px;
+  }
+
+  .community-redesign .feature-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .community-redesign .feature-note {
+    text-align: left;
+  }
+
+  .community-redesign .music-chip-grid,
+  .community-redesign .lounge-schedule {
+    grid-template-columns: 1fr;
+  }
+
+  .community-redesign .lounge-panel {
+    padding: 14px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .community-redesign *,
+  .community-redesign *::before,
+  .community-redesign *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
