@@ -141,19 +141,26 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
 
         <div className="body">
           {initialLoading && (
-            <div className="text-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
-              <p className="text-gray-400 mt-2">Načítání statistik...</p>
+            <div aria-busy="true" aria-label="Načítání statistik">
+              <div className="skeleton skeleton-headline" />
+              <div className="skeleton-tiles">
+                <div className="skeleton skeleton-tile" />
+                <div className="skeleton skeleton-tile" />
+                <div className="skeleton skeleton-tile" />
+                <div className="skeleton skeleton-tile" />
+              </div>
+              <div className="skeleton skeleton-strip" />
+              <div className="skeleton skeleton-row" />
+              <div className="skeleton skeleton-row" />
+              <div className="skeleton skeleton-row" />
+              <div className="skeleton skeleton-row" />
             </div>
           )}
 
-          {error && (
-            <div className="text-center py-8">
-              <p className="text-red-400">❌ {error}</p>
-              <button
-                onClick={() => fetchUserStats(true)}
-                className="mt-2 px-4 py-2 min-h-[44px] bg-purple-600 hover:bg-purple-700 rounded-lg text-white text-sm transition-colors"
-              >
+          {error && !initialLoading && (
+            <div className="error-card">
+              <p className="error-msg">❌ {error}</p>
+              <button type="button" className="lounge-button" onClick={() => fetchUserStats(true)}>
                 Zkusit znovu
               </button>
             </div>
