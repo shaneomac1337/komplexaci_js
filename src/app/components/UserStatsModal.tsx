@@ -2,83 +2,17 @@
 
 import { useState, useEffect, useRef } from 'react';
 import SafeImage from './SafeImage';
-
-interface UserStatsModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  userId: string;
-  displayName: string;
-  avatar: string | null;
-}
-
-interface UserStats {
-  userId: string;
-  timeRange: string;
-  dateRange: {
-    startDate: string;
-    endDate: string;
-  };
-  data: {
-    totals: {
-      totalSongsPlayed: number;
-      totalOnlineTime: number;
-      totalGameTime: number;
-      totalVoiceTime: number;
-      totalScreenShareTime: number;
-      gamesPlayed: number;
-      voiceChannelsUsed: number;
-      artistsListened: number;
-    };
-    spotifyActivity: Array<{
-      artist: string;
-      plays_count: number;
-      unique_tracks: number;
-    }>;
-    topTracks: Array<{
-      track_name: string;
-      artist: string;
-      play_count: number;
-    }>;
-    gameSessions: Array<{
-      game_name: string;
-      total_minutes: number;
-      session_count: number;
-    }>;
-    voiceActivity: Array<{
-      channel_name: string;
-      total_minutes: number;
-      screen_share_minutes: number;
-      session_count: number;
-    }>;
-    recentSessions: Array<{
-      type: 'game' | 'voice' | 'spotify';
-      name: string;
-      start_time: string;
-      duration_minutes: number;
-      details?: string;
-    }>;
-    serverAverages?: {
-      avgGameTime: number;
-      avgVoiceTime: number;
-      avgSongsPlayed: number;
-      totalActiveUsers: number;
-    };
-    percentiles?: {
-      gameTimePercentile: number;
-      voiceTimePercentile: number;
-      songsPlayedPercentile: number;
-    };
-  };
-}
-
-interface Achievement {
-  id: string;
-  title: string;
-  description: string;
-  icon: string;
-  threshold: number;
-  category: 'gaming' | 'voice' | 'spotify' | 'special';
-}
+import type {
+  UserStatsModalProps,
+  UserStats,
+  Achievement,
+} from './userStats/types';
+import {
+  formatOnlineTime,
+  formatDate,
+  getSessionTypeIcon,
+  getPercentileBadgeClass,
+} from './userStats/formatters';
 
 // Achievement definitions
 const ACHIEVEMENTS: Achievement[] = [
@@ -153,39 +87,6 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
         setInitialLoading(false);
       }
     }
-  };
-
-  const formatOnlineTime = (minutes: number) => {
-    if (minutes < 60) {
-      return `${minutes}m`;
-    }
-    const hours = Math.floor(minutes / 60);
-    const remainingMinutes = minutes % 60;
-    return `${hours}h ${remainingMinutes}m`;
-  };
-
-  const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleTimeString('cs-CZ', {
-      hour: '2-digit',
-      minute: '2-digit'
-    });
-  };
-
-  const getSessionTypeIcon = (type: string): string => {
-    switch (type) {
-      case 'game': return '🎮';
-      case 'voice': return '🎤';
-      case 'spotify': return '🎵';
-      default: return '📊';
-    }
-  };
-
-  const getPercentileBadgeClass = (percentile: number): string => {
-    if (percentile >= 90) return 'bg-yellow-500/20 text-yellow-400';
-    if (percentile >= 75) return 'bg-purple-500/20 text-purple-400';
-    if (percentile >= 50) return 'bg-blue-500/20 text-blue-400';
-    return 'bg-gray-500/20 text-gray-400';
   };
 
   const renderComparisonStat = (
