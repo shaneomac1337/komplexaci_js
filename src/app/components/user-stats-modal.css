@@ -715,6 +715,157 @@
   color: var(--lounge-faint);
 }
 
+/* ============ Achievements ============ */
+.user-stats-lounge .achievements-section {
+  padding-top: 4px;
+}
+.user-stats-lounge .achievements-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+.user-stats-lounge .achievements-header h3 {
+  margin: 0;
+  font-family: var(--lounge-font-display);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--lounge-text);
+}
+.user-stats-lounge .achievements-header .counter {
+  font-family: var(--lounge-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lounge-faint);
+}
+
+.user-stats-lounge .badge-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 10px;
+}
+@media (min-width: 541px) {
+  .user-stats-lounge .badge-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+.user-stats-lounge .badge {
+  position: relative;
+  border: 1px solid var(--lounge-line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 14px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 6px;
+  overflow: hidden;
+  min-height: 168px;
+}
+.user-stats-lounge .badge::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 2px;
+}
+.user-stats-lounge .badge.cat-gaming::before  { background: var(--lounge-discord); }
+.user-stats-lounge .badge.cat-voice::before   { background: var(--lounge-orange); }
+.user-stats-lounge .badge.cat-spotify::before { background: var(--lounge-pink); }
+.user-stats-lounge .badge.cat-special::before { background: var(--lounge-cyan); }
+
+.user-stats-lounge .badge .icon {
+  font-size: 36px;
+  line-height: 1;
+}
+.user-stats-lounge .badge.locked .icon {
+  filter: grayscale(1) brightness(0.6);
+  opacity: 0.55;
+}
+
+.user-stats-lounge .badge .title {
+  font-family: var(--lounge-font-display);
+  font-weight: 800;
+  font-size: 13px;
+  line-height: 1.1;
+  color: var(--lounge-text);
+}
+.user-stats-lounge .badge .desc {
+  font-size: 11px;
+  color: var(--lounge-muted);
+  line-height: 1.35;
+}
+
+.user-stats-lounge .badge .status {
+  margin-top: auto;
+  width: 100%;
+}
+.user-stats-lounge .badge.unlocked {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.18);
+  box-shadow: 0 0 0 1px rgba(0, 255, 255, 0.12), 0 8px 24px rgba(0, 255, 255, 0.08);
+}
+.user-stats-lounge .badge.unlocked .status {
+  display: flex;
+  justify-content: center;
+}
+.user-stats-lounge .badge .done-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: rgba(0, 255, 255, 0.13);
+  color: #5af3ff;
+  font-family: var(--lounge-font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+.user-stats-lounge .badge .done-pill > i {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: #5af3ff;
+  box-shadow: 0 0 6px #5af3ff;
+  display: inline-block;
+}
+
+.user-stats-lounge .badge .progressbar {
+  height: 4px;
+  border-radius: 2px;
+  background: rgba(255, 255, 255, 0.1);
+  overflow: hidden;
+}
+.user-stats-lounge .badge .progressbar > i {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--lounge-cyan), var(--lounge-pink));
+}
+.user-stats-lounge .badge .progressmeta {
+  display: flex;
+  justify-content: space-between;
+  font-family: var(--lounge-font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-top: 4px;
+  color: var(--lounge-faint);
+}
+.user-stats-lounge .badge .special-status {
+  font-family: var(--lounge-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lounge-faint);
+  text-align: center;
+  padding: 6px 0;
+}
+
 /* Reduced motion fallback. */
 @media (prefers-reduced-motion: reduce) {
   .user-stats-lounge,

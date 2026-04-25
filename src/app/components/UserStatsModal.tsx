@@ -6,17 +6,11 @@ import type {
   UserStatsModalProps,
   UserStats,
 } from './userStats/types';
-import { formatOnlineTime } from './userStats/formatters';
 import OverviewTab from './userStats/OverviewTab';
 import SpotifyTab from './userStats/SpotifyTab';
 import GamingTab from './userStats/GamingTab';
 import VoiceTab from './userStats/VoiceTab';
-import {
-  ACHIEVEMENTS,
-  calculateAchievementProgress,
-  getUnlockedAchievements,
-  getInProgressAchievements,
-} from './userStats/achievements';
+import AchievementsTab from './userStats/AchievementsTab';
 import './user-stats-modal.css';
 
 export default function UserStatsModal({ isOpen, onClose, userId, displayName, avatar }: UserStatsModalProps) {
@@ -180,100 +174,7 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
               {activeTab === 'voice' && <VoiceTab stats={stats} />}
 
               {/* Achievements Tab */}
-              {activeTab === 'achievements' && (
-                <div className="space-y-4">
-                  {/* Unlocked Achievements */}
-                  {getUnlockedAchievements(stats).length > 0 && (
-                    <div className="bg-gray-700/30 rounded-lg p-4">
-                      <h4 className="text-sm font-semibold text-green-300 mb-3">
-                        ✨ Odemčené úspěchy ({getUnlockedAchievements(stats).length}/{ACHIEVEMENTS.length})
-                      </h4>
-                      <div className="grid grid-cols-1 gap-3">
-                        {getUnlockedAchievements(stats).map((achievement) => {
-                          const { current } = calculateAchievementProgress(achievement, stats);
-                          return (
-                            <div key={achievement.id} className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg p-3 border border-green-500/30">
-                              <div className="flex items-center gap-3">
-                                <div className="text-3xl">{achievement.icon}</div>
-                                <div className="flex-1">
-                                  <div className="flex items-center gap-2">
-                                    <div className="font-semibold text-white">{achievement.title}</div>
-                                    <span className="text-xs px-2 py-0.5 rounded-full bg-green-500/20 text-green-400">
-                                      ✓ Dokončeno
-                                    </span>
-                                  </div>
-                                  <div className="text-xs text-gray-400">{achievement.description}</div>
-                                  <div className="text-xs text-green-400 mt-1">
-                                    {achievement.id === 'marathon-gamer' || achievement.id === 'social-butterfly' || achievement.id === 'streamer'
-                                      ? formatOnlineTime(current)
-                                      : achievement.id === 'night-owl' || achievement.id === 'early-bird'
-                                      ? 'Splněno!'
-                                      : `${current} / ${achievement.threshold}`}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* In-Progress Achievements */}
-                  {getInProgressAchievements(stats).length > 0 && (
-                    <div className="bg-gray-700/30 rounded-lg p-4">
-                      <h4 className="text-sm font-semibold text-purple-300 mb-3">
-                        🎯 Rozpracované úspěchy
-                      </h4>
-                      <div className="grid grid-cols-1 gap-3">
-                        {getInProgressAchievements(stats).map((achievement) => {
-                          const { current, progress } = calculateAchievementProgress(achievement, stats);
-                          return (
-                            <div key={achievement.id} className="bg-gray-700/50 rounded-lg p-3">
-                              <div className="flex items-center gap-3">
-                                <div className="text-3xl opacity-50">{achievement.icon}</div>
-                                <div className="flex-1">
-                                  <div className="font-semibold text-white">{achievement.title}</div>
-                                  <div className="text-xs text-gray-400">{achievement.description}</div>
-                                  <div className="mt-2">
-                                    <div className="flex items-center justify-between text-xs mb-1">
-                                      <span className="text-gray-400">
-                                        {achievement.id === 'marathon-gamer' || achievement.id === 'social-butterfly' || achievement.id === 'streamer'
-                                          ? `${formatOnlineTime(current)} / ${formatOnlineTime(achievement.threshold)}`
-                                          : achievement.id === 'night-owl' || achievement.id === 'early-bird'
-                                          ? 'Zkus být aktivní ve správný čas!'
-                                          : `${current} / ${achievement.threshold}`}
-                                      </span>
-                                      <span className="text-purple-400 font-semibold">{Math.round(progress)}%</span>
-                                    </div>
-                                    <div className="h-1.5 bg-gray-600 rounded-full overflow-hidden">
-                                      <div
-                                        className="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
-                                        style={{ width: `${progress}%` }}
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* No Achievements Yet */}
-                  {getUnlockedAchievements(stats).length === 0 && (
-                    <div className="bg-gray-700/30 rounded-lg p-6 text-center">
-                      <div className="text-4xl mb-3">🎯</div>
-                      <div className="text-gray-400 text-sm mb-2">Zatím nemáš žádné odemčené úspěchy</div>
-                      <div className="text-xs text-gray-500">
-                        Pokračuj v aktivitách a získej své první achievementy!
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              {activeTab === 'achievements' && <AchievementsTab stats={stats} />}
             </div>
           )}
         </div>
