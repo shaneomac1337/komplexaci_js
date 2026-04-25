@@ -130,6 +130,207 @@
   color: var(--lounge-faint);
 }
 
+/* ============ Header ============ */
+.user-stats-lounge .header {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  border-bottom: 1px solid var(--lounge-line);
+}
+
+.user-stats-lounge .header .avatar-wrap {
+  width: 40px;
+  height: 40px;
+  border-radius: 999px;
+  overflow: hidden;
+  flex: 0 0 auto;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.user-stats-lounge .header .avatar-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.user-stats-lounge .header .meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1 1 auto;
+}
+
+.user-stats-lounge .header .meta .name {
+  font-family: var(--lounge-font-display);
+  font-weight: 800;
+  font-size: 16px;
+  line-height: 1.05;
+  color: var(--lounge-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.user-stats-lounge .header .meta .sub {
+  font-family: var(--lounge-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lounge-faint);
+}
+
+/* ============ Live pill ============ */
+.user-stats-lounge .live-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 9px;
+  border-radius: 999px;
+  font-family: var(--lounge-font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.user-stats-lounge .live-pill > i {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.user-stats-lounge .live-pill.is-loading {
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--lounge-muted);
+}
+.user-stats-lounge .live-pill.is-loading > i {
+  background: var(--lounge-muted);
+  animation: lounge-loading-pulse 1.2s ease-in-out infinite;
+}
+.user-stats-lounge .live-pill.is-live {
+  background: rgba(16, 185, 129, 0.13);
+  color: var(--lounge-sage);
+}
+.user-stats-lounge .live-pill.is-live > i {
+  background: var(--lounge-sage);
+  box-shadow: 0 0 8px var(--lounge-sage);
+  animation: lounge-live-pulse 2s ease-in-out infinite;
+}
+.user-stats-lounge .live-pill.is-error {
+  background: rgba(248, 113, 113, 0.13);
+  color: var(--lounge-error);
+}
+.user-stats-lounge .live-pill.is-error > i {
+  background: var(--lounge-error);
+}
+
+@keyframes lounge-live-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.78); }
+}
+@keyframes lounge-loading-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+/* ============ Close button ============ */
+.user-stats-lounge .close-btn {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid transparent;
+  color: var(--lounge-muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.user-stats-lounge .close-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--lounge-text);
+}
+.user-stats-lounge .close-btn:focus-visible {
+  outline: 2px solid var(--lounge-cyan);
+  outline-offset: 2px;
+}
+.user-stats-lounge .close-btn svg {
+  width: 18px;
+  height: 18px;
+}
+
+/* ============ Tab strip ============ */
+.user-stats-lounge .tabs {
+  flex: 0 0 auto;
+  display: flex;
+  gap: 4px;
+  padding: 6px 12px 0;
+  border-bottom: 1px solid var(--lounge-line);
+  background: rgba(0, 0, 0, 0.25);
+  overflow-x: auto;
+  overflow-y: hidden;
+  scrollbar-width: none;
+}
+.user-stats-lounge .tabs::-webkit-scrollbar { display: none; }
+
+.user-stats-lounge .tab {
+  flex: 0 0 auto;
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px 8px 0 0;
+  background: transparent;
+  font-family: var(--lounge-font-body);
+  font-weight: 700;
+  font-size: 13px;
+  letter-spacing: 0.01em;
+  color: #8a8a9e;
+  cursor: pointer;
+  transition: color 0.15s ease, background 0.15s ease;
+  white-space: nowrap;
+}
+.user-stats-lounge .tab:hover { color: var(--lounge-muted); }
+.user-stats-lounge .tab:focus-visible {
+  outline: 2px solid var(--lounge-cyan);
+  outline-offset: -3px;
+}
+.user-stats-lounge .tab.is-active {
+  color: var(--lounge-text);
+  background: rgba(255, 255, 255, 0.06);
+}
+.user-stats-lounge .tab.is-active::after {
+  content: '';
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: -1px;
+  height: 2px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, var(--lounge-cyan), var(--lounge-pink));
+}
+.user-stats-lounge .tab .tab-label { display: none; }
+
+@media (min-width: 641px) {
+  .user-stats-lounge .tab .tab-label { display: inline; }
+}
+
+.user-stats-lounge .tab .tab-icon {
+  font-size: 16px;
+  line-height: 1;
+}
+
 /* Reduced motion fallback. */
 @media (prefers-reduced-motion: reduce) {
   .user-stats-lounge,

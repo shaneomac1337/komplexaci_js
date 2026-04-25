@@ -118,78 +118,75 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-      <div className="bg-gray-800 w-full sm:max-w-2xl rounded-t-2xl sm:rounded-xl max-h-[90vh] sm:max-h-[85vh] overflow-hidden border-t border-x sm:border border-purple-500/20 animate-slide-up sm:animate-fade-in">
-        {/* Drag handle for mobile */}
-        <div className="sm:hidden flex justify-center pt-2 pb-1">
-          <div className="w-10 h-1 bg-gray-600 rounded-full"></div>
-        </div>
+  const todayLabel = new Date().toLocaleDateString('cs-CZ', {
+    day: '2-digit',
+    month: '2-digit',
+  });
 
-        {/* Header */}
-        <div className="flex items-center justify-between p-4 border-b border-gray-700">
-          <div className="flex items-center space-x-3">
+  const liveState: 'is-loading' | 'is-live' | 'is-error' =
+    initialLoading ? 'is-loading' : error ? 'is-error' : 'is-live';
+  const liveLabel =
+    liveState === 'is-loading' ? 'Načítání' : liveState === 'is-error' ? 'Offline' : 'Live';
+
+  const TABS: Array<{ id: 'overview' | 'spotify' | 'gaming' | 'voice' | 'achievements'; label: string; icon: string }> = [
+    { id: 'overview', label: 'Přehled', icon: '📊' },
+    { id: 'spotify', label: 'Spotify', icon: '🎵' },
+    { id: 'gaming', label: 'Hry', icon: '🎮' },
+    { id: 'voice', label: 'Voice', icon: '🎤' },
+    { id: 'achievements', label: 'Úspěchy', icon: '🏆' },
+  ];
+
+  return (
+    <div className="user-stats-lounge scrim" onClick={onClose}>
+      <div className="panel" onClick={(e) => e.stopPropagation()}>
+        <div className="drag-handle" aria-hidden="true"><i /></div>
+
+        <div className="header">
+          <div className="avatar-wrap">
             <SafeImage
               src={avatar}
               alt={displayName}
               width={40}
               height={40}
-              className="rounded-full"
               fallback={
-                <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
-                  <span className="text-white text-sm font-bold">
-                    {displayName.charAt(0).toUpperCase()}
-                  </span>
+                <div style={{ width: '100%', height: '100%', display: 'grid', placeItems: 'center', background: 'rgba(255,255,255,0.06)' }}>
+                  <span style={{ fontWeight: 800, fontSize: 14 }}>{displayName.charAt(0).toUpperCase()}</span>
                 </div>
               }
             />
-            <div>
-              <h3 className="text-base sm:text-lg font-semibold text-white">{displayName}</h3>
-              <div className="space-y-0.5">
-                <p className="text-xs sm:text-sm font-semibold text-purple-300">Dnešní aktivita</p>
-                <p className="text-xs text-gray-400 hidden sm:block">
-                  {new Date().toLocaleDateString('cs-CZ', { day: '2-digit', month: '2-digit', year: 'numeric' })} • Reset v 00:00
-                </p>
-              </div>
-            </div>
           </div>
-          <button
-            onClick={onClose}
-            className="text-gray-400 hover:text-white transition-colors p-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
-            aria-label="Zavřít"
-          >
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="meta">
+            <span className="name">{displayName}</span>
+            <span className="sub">Dnešní aktivita · {todayLabel}</span>
+          </div>
+          <span className={`live-pill ${liveState}`} aria-live="polite">
+            <i />
+            {liveLabel}
+          </span>
+          <button type="button" className="close-btn" onClick={onClose} aria-label="Zavřít">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex overflow-x-auto scrollbar-hide gap-1 border-b border-gray-700 bg-gray-750 pb-0.5">
-          {[
-            { id: 'overview', label: 'Přehled', icon: '📊' },
-            { id: 'spotify', label: 'Spotify', icon: '🎵' },
-            { id: 'gaming', label: 'Hry', icon: '🎮' },
-            { id: 'voice', label: 'Voice', icon: '🎤' },
-            { id: 'achievements', label: 'Úspěchy', icon: '🏆' }
-          ].map((tab) => (
+        <div className="tabs" role="tablist">
+          {TABS.map((tab) => (
             <button
               key={tab.id}
-              onClick={() => setActiveTab(tab.id as any)}
-              className={`flex-shrink-0 min-h-[44px] px-3 sm:px-4 py-2 text-sm font-medium transition-colors whitespace-nowrap rounded-t-lg ${
-                activeTab === tab.id
-                  ? 'text-purple-300 border-b-2 border-purple-500 bg-gray-700/50'
-                  : 'text-gray-400 hover:text-gray-300'
-              }`}
+              type="button"
+              role="tab"
+              aria-selected={activeTab === tab.id}
+              className={`tab ${activeTab === tab.id ? 'is-active' : ''}`}
+              onClick={() => setActiveTab(tab.id)}
             >
-              <span className="mr-1.5">{tab.icon}</span>
-              <span className="hidden sm:inline">{tab.label}</span>
+              <span className="tab-icon" aria-hidden="true">{tab.icon}</span>
+              <span className="tab-label">{tab.label}</span>
             </button>
           ))}
         </div>
 
-        {/* Content */}
-        <div className="p-3 sm:p-4 max-h-[calc(90vh-180px)] sm:max-h-[calc(85vh-140px)] overflow-y-auto overscroll-contain touch-pan-y">
+        <div className="body">
           {initialLoading && (
             <div className="text-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-purple-400 mx-auto"></div>
@@ -483,7 +480,7 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
                   {(!stats.data.gameSessions || stats.data.gameSessions.length === 0) && (
                     <div className="bg-gray-700/30 rounded-lg p-4 text-center">
                       <div className="text-gray-400 text-sm">
-                        � Dnes ještě nehrál žádné hry
+                        🎮 Dnes ještě nehrál žádné hry
                       </div>
                     </div>
                   )}
@@ -660,12 +657,7 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
           )}
         </div>
 
-        {/* Footer */}
-        <div className="p-4 border-t border-gray-700">
-          <div className="text-xs text-gray-500 text-center">
-            Data se resetují každý den o půlnoci (CET)
-          </div>
-        </div>
+        <div className="footer">Data se resetují každý den o půlnoci (CET)</div>
       </div>
     </div>
   );
