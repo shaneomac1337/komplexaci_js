@@ -18,6 +18,7 @@ import {
   getUnlockedAchievements,
   getInProgressAchievements,
 } from './userStats/achievements';
+import './user-stats-modal.css';
 
 export default function UserStatsModal({ isOpen, onClose, userId, displayName, avatar }: UserStatsModalProps) {
   const [stats, setStats] = useState<UserStats | null>(null);

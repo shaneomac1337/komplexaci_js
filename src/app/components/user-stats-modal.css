@@ -1,0 +1,143 @@
+/* ================================================================
+   User Stats Modal — lounge redesign
+   Scoped under .user-stats-lounge so legacy modal markup is unaffected.
+   ================================================================ */
+
+.user-stats-lounge {
+  --lounge-bg: #07070d;
+  --lounge-bg-2: #0a0a14;
+  --lounge-panel: rgba(11, 12, 20, 0.92);
+  --lounge-panel-soft: rgba(18, 19, 31, 0.76);
+  --lounge-line: rgba(255, 255, 255, 0.1);
+  --lounge-line-strong: rgba(255, 255, 255, 0.17);
+  --lounge-text: #ffffff;
+  --lounge-muted: #d8d8e8;
+  --lounge-faint: #6b6b80;
+  --lounge-discord: #5865f2;
+  --lounge-cyan: #00ffff;
+  --lounge-pink: #ff6ec7;
+  --lounge-orange: #ff8c00;
+  --lounge-sage: #10b981;
+  --lounge-error: #f87171;
+  --lounge-font-display: 'Exo 2', system-ui, sans-serif;
+  --lounge-font-body: 'Roboto', system-ui, sans-serif;
+  --lounge-font-mono: 'JetBrains Mono', ui-monospace, monospace;
+}
+
+/* Scrim covers the viewport. */
+.user-stats-lounge.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  padding: 0;
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  font-family: var(--lounge-font-body);
+  color: var(--lounge-text);
+}
+
+@media (min-width: 641px) {
+  .user-stats-lounge.scrim {
+    align-items: center;
+    padding: 16px;
+  }
+}
+
+/* The actual panel. */
+.user-stats-lounge .panel {
+  position: relative;
+  width: 100%;
+  max-width: 720px;
+  max-height: 90vh;
+  background: var(--lounge-bg);
+  border: 1px solid var(--lounge-line-strong);
+  border-bottom: 0;
+  border-radius: 16px 16px 0 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.5);
+}
+
+@media (min-width: 641px) {
+  .user-stats-lounge .panel {
+    max-height: 85vh;
+    border-bottom: 1px solid var(--lounge-line-strong);
+    border-radius: 16px;
+  }
+}
+
+/* Top gradient strip — same palette as community-redesign. */
+.user-stats-lounge .panel::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(90deg, var(--lounge-discord), var(--lounge-cyan), var(--lounge-pink), var(--lounge-orange));
+  z-index: 2;
+}
+
+/* Drag handle on mobile only. */
+.user-stats-lounge .drag-handle {
+  display: flex;
+  justify-content: center;
+  padding: 8px 0 4px;
+}
+
+.user-stats-lounge .drag-handle > i {
+  width: 40px;
+  height: 4px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.18);
+  display: block;
+}
+
+@media (min-width: 641px) {
+  .user-stats-lounge .drag-handle {
+    display: none;
+  }
+}
+
+/* Body wrapper that scrolls. */
+.user-stats-lounge .body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 16px 16px 20px;
+}
+
+@media (min-width: 641px) {
+  .user-stats-lounge .body {
+    padding: 18px 20px 22px;
+  }
+}
+
+/* Footer. */
+.user-stats-lounge .footer {
+  flex: 0 0 auto;
+  padding: 10px 16px 12px;
+  border-top: 1px solid var(--lounge-line);
+  text-align: center;
+  font-family: var(--lounge-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--lounge-faint);
+}
+
+/* Reduced motion fallback. */
+@media (prefers-reduced-motion: reduce) {
+  .user-stats-lounge,
+  .user-stats-lounge *,
+  .user-stats-lounge *::before,
+  .user-stats-lounge *::after {
+    animation-duration: 0.001s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001s !important;
+  }
+}
