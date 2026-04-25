@@ -47,3 +47,6 @@ next-env.d.ts
 
 # Exclude current_page directory entirely
 /current_page/
+
+# superpowers brainstorm session files
+.superpowers/
