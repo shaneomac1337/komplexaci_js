@@ -3,7 +3,6 @@ import { Metadata } from 'next';
 export const metadata: Metadata = {
   title: 'Counter-Strike 2 | Komplexáci',
   description: 'Counter-Strike 2 (CS2) je taktická střílečka z pohledu prvé osoby, která je pokračováním legendárního Counter-Strike: Global Offensive. Hra staví proti sobě dva týmy - teroristy a protiteroristickou jednotku - v různých herních režimech.',
-  keywords: ['Counter-Strike 2', 'CS2', 'FPS', 'střílečka', 'Valve', 'esport', 'Komplexáci'],
   alternates: {
     canonical: "/cs2",
   },
@@ -62,13 +61,6 @@ export default function CS2Layout({
             "developer": {
               "@type": "Organization",
               "name": "Valve Corporation"
-            },
-            "aggregateRating": {
-              "@type": "AggregateRating",
-              "ratingValue": "4.5",
-              "reviewCount": "1000000",
-              "bestRating": "5",
-              "worstRating": "1"
             },
             "playMode": ["MultiPlayer", "CoOp"],
             "offers": {

@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { SessionProvider } from "@/components/SessionProvider";
-import SEOContent from "@/components/SEOContent";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -15,15 +14,11 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Komplexáci - Komplexaci Gaming Klan | KompG Dobřany",
-  description: "Gaming komunita Komplexáci z Dobřan - League of Legends, CS2, WWE hry. KompG gaming klan.",
-  keywords: [
-    "Komplexáci", "Komplexaci", "KompG", "Komplex gaming", "komplexaci cz",
-    "gaming klan", "gaming komunita", "Dobřany", "Dobřany gaming",
-    "League of Legends", "LoL", "CS2", "Counter Strike", "WWE hry",
-    "esports", "český gaming", "česká komunita", "gaming tým",
-    "komplexaci.cz", "www.komplexaci.cz", "komplexaci web"
-  ],
+  title: {
+    default: "Komplexáci — Gaming klan z Dobřan (LoL, CS2, WWE)",
+    template: "%s | Komplexáci",
+  },
+  description: "Komplexáci jsou česká herní komunita z Dobřan. Hrajeme League of Legends, Counter-Strike 2 a WWE hry — a sdílíme náš gaming obsah.",
   authors: [{ name: "Komplexáci" }],
   creator: "Komplexáci",
   publisher: "Komplexáci",
@@ -110,13 +105,6 @@ export default function RootLayout({
         {/* Telegram specific */}
         <meta name="telegram:channel" content="@komplexaci" />
 
-        <link
-          rel="stylesheet"
-          href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css"
-          integrity="sha512-iecdLmaskl7CVkqkXNQ/ZH/XLlvWZOJyj7Yy7tcenmpD1ypASozpmT/E0iPtmFIB46ZmdtAc9eNBvH0H/ZpiBw=="
-          crossOrigin="anonymous"
-          referrerPolicy="no-referrer"
-        />
         {/* Structured Data for Organization */}
         <script
           type="application/ld+json"
@@ -135,10 +123,6 @@ export default function RootLayout({
                 "addressCountry": "CZ"
               },
               "sameAs": [
-                "https://www.facebook.com/penkava.martin",
-                "https://x.com/mpenkava1337",
-                "https://www.instagram.com/m_penkava/",
-                "https://www.twitch.tv/shanemc1337",
                 "https://www.youtube.com/user/Mercin1000",
                 "https://discord.gg/e6BEQpQRBA"
               ],
@@ -200,7 +184,6 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <SessionProvider>
-          <SEOContent />
           {children}
         </SessionProvider>
       </body>

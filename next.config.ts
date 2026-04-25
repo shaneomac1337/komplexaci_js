@@ -80,9 +80,6 @@ const nextConfig: NextConfig = {
         pathname: '/**',
       }
     ],
-    dangerouslyAllowSVG: true,
-    contentDispositionType: 'attachment',
-    contentSecurityPolicy: "default-src 'self'; script-src 'none'; sandbox;",
   },
   // Keep native / Discord-side modules out of the client/Edge bundles. These
   // are resolved from node_modules at runtime on the server.
