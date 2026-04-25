@@ -507,6 +507,20 @@
   line-height: 1.45;
 }
 
+.community-redesign .music-strip-source-link {
+  color: #fff;
+  font-weight: 600;
+  text-decoration: underline;
+  text-decoration-color: rgba(255, 255, 255, 0.4);
+  text-underline-offset: 2px;
+  transition: text-decoration-color 160ms ease, color 160ms ease;
+}
+
+.community-redesign .music-strip-source-link:hover {
+  color: var(--lounge-cyan);
+  text-decoration-color: var(--lounge-cyan);
+}
+
 .community-redesign .music-chip-grid {
   position: relative;
   z-index: 1;
@@ -663,9 +677,9 @@
   margin-bottom: 14px;
 }
 
-.community-redesign .compact-status-panel {
-  align-self: start;
-}
+/* Removed `align-self: start` so this panel inherits the grid's
+   align-items: stretch and matches the height of Ocenění dne — keeps the
+   two-column dashboard visually symmetric. */
 
 .community-redesign .compact-status-panel .status-list {
   grid-template-columns: repeat(3, minmax(0, 1fr));

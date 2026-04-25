@@ -85,19 +85,27 @@
         0 0 0 1px rgba(255, 255, 255, 0.02);
     width: max-content;
     max-width: calc(100vw - 24px);
+    /* Choreographed dock morph — three layers with different durations on the
+       same expo-out curve give the bar a sense of intent rather than uniform
+       stretch:
+         · corners flatten fastest (the chassis "decides" to dock)
+         · width / padding / position morph at the primary 560ms beat
+         · the box-shadow settles slowest, lending weight to the landing
+       Background and border are kept short and snappy so the surface doesn't
+       feel translucent during the morph. */
     transition:
-        top 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-        left 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-        right 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-        width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-        max-width 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-        transform 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-        border-radius 0.35s cubic-bezier(0.4, 0, 0.2, 1),
-        background-color 0.35s ease,
-        border-color 0.3s ease,
-        box-shadow 0.35s ease,
-        padding 0.35s ease;
-    will-change: transform, width;
+        top 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+        left 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+        right 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+        width 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+        max-width 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+        transform 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+        padding 0.56s cubic-bezier(0.22, 1, 0.36, 1),
+        border-radius 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+        background-color 0.26s ease-out,
+        border-color 0.26s ease-out,
+        box-shadow 0.64s cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: width, border-radius, box-shadow, transform;
 }
 
 /* Full-width "shelf" that fades in when docked, behind the pill.
@@ -118,15 +126,73 @@
     z-index: -1;
     opacity: 0;
     transform: translateY(-8px);
+    clip-path: inset(0 50% 0 50%);
     transition:
-        opacity 0.35s ease,
-        transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+        clip-path 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.18s ease-out,
+        transform 0.18s ease-out;
     pointer-events: none;
 }
 
 .pill-nav.is-docked::before {
     opacity: 1;
     transform: translateY(0);
+    clip-path: inset(0 0 0 0);
+    /* The shelf's horizontal sweep is intentionally locked to the same
+       duration / delay / easing as the ::after light-bar draw so they read
+       as one unified "extending" beat — the dark band and the glowing line
+       expand outward together. Opacity stays on the faster curve so the
+       shelf is fully visible during the wipe (otherwise the leading edge
+       would look ghostly). */
+    transition:
+        clip-path 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s,
+        opacity 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.08s,
+        transform 0.42s cubic-bezier(0.22, 1, 0.36, 1) 0.08s;
+}
+
+/* Light-bar that draws across the bottom border on dock. Position is fixed
+   to the viewport (pinned to the bottom edge of the docked pill), so the
+   line scales out to full viewport width independently of the chassis
+   morph — that's what makes it feel like a deliberate animated draw rather
+   than the chassis just stretching. Has a horizontal gradient that fades at
+   the edges plus a soft outer glow in the synthwave accent color. */
+.pill-nav::after {
+    content: '';
+    position: fixed;
+    top: 50px;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg,
+        transparent 0%,
+        color-mix(in srgb, var(--pill-accent) 55%, transparent) 12%,
+        color-mix(in srgb, var(--pill-accent) 100%, transparent) 50%,
+        color-mix(in srgb, var(--pill-accent) 55%, transparent) 88%,
+        transparent 100%);
+    box-shadow:
+        0 0 22px 1px color-mix(in srgb, var(--pill-accent) 55%, transparent),
+        0 0 6px 0 color-mix(in srgb, var(--pill-accent) 85%, transparent);
+    z-index: 1003;
+    pointer-events: none;
+    opacity: 0;
+    transform: scaleX(0);
+    transform-origin: center;
+    transition:
+        transform 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.18s ease-out,
+        top 0.22s ease-out;
+}
+
+.pill-nav.is-docked::after {
+    opacity: 1;
+    transform: scaleX(1);
+    /* Long, deliberate draw with a slight delay so it starts just as the
+       chassis lands. Expo-out easing makes the leading edge "shoot" outward
+       fast and decelerate at the viewport edges — the most visible part of
+       the animation. */
+    transition:
+        transform 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s,
+        opacity 0.32s ease-out 0.18s;
 }
 
 /* Docked: morph into a full-width bar that occupies the reserved top band.
@@ -149,6 +215,63 @@
     box-shadow:
         0 6px 24px rgba(0, 0, 0, 0.55),
         0 2px 0 0 color-mix(in srgb, var(--pill-accent) 35%, transparent);
+    /* Apple-tier deploy: the chassis crouches (squash anticipation), fires up
+       with a confident overshoot, takes a small back-bounce, then settles.
+       In parallel the accent line pulses out a saturated halo and decays to
+       its static 2px state. Two keyframe animations layered so the layout
+       transitions (width / radius) handle reflow while the spring + halo
+       carry the personality. Keyframe fill is `both` so the final state
+       composes cleanly with the static styles above. */
+    animation: pill-nav-deploy 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes pill-nav-deploy {
+    0% {
+        box-shadow:
+            0 12px 40px rgba(0, 0, 0, 0.45),
+            0 2px 0 0 transparent;
+    }
+    32% {
+        box-shadow:
+            0 8px 30px rgba(0, 0, 0, 0.5),
+            0 4px 0 0 color-mix(in srgb, var(--pill-accent) 95%, transparent),
+            0 14px 36px -2px color-mix(in srgb, var(--pill-accent) 75%, transparent),
+            0 0 26px 2px color-mix(in srgb, var(--pill-accent) 35%, transparent);
+    }
+    62% {
+        box-shadow:
+            0 6px 24px rgba(0, 0, 0, 0.55),
+            0 2px 0 0 color-mix(in srgb, var(--pill-accent) 80%, transparent),
+            0 9px 24px -3px color-mix(in srgb, var(--pill-accent) 45%, transparent);
+    }
+    100% {
+        box-shadow:
+            0 6px 24px rgba(0, 0, 0, 0.55),
+            0 2px 0 0 color-mix(in srgb, var(--pill-accent) 35%, transparent);
+    }
+}
+
+/* Spring animation runs in parallel on viewports where the chassis is
+   center-translated (i.e. not the small-mobile breakpoint that pins it
+   left:8px / right:8px and removes the translate). Sequence:
+     · 18% — Y-squash to 0.82 with a sliver of X-overshoot (anticipation)
+     · 50% — Y-snap to 1.07 with X-undershoot (confident deploy)
+     · 78% — small back-bounce (the "settle" tell)
+     · 100% — rest at scale(1, 1) */
+@keyframes pill-nav-spring {
+    0%   { transform: translate(-50%, 0) scale(1, 1); }
+    18%  { transform: translate(-50%, 0) scale(1.006, 0.82); }
+    50%  { transform: translate(-50%, 0) scale(0.997, 1.07); }
+    78%  { transform: translate(-50%, 0) scale(1.002, 0.96); }
+    100% { transform: translate(-50%, 0) scale(1, 1); }
+}
+
+@media (min-width: 521px) {
+    .pill-nav.is-docked {
+        animation:
+            pill-nav-deploy 0.72s cubic-bezier(0.22, 1, 0.36, 1) both,
+            pill-nav-spring 0.66s cubic-bezier(0.4, 0, 0.2, 1) both;
+    }
 }
 
 .pill-nav-brand {
@@ -477,11 +600,16 @@
 
 @media (prefers-reduced-motion: reduce) {
     .pill-nav,
+    .pill-nav::before,
+    .pill-nav::after,
     .pill-nav-indicator,
     .pill-nav-submenu,
     .pill-nav-logout,
     .pill-nav-login {
         transition: none;
+    }
+    .pill-nav.is-docked {
+        animation: none;
     }
 }
 
