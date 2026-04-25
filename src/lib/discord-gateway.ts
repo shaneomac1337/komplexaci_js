@@ -128,6 +128,7 @@ class DiscordGatewayService {
   private channelCache = new Map<string, ChannelInfo>();
   private messageTimestamps = new Map<string, number[]>();
   private static readonly MESSAGE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
+  private static readonly MAX_TIMESTAMPS_PER_CHANNEL = 5000;
   private serverStats: ServerStats | null = null;
   private serverId: string;
   private updateInterval: NodeJS.Timeout | null = null;
@@ -216,19 +217,27 @@ class DiscordGatewayService {
       if (!message.inGuild()) return;
       if (message.guildId !== this.serverId) return;
       if (message.author.bot) return;
+      // Only track channels we actually expose; skips threads and untracked channels.
+      if (!this.channelCache.has(message.channelId)) return;
+
       const arr = this.messageTimestamps.get(message.channelId) ?? [];
       arr.push(Date.now());
+      // Hard cap to bound a single hot channel between trims.
+      if (arr.length > DiscordGatewayService.MAX_TIMESTAMPS_PER_CHANNEL) {
+        arr.splice(0, arr.length - DiscordGatewayService.MAX_TIMESTAMPS_PER_CHANNEL);
+      }
       this.messageTimestamps.set(message.channelId, arr);
     });
 
     this.client.on('channelCreate', (channel) => {
       if (!('guildId' in channel) || channel.guildId !== this.serverId) return;
+      if (channel.type !== ChannelType.GuildText && channel.type !== ChannelType.GuildVoice) return;
       this.upsertChannel(channel as GuildBasedChannel);
       this.updateServerStats();
     });
 
     this.client.on('channelDelete', (channel) => {
-      if (!('id' in channel)) return;
+      if (!('guildId' in channel) || channel.guildId !== this.serverId) return;
       this.channelCache.delete(channel.id);
       this.messageTimestamps.delete(channel.id);
       this.updateServerStats();
@@ -236,6 +245,7 @@ class DiscordGatewayService {
 
     this.client.on('channelUpdate', (_oldChannel, newChannel) => {
       if (!('guildId' in newChannel) || newChannel.guildId !== this.serverId) return;
+      if (newChannel.type !== ChannelType.GuildText && newChannel.type !== ChannelType.GuildVoice) return;
       this.upsertChannel(newChannel as GuildBasedChannel);
       this.updateServerStats();
     });
@@ -1147,17 +1157,25 @@ class DiscordGatewayService {
   }
 
   private selectPreviewChannels(): ChannelInfo[] {
-    const configured = (process.env.DISCORD_PREVIEW_CHANNEL_IDS ?? '')
+    const raw = (process.env.DISCORD_PREVIEW_CHANNEL_IDS ?? '')
       .split(',')
       .map((id) => id.trim())
       .filter(Boolean);
 
-    if (configured.length > 0) {
-      return configured
+    if (raw.length > 0) {
+      const seen = new Set<string>();
+      const ordered: string[] = [];
+      for (const id of raw) {
+        if (seen.has(id)) continue;
+        seen.add(id);
+        ordered.push(id);
+      }
+      return ordered
         .map((id) => this.channelCache.get(id))
         .filter((c): c is ChannelInfo => Boolean(c));
     }
 
+    // Fallback: first 3 text channels + first voice channel, in Discord position order.
     const all = Array.from(this.channelCache.values()).sort((a, b) => a.position - b.position);
     const text = all.filter((c) => c.type === 'text').slice(0, 3);
     const voice = all.filter((c) => c.type === 'voice').slice(0, 1);
