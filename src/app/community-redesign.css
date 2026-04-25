@@ -380,6 +380,14 @@
   text-align: center;
 }
 
+.community-redesign .server-channel em.server-channel-rate {
+  background: rgba(88, 101, 242, 0.85); /* Discord blurple — distinct from voice-count badge */
+  color: #fff;
+  font-size: 0.65rem;
+  letter-spacing: 0.02em;
+  padding: 0 6px;
+}
+
 .community-redesign .feature-topline,
 .community-redesign .feature-footer,
 .community-redesign .panel-heading {
