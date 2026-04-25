@@ -4,6 +4,7 @@ import Image from 'next/image';
 import Head from 'next/head';
 import './komplexaci.css';
 import './hero-members-redesign.css';
+import './community-redesign.css';
 import Header from './components/Header';
 import ServerStatus from './components/ServerStatus';
 import DiscordServerStats from './components/DiscordServerStats';
@@ -21,6 +22,22 @@ const devWarn = isDev ? Function.prototype.bind.call(console.warn, console) : ()
 interface HomePageClientProps {
   members?: Member[];
   games?: typeof defaultGames;
+}
+
+interface CommunityActiveMember {
+  id: string;
+  username: string;
+  displayName: string;
+  avatar: string | null;
+  status: string;
+  dailyOnlineTime: number;
+  isOnline: boolean;
+}
+
+interface CommunityDiscordStats {
+  mostActiveMembers?: CommunityActiveMember[];
+  dataSource?: 'GATEWAY' | 'REST_API' | 'FALLBACK';
+  memberCount?: number;
 }
 
 // Import exact fonts from original
@@ -250,6 +267,209 @@ function HeroRedesign({ showMusicHint }: { showMusicHint: boolean }) {
             </div>
           </div>
         )}
+      </div>
+    </section>
+  );
+}
+
+function DiscordMark({ className = '' }: { className?: string }) {
+  return (
+    <svg className={className} fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z" />
+    </svg>
+  );
+}
+
+function CommunityLounge({ discordStats }: { discordStats: CommunityDiscordStats | null }) {
+  const musicFeatures = [
+    { label: 'Ovládání', icon: 'M8 5v14l11-7z' },
+    { label: 'Fronta', icon: 'M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z' },
+    { label: 'Rádio', icon: 'M3.24 6.15C2.51 6.43 2 7.17 2 8v8c0 .83.51 1.57 1.24 1.85L12 21.5l8.76-3.65C21.49 17.57 22 16.83 22 16V8c0-.83-.51-1.57-1.24-1.85L12 2.5 3.24 6.15zM12 9 8.5 7.5 12 6l3.5 1.5L12 9z' },
+    { label: 'Vyhledávání', icon: 'M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z' },
+  ];
+
+  return (
+    <section id="discord" className="community-redesign">
+      <div className="community-bg" aria-hidden="true">
+        <div className="community-bg-image" />
+        <div className="community-grid" />
+      </div>
+
+      <div className="community-shell">
+        <header className="community-header">
+          <div className="community-kicker">
+            <span className="community-live-dot" />
+            Discord Lounge
+          </div>
+          <div className="community-heading-row">
+            <h2>
+              Discord <span>vychytávky</span>
+            </h2>
+            <p>
+              Náš Discord není jen místo na pokec. Máme vlastního music bota,
+              webový dashboard a přehledné statistiky, které ukazují aktivitu,
+              online členy i malé denní triumfy celé komunity.
+            </p>
+          </div>
+        </header>
+
+        <div className="lounge-feature-grid">
+          <article className="lounge-feature discord-feature">
+            <div className="feature-topline">
+              <div className="feature-icon discord-icon">
+                <DiscordMark />
+              </div>
+              <span className="feature-tag">Invite open</span>
+            </div>
+            <div className="feature-copy">
+              <span className="feature-eyebrow">Server hub</span>
+              <h3>Připoj se na náš Discord</h3>
+              <p>
+                Najdeš tu naši komunitu, hlasové kanály, aktuální aktivitu členů
+                a všechny ty malé věci, které drží Komplexáky pohromadě i po letech.
+              </p>
+            </div>
+            <div className="feature-footer">
+              <a
+                href="https://discord.gg/e6BEQpQRBA"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="lounge-button discord-button"
+              >
+                <DiscordMark />
+                Připojit se
+              </a>
+              <span className="feature-note">Komunita v důchodu, Discord pořád na příjmu.</span>
+            </div>
+          </article>
+
+          <article className="lounge-feature music-feature">
+            <div className="feature-topline">
+              <div className="feature-icon music-icon">
+                <svg fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+                </svg>
+              </div>
+              <span className="feature-tag">KompG Trax echo</span>
+            </div>
+            <div className="feature-copy">
+              <span className="feature-eyebrow">Music bot</span>
+              <h3>Hudba, fronta a statistiky z webu</h3>
+              <p>
+                Ovládej Discord music bot přímo z webového rozhraní, spravuj frontu
+                a sleduj přehrávání v reálném čase. K tomu přidáváme i pěkně
+                zpracovaná data z našeho serveru.
+              </p>
+            </div>
+            <div className="music-chip-grid">
+              {musicFeatures.map((feature) => (
+                <span key={feature.label} className="music-chip">
+                  <svg fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d={feature.icon} />
+                  </svg>
+                  {feature.label}
+                </span>
+              ))}
+            </div>
+            <div className="feature-footer">
+              <a
+                href="https://music.komplexaci.cz/dashboard"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="lounge-button music-button"
+              >
+                <svg fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
+                  <path d="M19 19H5V5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7z" />
+                </svg>
+                Otevřít dashboard
+              </a>
+              <span className="feature-note">Vyžaduje Discord přihlášení.</span>
+            </div>
+          </article>
+        </div>
+
+        <div className="lounge-dashboard">
+          <div className="lounge-panel panel-large">
+            <div className="panel-heading">
+              <span>Live server</span>
+              <small>real-time stav</small>
+            </div>
+            <DiscordServerStats />
+          </div>
+
+          <div className="lounge-panel panel-large">
+            <div className="panel-heading">
+              <span>Nejaktivnější členové</span>
+              <small>kdo dnes okupuje Discord</small>
+            </div>
+            <MostActiveMembers
+              members={discordStats?.mostActiveMembers || []}
+              dataSource={discordStats?.dataSource}
+              totalMemberCount={discordStats?.memberCount}
+            />
+          </div>
+
+          <div className="lounge-panel">
+            <div className="panel-heading">
+              <span>Ocenění dne</span>
+              <small>dnešní malé triumfy</small>
+            </div>
+            <DailyAwards />
+          </div>
+
+          <div className="lounge-panel">
+            <div className="panel-heading">
+              <span>Pravidla lounge</span>
+              <small>krátké a použitelné</small>
+            </div>
+            <ul className="lounge-rules">
+              <li>Respektuj ostatní členy, i když hrají hůř než tvoje vzpomínky.</li>
+              <li>Žádný spam, toxicita ani hlasitý chaos mimo správný kanál.</li>
+              <li>Používej kanály podle tématu, ať se v tom dá žít.</li>
+              <li>Bav se. Tahle stránka existuje hlavně kvůli tomu.</li>
+            </ul>
+          </div>
+
+          <div className="lounge-panel compact-panel">
+            <div className="panel-heading">
+              <span>Nejaktivnější časy</span>
+              <small>CET / CEST</small>
+            </div>
+            <div className="lounge-schedule">
+              <div>
+                <strong>18:00 - 23:00</strong>
+                <span>všední dny</span>
+              </div>
+              <div>
+                <strong>13:00 - 01:00</strong>
+                <span>víkendy</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="lounge-panel status-panel">
+            <div className="panel-heading">
+              <span>Aktuální stav</span>
+              <small>komunitní diagnóza</small>
+            </div>
+            <div className="status-list">
+              <div>
+                <span>Status</span>
+                <strong>Klan v důchodu</strong>
+              </div>
+              <div>
+                <span>Discord</span>
+                <strong>Stále na příjmu</strong>
+              </div>
+              <div>
+                <span>Music bot</span>
+                <strong>Nostalgie připravena</strong>
+              </div>
+            </div>
+            <ServerStatus />
+          </div>
+        </div>
       </div>
     </section>
   );
@@ -1553,351 +1773,7 @@ export default function HomePageClient({
         </div>
       </section>
 
-      {/* Discord & Music Section - Enhanced Immersive with Discord Background */}
-      <section
-        id="discord"
-        className="relative z-10 py-12 overflow-hidden"
-        style={{
-          background: `
-            linear-gradient(rgba(0, 0, 0, 0.7), rgba(0, 0, 0, 0.7)),
-            url('https://cdn.komplexaci.cz/komplexaci/img/discord-bg.jpg'),
-            linear-gradient(135deg,
-              rgba(15, 15, 25, 0.95) 0%,
-              rgba(25, 15, 35, 0.95) 25%,
-              rgba(20, 25, 40, 0.95) 50%,
-              rgba(30, 20, 45, 0.95) 75%,
-              rgba(15, 15, 25, 0.95) 100%
-            )
-          `,
-          backgroundAttachment: 'scroll',
-          backgroundSize: 'cover',
-          backgroundPosition: 'center center',
-          backgroundRepeat: 'no-repeat',
-          minHeight: '600px'
-        }}
-      >
-        {/* Simplified Background Layers - Performance Optimized */}
-        <div
-          className="absolute inset-0 opacity-20 pointer-events-none discord-wave-bg"
-          style={{
-            background: `
-              linear-gradient(45deg,
-                transparent 0%,
-                rgba(114, 137, 218, 0.03) 25%,
-                transparent 50%,
-                rgba(114, 137, 218, 0.05) 75%,
-                transparent 100%
-              )
-            `,
-            animation: 'discordWave 30s ease-in-out infinite', // Slowed from 20s to 30s
-            transform: 'translate3d(0, 0, 0)', // Force GPU layer
-            willChange: 'transform, opacity',
-            backfaceVisibility: 'hidden',
-            WebkitBackfaceVisibility: 'hidden'
-          }}
-        />
-
-        <div className="container mx-auto px-6 relative z-10">
-          <h2
-            className="text-3xl font-bold text-center mb-8 bg-gradient-to-r from-purple-400 via-blue-400 to-cyan-400 bg-clip-text text-transparent"
-            style={{
-              fontFamily: "'Exo 2', sans-serif",
-              fontSize: '2.2rem',
-              textShadow: '0 0 20px rgba(138, 43, 226, 0.5)'
-            }}
-          >
-            Discord & Music
-          </h2>
-
-          {/* Discord Main Content - More compact */}
-          <div className="max-w-2xl mx-auto text-center mb-6">
-            <div
-              className="backdrop-blur-lg rounded-xl p-6 border border-purple-500/30 shadow-2xl"
-              style={{
-                background: 'linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%)',
-                boxShadow: '0 15px 30px rgba(0, 0, 0, 0.3), 0 0 15px rgba(114, 137, 218, 0.2)'
-              }}
-            >
-              <div className="mb-4">
-                <div
-                  className="w-12 h-12 mx-auto mb-3 rounded-full flex items-center justify-center transform transition-transform duration-300 hover:scale-105"
-                  style={{
-                    background: 'linear-gradient(135deg, #5865F2, #7289DA)',
-                    boxShadow: '0 6px 12px rgba(88, 101, 242, 0.3)',
-                    transform: 'translateZ(0)'
-                  }}
-                >
-                  <svg className="w-6 h-6 text-white" fill="currentColor" viewBox="0 0 24 24">
-                    <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
-                  </svg>
-                </div>
-              </div>
-              <p
-                className="text-lg mb-5 leading-relaxed text-white"
-                style={{
-                  fontSize: '1.1rem',
-                  textShadow: '0 2px 4px rgba(0, 0, 0, 0.5)'
-                }}
-              >
-                Staň se součástí naší komunity na Discordu(která bohužel také upadá). Vlastně ani nevím, co zde najdeš
-              </p>
-              <a
-                href="https://discord.gg/e6BEQpQRBA"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center px-6 py-3 rounded-full text-base font-semibold transition-all duration-300 hover:scale-105 hover:shadow-2xl relative overflow-hidden group"
-                style={{
-                  background: 'linear-gradient(135deg, #5865F2, #7289DA)',
-                  color: 'white',
-                  boxShadow: '0 4px 15px rgba(88, 101, 242, 0.4)'
-                }}
-              >
-                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/20 to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-700" />
-                <svg className="w-5 h-5 mr-2 relative z-10" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057a.082.082 0 0 0 .031.057 19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03zM8.02 15.33c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.956-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.956 2.418-2.157 2.418zm7.975 0c-1.183 0-2.157-1.085-2.157-2.419 0-1.333.955-2.419 2.157-2.419 1.21 0 2.176 1.096 2.157 2.42 0 1.333-.946 2.418-2.157 2.418z"/>
-                </svg>
-                <span className="relative z-10">Připojit se</span>
-              </a>
-            </div>
-          </div>
-
-          {/* Music Dashboard Content - More compact with original spacing */}
-          <div className="max-w-4xl mx-auto" style={{ marginTop: '30px' }}>
-            <div
-              className="relative overflow-hidden rounded-2xl border border-purple-500/30 hover:border-purple-400/60 transition-all duration-500 group"
-              style={{
-                background: `
-                  linear-gradient(135deg,
-                    rgba(255, 255, 255, 0.08) 0%,
-                    rgba(255, 255, 255, 0.03) 100%
-                  )
-                `,
-                backdropFilter: 'blur(20px)',
-                boxShadow: `
-                  0 20px 40px rgba(0, 0, 0, 0.3),
-                  0 0 25px rgba(110, 79, 246, 0.15),
-                  inset 0 1px 0 rgba(255, 255, 255, 0.1)
-                `
-              }}
-            >
-              {/* Simplified Background Overlay */}
-              <div
-                className="absolute inset-0 opacity-0 group-hover:opacity-50 transition-opacity duration-300 pointer-events-none"
-                style={{
-                  background: 'linear-gradient(45deg, transparent 0%, rgba(138, 43, 226, 0.05) 50%, transparent 100%)',
-                  transform: 'translateZ(0)'
-                }}
-              />
-
-              {/* Music Dashboard Card with improved layout */}
-              <div className="relative z-10 p-6">
-                <div className="flex flex-col lg:flex-row items-center lg:items-start gap-6">
-                  {/* Music Icon */}
-                  <div className="flex-shrink-0">
-                    <div
-                      className="w-16 h-16 rounded-full flex items-center justify-center relative group-hover:scale-105 transition-transform duration-300"
-                      style={{
-                        background: 'linear-gradient(135deg, #6e4ff6, #00d2ff)',
-                        boxShadow: '0 8px 16px rgba(110, 79, 246, 0.3)',
-                        transform: 'translateZ(0)'
-                      }}
-                    >
-                      <svg className="w-8 h-8 text-white" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z"/>
-                      </svg>
-                    </div>
-                  </div>
-
-                  {/* Music Info - Expanded to take more space */}
-                  <div className="flex-1 text-center lg:text-left">
-                    <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
-                      <div className="flex-1">
-                        <h3
-                          className="text-2xl font-bold mb-3 bg-gradient-to-r from-purple-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent"
-                          style={{
-                            fontSize: '1.6rem',
-                            fontWeight: '700',
-                            textShadow: '0 0 15px rgba(138, 43, 226, 0.5)'
-                          }}
-                        >
-                          🎵 Discord Music Bot Dashboard
-                        </h3>
-                        <p
-                          className="text-base leading-relaxed mb-4 text-gray-200"
-                          style={{
-                            fontSize: '1rem',
-                            lineHeight: '1.5',
-                            textShadow: '0 2px 4px rgba(0, 0, 0, 0.3)'
-                          }}
-                        >
-                          Ovládej náš Discord music bot přímo z webového rozhraní. Přidávej skladby, spravuj frontu, poslouchej rádio stanice a kontroluj přehrávání v reálném čase.
-                        </p>
-
-                        {/* Compact Feature tags */}
-                        <div className="grid grid-cols-2 gap-2 mb-4 lg:mb-0">
-                          {[
-                            { icon: "M8 5v14l11-7z", text: "Ovládání" },
-                            { icon: "M4 6h16v2H4zm0 5h16v2H4zm0 5h16v2H4z", text: "Fronta" },
-                            { icon: "M3.24 6.15C2.51 6.43 2 7.17 2 8v8c0 .83.51 1.57 1.24 1.85L12 21.5l8.76-3.65C21.49 17.57 22 16.83 22 16V8c0-.83-.51-1.57-1.24-1.85L12 2.5 3.24 6.15zM12 9L8.5 7.5 12 6l3.5 1.5L12 9z", text: "Rádio" },
-                            { icon: "M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z", text: "Vyhledávání" }
-                          ].map((feature, index) => (
-                            <div
-                              key={index}
-                              className="flex items-center px-3 py-2 rounded-lg border border-purple-500/30 hover:border-purple-400/50 transition-all duration-300 hover:scale-105 group/feature"
-                              style={{
-                                background: 'linear-gradient(135deg, rgba(138, 43, 226, 0.1), rgba(0, 210, 255, 0.05))',
-                                backdropFilter: 'blur(10px)',
-                                animationDelay: `${index * 0.1}s`
-                              }}
-                            >
-                              <div className="w-6 h-6 rounded-md bg-gradient-to-br from-purple-500 to-cyan-500 flex items-center justify-center mr-2 group-hover/feature:scale-110 transition-transform duration-300">
-                                <svg className="w-3 h-3 text-white" fill="currentColor" viewBox="0 0 24 24">
-                                  <path d={feature.icon}/>
-                                </svg>
-                              </div>
-                              <span className="text-xs font-medium text-purple-200 group-hover/feature:text-white transition-colors duration-300">
-                                {feature.text}
-                              </span>
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-
-                      {/* Action Button - Better positioned and sized */}
-                      <div className="flex-shrink-0 text-center lg:text-right">
-                        <a
-                          href="https://music.komplexaci.cz/dashboard"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center px-5 py-2.5 rounded-lg font-semibold transition-all duration-300 hover:scale-105 hover:shadow-lg text-white text-sm"
-                          style={{
-                            background: 'linear-gradient(135deg, #ff4655, #ff6b7a)',
-                            boxShadow: '0 4px 12px rgba(255, 70, 85, 0.3)',
-                            transform: 'translateZ(0)'
-                          }}
-                        >
-                          <svg className="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 24 24">
-                            <path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z"/>
-                            <path d="M19 19H5V5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7z"/>
-                          </svg>
-                          <span>Otevřít Dashboard</span>
-                        </a>
-                        <p className="text-xs mt-1.5 text-purple-300" style={{ textShadow: '0 1px 2px rgba(0, 0, 0, 0.5)' }}>
-                          Vyžaduje Discord přihlášení
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Server Information & Community Guidelines */}
-      <section className="relative z-10 py-20" style={{ backgroundColor: 'var(--darker-bg)' }}>
-        <div className="container mx-auto px-6">
-          {/* Server Information & Community Guidelines */}
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-            {/* Server Information */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/20">
-              <h3 className="text-2xl font-bold mb-6 bg-gradient-to-r from-blue-400 to-cyan-400 bg-clip-text text-transparent">
-                🖥️ Server Information
-              </h3>
-              
-              <div className="space-y-6">
-                {/* Discord Server - Live Members */}
-                <DiscordServerStats />
-
-                {/* Daily Awards */}
-                <DailyAwards />
-
-                {/* Activity Times */}
-                <div className="bg-gray-700/30 rounded-xl p-4 border border-green-500/20">
-                  <div className="flex items-center mb-3">
-                    <svg className="w-6 h-6 mr-3 text-green-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
-                    <h4 className="text-lg font-semibold text-white">Nejaktivnější časy</h4>
-                  </div>
-                  <div className="text-sm space-y-1">
-                    <div className="text-gray-300">🕕 18:00 - 23:00 (všední dny)</div>
-                    <div className="text-gray-300">🕐 13:00 - 01:00 (víkendy)</div>
-                    <div className="text-gray-400 text-xs mt-2">* Časy v CET/CEST timezone</div>
-                  </div>
-                </div>
-
-
-
-              </div>
-            </div>
-
-            {/* Community Guidelines & Most Active Members */}
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/20">
-              <h3 className="text-2xl font-bold mb-6 bg-gradient-to-r from-purple-400 to-pink-400 bg-clip-text text-transparent">
-                📋 Community Guidelines
-              </h3>
-
-              <div className="space-y-6">
-                {/* Most Active Members */}
-                <MostActiveMembers
-                  members={discordStats?.mostActiveMembers || []}
-                  dataSource={discordStats?.dataSource}
-                  totalMemberCount={discordStats?.memberCount}
-                />
-
-                {/* Basic Rules */}
-                <div className="bg-gray-700/30 rounded-xl p-4 border border-purple-500/20">
-                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-                    </svg>
-                    Základní pravidla
-                  </h4>
-                  <ul className="space-y-2 text-sm text-gray-300">
-                    <li className="flex items-start">
-                      <span className="text-green-400 mr-2">✓</span>
-                      Respektuj ostatní členy
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-green-400 mr-2">✓</span>
-                      Žádný spam nebo toxicita
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-green-400 mr-2">✓</span>
-                      Používej správné kanály
-                    </li>
-                    <li className="flex items-start">
-                      <span className="text-green-400 mr-2">✓</span>
-                      Bavte se a užívejte si to!
-                    </li>
-                  </ul>
-                </div>
-
-
-                {/* Server Status - Website Health */}
-                <ServerStatus />
-
-                {/* Current Status */}
-                <div className="bg-gray-700/30 rounded-xl p-4 border border-yellow-500/20">
-                  <h4 className="text-lg font-semibold text-white mb-3 flex items-center">
-                    <svg className="w-5 h-5 mr-2 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-                    </svg>
-                    Aktuální stav
-                  </h4>
-                  <div className="text-sm text-gray-300">
-                    <p className="mb-2">🏖️ <strong>Status:</strong> Klan v důchodu</p>
-                    <p className="mb-2">💬 <strong>Discord:</strong> Stále aktivní pro povídání</p>
-                    <p>🎵 <strong>Music Bot:</strong> Hraje nostalgické pecky</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
+      <CommunityLounge discordStats={discordStats} />
 
       {/* Contact Section */}
       <section id="kontakt" className="relative z-10 py-20" style={{ backgroundColor: 'var(--darker-bg)' }}>

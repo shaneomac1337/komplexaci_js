@@ -1,0 +1,75 @@
+{
+  "planPath": "docs/superpowers/plans/2026-04-25-user-stats-modal-redesign.md",
+  "tasks": [
+    {
+      "id": 0,
+      "subject": "Task 0: Extract types and formatters",
+      "status": "completed",
+      "description": "**Goal:** Move pure data shapes and formatting helpers out of UserStatsModal.tsx with zero behavior change.\n\n**Files:**\n- Create: src/app/components/userStats/types.ts\n- Create: src/app/components/userStats/formatters.ts\n- Modify: src/app/components/UserStatsModal.tsx\n\n**Verify:** `npx tsc --noEmit && npm run lint`\n\n```json:metadata\n{\"files\": [\"src/app/components/userStats/types.ts\", \"src/app/components/userStats/formatters.ts\", \"src/app/components/UserStatsModal.tsx\"], \"verifyCommand\": \"npx tsc --noEmit && npm run lint\", \"acceptanceCriteria\": [\"types.ts exports the three interfaces\", \"formatters.ts exports the four helpers\", \"UserStatsModal.tsx imports them and removes inline declarations\", \"Modal renders identically with no visual change\"]}\n```"
+    },
+    {
+      "id": 1,
+      "subject": "Task 1: Extract achievements logic",
+      "status": "completed",
+      "blockedBy": [0],
+      "description": "**Goal:** Move the ACHIEVEMENTS array and progress-calculation logic out of the modal into a pure module.\n\n**Files:**\n- Create: src/app/components/userStats/achievements.ts\n- Modify: src/app/components/UserStatsModal.tsx\n\n**Verify:** `npx tsc --noEmit && npm run build`\n\n```json:metadata\n{\"files\": [\"src/app/components/userStats/achievements.ts\", \"src/app/components/UserStatsModal.tsx\"], \"verifyCommand\": \"npx tsc --noEmit && npm run build\", \"acceptanceCriteria\": [\"achievements.ts exports ACHIEVEMENTS and three pure functions taking stats explicitly\", \"UserStatsModal.tsx removes inline definitions and updates call sites\", \"Úspěchy tab renders identically before and after\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 2: Create scoped lounge CSS shell",
+      "status": "completed",
+      "blockedBy": [1],
+      "description": "**Goal:** Add user-stats-modal.css with lounge tokens, scrim, panel, drag handle, body scroll, footer, and reduced-motion fallback.\n\n**Files:**\n- Create: src/app/components/user-stats-modal.css\n- Modify: src/app/components/UserStatsModal.tsx (add import only)\n\n**Verify:** `npm run build`\n\n```json:metadata\n{\"files\": [\"src/app/components/user-stats-modal.css\", \"src/app/components/UserStatsModal.tsx\"], \"verifyCommand\": \"npm run build\", \"acceptanceCriteria\": [\"CSS file with lounge tokens scoped under .user-stats-lounge\", \"Modal imports the CSS but JSX is unchanged\", \"Build passes; no visual change\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 3: Replace modal frame with lounge chrome",
+      "status": "completed",
+      "blockedBy": [2],
+      "description": "**Goal:** Swap outer scrim, panel container, drag handle, header (avatar + meta + Live pill + close), tab strip with gradient underline, and footer to lounge styling. Tab content panels stay on old Tailwind for now.\n\n**Files:**\n- Modify: src/app/components/UserStatsModal.tsx\n- Modify: src/app/components/user-stats-modal.css\n\n**Verify:** `npm run build`\n\n```json:metadata\n{\"files\": [\"src/app/components/UserStatsModal.tsx\", \"src/app/components/user-stats-modal.css\"], \"verifyCommand\": \"npm run build\", \"acceptanceCriteria\": [\"New chrome (panel + header + tabs + footer) renders with lounge styling\", \"Live pill shows correct state (loading/live/error)\", \"Tab strip works with gradient underline on active tab\", \"Mobile bottom sheet + drag handle preserved\", \"All 5 tabs still render their old content correctly\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 4: Build OverviewTab (numbers-led hero)",
+      "status": "completed",
+      "blockedBy": [3],
+      "description": "**Goal:** Replace overview tab content with direction A: gradient hero number, 4 mini-tiles (Hry/Voice/Spotify/Stream) with vs-průměr or Top X% pills, Další statistiky strip, 8-row timeline list.\n\n**Files:**\n- Create: src/app/components/userStats/OverviewTab.tsx\n- Modify: src/app/components/user-stats-modal.css\n- Modify: src/app/components/UserStatsModal.tsx\n\n**Verify:** `npx tsc --noEmit && npm run build`\n\n```json:metadata\n{\"files\": [\"src/app/components/userStats/OverviewTab.tsx\", \"src/app/components/user-stats-modal.css\", \"src/app/components/UserStatsModal.tsx\"], \"verifyCommand\": \"npx tsc --noEmit && npm run build\", \"acceptanceCriteria\": [\"Gradient headline with totalOnlineTime renders\", \"4 tiles with correct accent colors and comparison pills\", \"Micro-strip with 4 stats\", \"Timeline list of up to 8 sessions\", \"Server averages caption only when present\", \"Layout adapts at 375px\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 5: Build SpotifyTab, GamingTab, VoiceTab",
+      "status": "completed",
+      "blockedBy": [4],
+      "description": "**Goal:** Replace three list-based tabs with a shared lounge skeleton (tab hero with 2 inline stats + ranked list panel(s) + faint footnote + empty state).\n\n**Files:**\n- Create: src/app/components/userStats/SpotifyTab.tsx\n- Create: src/app/components/userStats/GamingTab.tsx\n- Create: src/app/components/userStats/VoiceTab.tsx\n- Modify: src/app/components/user-stats-modal.css\n- Modify: src/app/components/UserStatsModal.tsx\n\n**Verify:** `npm run build`\n\n```json:metadata\n{\"files\": [\"src/app/components/userStats/SpotifyTab.tsx\", \"src/app/components/userStats/GamingTab.tsx\", \"src/app/components/userStats/VoiceTab.tsx\", \"src/app/components/user-stats-modal.css\", \"src/app/components/UserStatsModal.tsx\"], \"verifyCommand\": \"npm run build\", \"acceptanceCriteria\": [\"All three tabs render tab hero + ranked list + footnote\", \"Accent colors correct per tab\", \"First-place rank pill is tinted accent\", \"Empty states render when arrays empty\"]}\n```"
+    },
+    {
+      "id": 6,
+      "subject": "Task 6: Build AchievementsTab (trophy badge grid)",
+      "status": "completed",
+      "blockedBy": [5],
+      "description": "**Goal:** Replace achievements tab with single 2-col badge grid. Unlocked badges glow with cyan halo + Dokončeno pill; locked show grayscale icon + progress bar with current/threshold caption.\n\n**Files:**\n- Create: src/app/components/userStats/AchievementsTab.tsx\n- Modify: src/app/components/user-stats-modal.css\n- Modify: src/app/components/UserStatsModal.tsx\n\n**Verify:** `npm run build`\n\n```json:metadata\n{\"files\": [\"src/app/components/userStats/AchievementsTab.tsx\", \"src/app/components/user-stats-modal.css\", \"src/app/components/UserStatsModal.tsx\"], \"verifyCommand\": \"npm run build\", \"acceptanceCriteria\": [\"8 badges in 2-col grid (1-col under 540px)\", \"Sort: unlocked first by category, then locked by progress\", \"Unlocked have cyan halo + Dokončeno pill\", \"Locked have grayscale icon + progress bar\", \"Special category shows text status\", \"Section counter shows unlocked/total\"]}\n```"
+    },
+    {
+      "id": 7,
+      "subject": "Task 7: Loading skeleton + lounge error state",
+      "status": "completed",
+      "blockedBy": [6],
+      "description": "**Goal:** Replace centered spinner with shimmer skeleton on initial load. Restyle error card with lounge tokens; preserve retry button behavior.\n\n**Files:**\n- Modify: src/app/components/user-stats-modal.css\n- Modify: src/app/components/UserStatsModal.tsx\n\n**Verify:** `npm run build`\n\n```json:metadata\n{\"files\": [\"src/app/components/user-stats-modal.css\", \"src/app/components/UserStatsModal.tsx\"], \"verifyCommand\": \"npm run build\", \"acceptanceCriteria\": [\"Skeleton placeholders replace the spinner on initial load\", \"Shimmer animation disabled under prefers-reduced-motion\", \"Error card uses lounge styling with retry button\", \"30s refresh remains silent\"]}\n```"
+    },
+    {
+      "id": 8,
+      "subject": "Task 8: Accessibility, motion, and focus management",
+      "status": "completed",
+      "blockedBy": [7],
+      "description": "**Goal:** Add ARIA roles for dialog and tablist, focus trap, escape-to-close, arrow-key tab nav, entry/exit animations, and prefers-reduced-motion fallback.\n\n**Files:**\n- Modify: src/app/components/UserStatsModal.tsx\n- Modify: src/app/components/user-stats-modal.css\n\n**Verify:** `npm run build`\n\n```json:metadata\n{\"files\": [\"src/app/components/UserStatsModal.tsx\", \"src/app/components/user-stats-modal.css\"], \"verifyCommand\": \"npm run build\", \"acceptanceCriteria\": [\"Dialog has correct ARIA roles\", \"Escape closes and focus returns to trigger\", \"Focus trap cycles within modal\", \"Arrow keys navigate tabs\", \"Animations work and respect prefers-reduced-motion\"]}\n```"
+    },
+    {
+      "id": 9,
+      "subject": "Task 9: Final cleanup + visual QA",
+      "status": "completed",
+      "blockedBy": [8],
+      "description": "**Goal:** Remove residual Tailwind classes from the modal, confirm visuals across breakpoints, and verify the MostActiveMembers integration still triggers the modal.\n\n**Files:**\n- Modify: src/app/components/UserStatsModal.tsx\n\n**Verify:** `npm run build && npm run lint`\n\n```json:metadata\n{\"files\": [\"src/app/components/UserStatsModal.tsx\"], \"verifyCommand\": \"npm run build && npm run lint\", \"acceptanceCriteria\": [\"No dead Tailwind classes in modal\", \"Build and lint pass clean\", \"Modal works at desktop / 768px / 375px\", \"MostActiveMembers integration still triggers modal\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-04-25T12:00:00Z"
+}
