@@ -148,51 +148,236 @@
   line-height: 1.58;
 }
 
-.community-redesign .lounge-feature-grid,
 .community-redesign .lounge-dashboard {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 18px;
 }
 
-.community-redesign .lounge-feature {
+.community-redesign .discord-join-banner {
   position: relative;
-  min-height: 410px;
-  padding: 24px;
-  border: 1px solid var(--lounge-line-strong);
-  border-radius: 14px;
-  background:
-    linear-gradient(180deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.025)),
-    var(--lounge-panel);
-  box-shadow:
-    0 24px 55px rgba(0, 0, 0, 0.42),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
   overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 260px;
+  align-items: center;
+  gap: 40px;
+  margin-bottom: 16px;
+  padding: 42px 48px;
+  border: 1px solid rgba(88, 101, 242, 0.42);
+  border-radius: 6px;
+  background:
+    radial-gradient(ellipse 62% 110% at 82% 50%, rgba(88, 101, 242, 0.2), transparent 72%),
+    radial-gradient(ellipse 34% 80% at 100% 12%, rgba(0, 255, 255, 0.08), transparent 62%),
+    #23272a;
+  box-shadow: 0 24px 58px rgba(0, 0, 0, 0.44);
 }
 
-.community-redesign .lounge-feature::before {
-  content: '';
+.community-redesign .discord-banner-lines {
   position: absolute;
-  inset: 0 0 auto 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--lounge-discord), var(--lounge-cyan), var(--lounge-pink));
-}
-
-.community-redesign .lounge-feature::after {
-  content: '';
-  position: absolute;
-  inset: auto -20% -30% 10%;
-  height: 55%;
-  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.08), transparent 62%);
-  transform: rotate(-8deg);
+  inset: 0;
   pointer-events: none;
+  background-image: repeating-linear-gradient(
+    90deg,
+    rgba(88, 101, 242, 0.045) 0,
+    rgba(88, 101, 242, 0.045) 1px,
+    transparent 1px,
+    transparent 48px
+  );
 }
 
-.community-redesign .music-feature::before {
-  background: linear-gradient(90deg, var(--lounge-cyan), var(--lounge-pink), var(--lounge-orange));
+.community-redesign .discord-banner-copy,
+.community-redesign .discord-server-preview {
+  position: relative;
+  z-index: 1;
+}
+
+.community-redesign .discord-hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 16px;
+  padding: 5px 12px;
+  border: 1px solid rgba(88, 101, 242, 0.5);
+  border-radius: 3px;
+  background: rgba(88, 101, 242, 0.2);
+  color: #9ca5ff;
+  font-family: var(--lounge-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.community-redesign .discord-join-banner h3 {
+  margin: 0;
+  max-width: 740px;
+  color: #fff;
+  font-family: var(--lounge-font-display);
+  font-size: clamp(34px, 4.6vw, 56px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.community-redesign .discord-join-banner h3 span {
+  color: #9ca5ff;
+}
+
+.community-redesign .discord-join-banner p {
+  max-width: 690px;
+  margin: 14px 0 0;
+  color: var(--lounge-muted);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.community-redesign .discord-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(92px, 1fr));
+  gap: 24px;
+  max-width: 680px;
+  margin: 28px 0 30px;
+}
+
+.community-redesign .discord-stat span {
+  display: block;
+  color: var(--lounge-faint);
+  font-family: var(--lounge-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+.community-redesign .discord-stat strong {
+  display: block;
+  margin-top: 4px;
+  color: #fff;
+  font-family: var(--lounge-font-display);
+  font-size: 30px;
+  font-weight: 850;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.community-redesign .discord-stat strong.is-live {
+  color: var(--lounge-sage);
+}
+
+.community-redesign .discord-banner-cta {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.community-redesign .discord-banner-cta > span {
+  color: var(--lounge-faint);
+  font-family: var(--lounge-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.08em;
+}
+
+.community-redesign .discord-server-preview {
+  min-width: 0;
+  padding: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 6px;
+  background: #2c2f33;
+  box-shadow: 0 18px 46px rgba(0, 0, 0, 0.42);
+}
+
+.community-redesign .server-preview-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding-bottom: 12px;
+  margin-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.09);
+}
+
+.community-redesign .server-preview-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  background: var(--lounge-discord);
+  color: #fff;
+  font-family: var(--lounge-font-display);
+  font-size: 18px;
+  font-weight: 900;
+  flex: 0 0 auto;
+}
+
+.community-redesign .server-preview-head strong,
+.community-redesign .server-channel strong {
+  display: block;
+  color: #fff;
+  font-family: var(--lounge-font-display);
+}
+
+.community-redesign .server-preview-head strong {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.community-redesign .server-preview-head span {
+  display: block;
+  margin-top: 2px;
+  color: var(--lounge-faint);
+  font-family: var(--lounge-font-mono);
+  font-size: 10px;
+}
+
+.community-redesign .server-channel-list {
+  display: grid;
+  gap: 2px;
+}
+
+.community-redesign .server-channel {
+  display: grid;
+  grid-template-columns: 24px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 5px 8px;
+  border-radius: 4px;
+  color: var(--lounge-faint);
+}
+
+.community-redesign .server-channel.is-active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+}
+
+.community-redesign .server-channel span {
+  color: currentColor;
+  font-family: var(--lounge-font-mono);
+  font-size: 10px;
+  font-weight: 700;
+  opacity: 0.72;
+}
+
+.community-redesign .server-channel strong {
+  min-width: 0;
+  overflow: hidden;
+  font-size: 12px;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.community-redesign .server-channel em {
+  min-width: 18px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: #ef4444;
+  color: #fff;
+  font-family: var(--lounge-font-mono);
+  font-size: 9px;
+  font-style: normal;
+  font-weight: 800;
+  line-height: 1;
+  text-align: center;
 }
 
 .community-redesign .feature-topline,
@@ -207,7 +392,7 @@
 .community-redesign .feature-icon {
   width: 54px;
   height: 54px;
-  border-radius: 12px;
+  border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -278,6 +463,42 @@
   line-height: 1.56;
 }
 
+.community-redesign .music-dashboard-strip {
+  display: grid;
+  grid-template-columns: auto minmax(210px, 0.9fr) minmax(320px, 1.2fr) auto;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 18px;
+  padding: 18px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 6px;
+  background:
+    linear-gradient(135deg, rgba(0, 255, 255, 0.08), rgba(255, 110, 199, 0.05)),
+    rgba(12, 13, 22, 0.9);
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.32);
+}
+
+.community-redesign .music-strip-copy {
+  min-width: 0;
+}
+
+.community-redesign .music-strip-copy h3 {
+  margin: 0;
+  color: #fff;
+  font-family: var(--lounge-font-display);
+  font-size: 24px;
+  font-weight: 850;
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.community-redesign .music-strip-copy p {
+  margin: 8px 0 0;
+  color: var(--lounge-muted);
+  font-size: 14px;
+  line-height: 1.45;
+}
+
 .community-redesign .music-chip-grid {
   position: relative;
   z-index: 1;
@@ -285,6 +506,10 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 8px;
   margin-bottom: 22px;
+}
+
+.community-redesign .music-dashboard-strip .music-chip-grid {
+  margin-bottom: 0;
 }
 
 .community-redesign .music-chip {
@@ -363,11 +588,11 @@
 .community-redesign .lounge-panel {
   padding: 18px;
   border: 1px solid var(--lounge-line);
-  border-radius: 12px;
-  background: var(--lounge-panel-soft);
-  backdrop-filter: blur(18px) saturate(130%);
-  -webkit-backdrop-filter: blur(18px) saturate(130%);
-  box-shadow: 0 20px 42px rgba(0, 0, 0, 0.32);
+  border-radius: 8px;
+  background: rgba(13, 14, 24, 0.82);
+  backdrop-filter: blur(14px) saturate(120%);
+  -webkit-backdrop-filter: blur(14px) saturate(120%);
+  box-shadow: 0 16px 34px rgba(0, 0, 0, 0.3);
   overflow: hidden;
 }
 
@@ -395,17 +620,11 @@
   text-align: right;
 }
 
-.community-redesign .lounge-schedule,
 .community-redesign .status-list {
   display: grid;
   gap: 10px;
 }
 
-.community-redesign .lounge-schedule {
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-}
-
-.community-redesign .lounge-schedule div,
 .community-redesign .status-list div {
   padding: 12px;
   border: 1px solid rgba(255, 255, 255, 0.1);
@@ -413,7 +632,6 @@
   background: rgba(255, 255, 255, 0.045);
 }
 
-.community-redesign .lounge-schedule strong,
 .community-redesign .status-list strong {
   display: block;
   color: #fff;
@@ -423,7 +641,6 @@
   line-height: 1.1;
 }
 
-.community-redesign .lounge-schedule span,
 .community-redesign .status-list span {
   display: block;
   margin-top: 4px;
@@ -434,43 +651,59 @@
   text-transform: uppercase;
 }
 
-.community-redesign .lounge-rules {
-  display: grid;
-  gap: 9px;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  color: var(--lounge-muted);
-  font-size: 14px;
-  line-height: 1.45;
-}
-
-.community-redesign .lounge-rules li {
-  position: relative;
-  padding: 11px 12px 11px 36px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
-  background: rgba(255, 255, 255, 0.045);
-}
-
-.community-redesign .lounge-rules li::before {
-  content: '';
-  position: absolute;
-  left: 14px;
-  top: 17px;
-  width: 7px;
-  height: 7px;
-  border-radius: 999px;
-  background: var(--lounge-cyan);
-  box-shadow: 0 0 12px rgba(0, 255, 255, 0.55);
-}
-
 .community-redesign .status-panel .status-list {
   margin-bottom: 14px;
 }
 
+.community-redesign .compact-status-panel {
+  align-self: start;
+}
+
+.community-redesign .compact-status-panel .status-list {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.community-redesign .compact-status-panel .status-list div {
+  padding: 10px;
+}
+
+.community-redesign .compact-status-panel .status-list strong {
+  font-size: 16px;
+}
+
+.community-redesign .compact-status-panel > div:not(.panel-heading):not(.status-list) {
+  padding: 12px !important;
+}
+
+.community-redesign .compact-status-panel .text-lg {
+  font-size: 16px !important;
+  line-height: 1.2 !important;
+}
+
+.community-redesign .compact-status-panel .text-sm {
+  font-size: 12px !important;
+}
+
+.community-redesign .compact-status-panel .text-xs {
+  font-size: 10px !important;
+}
+
+.community-redesign .compact-status-panel .mb-3 {
+  margin-bottom: 8px !important;
+}
+
+.community-redesign .compact-status-panel .mt-2 {
+  margin-top: 6px !important;
+}
+
+.community-redesign .compact-status-panel svg.w-6 {
+  width: 18px !important;
+  height: 18px !important;
+}
+
 /* Restyle imported live widgets only inside this lounge. */
-.community-redesign .lounge-panel > div:not(.panel-heading):not(.lounge-schedule):not(.status-list),
+.community-redesign .lounge-panel > div:not(.panel-heading):not(.status-list),
 .community-redesign .lounge-panel .bg-gray-700\/30,
 .community-redesign .lounge-panel .bg-gray-800\/30 {
   border-color: rgba(255, 255, 255, 0.11) !important;
@@ -479,7 +712,7 @@
 }
 
 .community-redesign .lounge-panel .rounded-xl {
-  border-radius: 10px !important;
+  border-radius: 8px !important;
 }
 
 .community-redesign .lounge-panel .rounded-lg {
@@ -510,13 +743,22 @@
   }
 
   .community-redesign .community-header,
-  .community-redesign .lounge-feature-grid,
+  .community-redesign .discord-join-banner,
+  .community-redesign .music-dashboard-strip,
   .community-redesign .lounge-dashboard {
     grid-template-columns: 1fr;
   }
 
   .community-redesign .community-header {
     gap: 14px;
+  }
+
+  .community-redesign .discord-server-preview {
+    width: min(100%, 340px);
+  }
+
+  .community-redesign .music-dashboard-strip {
+    align-items: start;
   }
 }
 
@@ -534,22 +776,45 @@
   }
 
   .community-redesign .community-heading-row p,
-  .community-redesign .feature-copy p {
+  .community-redesign .discord-join-banner p,
+  .community-redesign .music-strip-copy p {
     font-size: 15px;
   }
 
-  .community-redesign .lounge-feature {
-    min-height: auto;
-    padding: 18px;
+  .community-redesign .discord-join-banner {
+    padding: 24px 18px;
+    gap: 24px;
   }
 
-  .community-redesign .feature-copy {
-    margin: 30px 0 20px;
+  .community-redesign .discord-stat-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 18px 14px;
+    margin: 24px 0;
   }
 
-  .community-redesign .feature-footer {
+  .community-redesign .discord-stat strong {
+    font-size: 26px;
+  }
+
+  .community-redesign .discord-banner-cta {
     align-items: stretch;
     flex-direction: column;
+  }
+
+  .community-redesign .discord-banner-cta .lounge-button {
+    width: 100%;
+  }
+
+  .community-redesign .discord-banner-cta > span {
+    overflow-wrap: anywhere;
+  }
+
+  .community-redesign .discord-server-preview {
+    display: none;
+  }
+
+  .community-redesign .music-dashboard-strip {
+    padding: 16px;
   }
 
   .community-redesign .feature-note {
@@ -557,7 +822,7 @@
   }
 
   .community-redesign .music-chip-grid,
-  .community-redesign .lounge-schedule {
+  .community-redesign .compact-status-panel .status-list {
     grid-template-columns: 1fr;
   }
 

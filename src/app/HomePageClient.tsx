@@ -1,10 +1,14 @@
 "use client";
 import { useState, useEffect, useRef, useMemo, memo, useCallback } from 'react';
+import type { CSSProperties } from 'react';
 import Image from 'next/image';
 import Head from 'next/head';
 import './komplexaci.css';
 import './hero-members-redesign.css';
 import './community-redesign.css';
+import './games-redesign.css';
+import './section-headings-redesign.css';
+import './about-redesign.css';
 import Header from './components/Header';
 import ServerStatus from './components/ServerStatus';
 import DiscordServerStats from './components/DiscordServerStats';
@@ -34,11 +38,33 @@ interface CommunityActiveMember {
   isOnline: boolean;
 }
 
+interface CommunityOnlineMember {
+  id: string;
+  username: string;
+  displayName: string;
+  status: string;
+  streaming?: {
+    isStreaming?: boolean;
+    inVoice?: boolean;
+    channelName?: string;
+  } | null;
+}
+
 interface CommunityDiscordStats {
   mostActiveMembers?: CommunityActiveMember[];
   dataSource?: 'GATEWAY' | 'REST_API' | 'FALLBACK';
   memberCount?: number;
+  onlineCount?: number;
+  boostLevel?: number;
+  boostCount?: number;
+  onlineMembers?: CommunityOnlineMember[];
+  streamingStats?: {
+    totalStreaming?: number;
+    totalInVoice?: number;
+  };
 }
+
+type GameItem = (typeof defaultGames)[number];
 
 // Import exact fonts from original
 if (typeof window !== 'undefined') {
@@ -287,6 +313,23 @@ function CommunityLounge({ discordStats }: { discordStats: CommunityDiscordStats
     { label: 'Rádio', icon: 'M3.24 6.15C2.51 6.43 2 7.17 2 8v8c0 .83.51 1.57 1.24 1.85L12 21.5l8.76-3.65C21.49 17.57 22 16.83 22 16V8c0-.83-.51-1.57-1.24-1.85L12 2.5 3.24 6.15zM12 9 8.5 7.5 12 6l3.5 1.5L12 9z' },
     { label: 'Vyhledávání', icon: 'M15.5 14h-.79l-.28-.27C15.41 12.59 16 11.11 16 9.5 16 5.91 13.09 3 9.5 3S3 5.91 3 9.5 5.91 16 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z' },
   ];
+  const onlineMembers = discordStats?.onlineMembers || [];
+  const inferredOnlineCount = discordStats?.mostActiveMembers?.filter((member) => member.isOnline).length || 0;
+  const onlineCount = discordStats?.onlineCount ?? (onlineMembers.length || inferredOnlineCount);
+  const voiceCount = discordStats?.streamingStats?.totalInVoice
+    ?? onlineMembers.filter((member) => member.streaming?.inVoice || member.streaming?.isStreaming).length;
+  const boostCount = discordStats?.boostCount ?? 0;
+  const boostLabel = boostCount > 0
+    ? `${boostCount} boost${boostCount === 1 ? '' : 's'}`
+    : discordStats?.boostLevel
+      ? `Lvl ${discordStats.boostLevel}`
+      : 'Žádný';
+  const statItems = [
+    { label: 'Členů', value: discordStats?.memberCount ? String(discordStats.memberCount) : '--' },
+    { label: 'Online', value: onlineCount > 0 ? String(onlineCount) : '--', tone: 'green' },
+    { label: 'Voice', value: voiceCount > 0 ? String(voiceCount) : '--' },
+    { label: 'Boost', value: boostLabel },
+  ];
 
   return (
     <section id="discord" className="community-redesign">
@@ -313,23 +356,30 @@ function CommunityLounge({ discordStats }: { discordStats: CommunityDiscordStats
           </div>
         </header>
 
-        <div className="lounge-feature-grid">
-          <article className="lounge-feature discord-feature">
-            <div className="feature-topline">
-              <div className="feature-icon discord-icon">
-                <DiscordMark />
-              </div>
-              <span className="feature-tag">Invite open</span>
+        <article className="discord-join-banner">
+          <div className="discord-banner-lines" aria-hidden="true" />
+          <div className="discord-banner-copy">
+            <div className="discord-hero-badge">
+              <span className="community-live-dot" />
+              discord.komplexaci.cz
             </div>
-            <div className="feature-copy">
-              <span className="feature-eyebrow">Server hub</span>
-              <h3>Připoj se na náš Discord</h3>
-              <p>
-                Najdeš tu naši komunitu, hlasové kanály, aktuální aktivitu členů
-                a všechny ty malé věci, které drží Komplexáky pohromadě i po letech.
-              </p>
+            <h3>
+              Připoj se na <span>Discord</span>
+            </h3>
+            <p>
+              Stará dobrá komunita, trochu v důchodu, pořád živá. Najdeš tu hlasové
+              kanály, aktivitu členů, music bota a všechny malé věci, které drží
+              Komplexáky pohromadě.
+            </p>
+            <div className="discord-stat-grid">
+              {statItems.map((item) => (
+                <div key={item.label} className="discord-stat">
+                  <span>{item.label}</span>
+                  <strong className={item.tone === 'green' ? 'is-live' : undefined}>{item.value}</strong>
+                </div>
+              ))}
             </div>
-            <div className="feature-footer">
+            <div className="discord-banner-cta">
               <a
                 href="https://discord.gg/e6BEQpQRBA"
                 target="_blank"
@@ -339,55 +389,75 @@ function CommunityLounge({ discordStats }: { discordStats: CommunityDiscordStats
                 <DiscordMark />
                 Připojit se
               </a>
-              <span className="feature-note">Komunita v důchodu, Discord pořád na příjmu.</span>
+              <span>discord.gg/e6BEQpQRBA</span>
             </div>
-          </article>
+          </div>
 
-          <article className="lounge-feature music-feature">
-            <div className="feature-topline">
-              <div className="feature-icon music-icon">
-                <svg fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
-                </svg>
+          <aside className="discord-server-preview" aria-label="Náhled Discord serveru">
+            <div className="server-preview-head">
+              <div className="server-preview-icon">K</div>
+              <div>
+                <strong>Komplexáci</strong>
+                <span>{discordStats?.memberCount ? `${discordStats.memberCount} členů` : 'server status'} · {onlineCount > 0 ? `${onlineCount} online` : 'live data'}</span>
               </div>
-              <span className="feature-tag">KompG Trax echo</span>
             </div>
-            <div className="feature-copy">
-              <span className="feature-eyebrow">Music bot</span>
-              <h3>Hudba, fronta a statistiky z webu</h3>
-              <p>
-                Ovládej Discord music bot přímo z webového rozhraní, spravuj frontu
-                a sleduj přehrávání v reálném čase. K tomu přidáváme i pěkně
-                zpracovaná data z našeho serveru.
-              </p>
+            <div className="server-channel-list">
+              <div className="server-channel is-active">
+                <span>#</span>
+                <strong>obecné</strong>
+              </div>
+              <div className="server-channel">
+                <span>#</span>
+                <strong>gaming</strong>
+                {onlineCount > 0 && <em>{Math.min(onlineCount, 9)}</em>}
+              </div>
+              <div className="server-channel">
+                <span>#</span>
+                <strong>music-bot</strong>
+              </div>
+              <div className="server-channel">
+                <span>VC</span>
+                <strong>Lobby</strong>
+                {voiceCount > 0 && <em>{voiceCount}</em>}
+              </div>
             </div>
-            <div className="music-chip-grid">
-              {musicFeatures.map((feature) => (
-                <span key={feature.label} className="music-chip">
-                  <svg fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                    <path d={feature.icon} />
-                  </svg>
-                  {feature.label}
-                </span>
-              ))}
-            </div>
-            <div className="feature-footer">
-              <a
-                href="https://music.komplexaci.cz/dashboard"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="lounge-button music-button"
-              >
+          </aside>
+        </article>
+
+        <article className="music-dashboard-strip">
+          <div className="feature-icon music-icon">
+            <svg fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 3v10.55c-.59-.34-1.27-.55-2-.55-2.21 0-4 1.79-4 4s1.79 4 4 4 4-1.79 4-4V7h4V3h-6z" />
+            </svg>
+          </div>
+          <div className="music-strip-copy">
+            <span className="feature-eyebrow">KompG Trax</span>
+            <h3>Hudba, fronta a statistiky z webu</h3>
+            <p>Ovládej Discord music bot přímo z webového rozhraní a sleduj přehrávání v reálném čase.</p>
+          </div>
+          <div className="music-chip-grid">
+            {musicFeatures.map((feature) => (
+              <span key={feature.label} className="music-chip">
                 <svg fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                  <path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
-                  <path d="M19 19H5V5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7z" />
+                  <path d={feature.icon} />
                 </svg>
-                Otevřít dashboard
-              </a>
-              <span className="feature-note">Vyžaduje Discord přihlášení.</span>
-            </div>
-          </article>
-        </div>
+                {feature.label}
+              </span>
+            ))}
+          </div>
+          <a
+            href="https://music.komplexaci.cz/dashboard"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="lounge-button music-button"
+          >
+            <svg fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M14 3v2h3.59l-9.83 9.83 1.41 1.41L19 6.41V10h2V3h-7z" />
+              <path d="M19 19H5V5h7V3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2v-7h-2v7z" />
+            </svg>
+            Otevřít dashboard
+          </a>
+        </article>
 
         <div className="lounge-dashboard">
           <div className="lounge-panel panel-large">
@@ -418,37 +488,7 @@ function CommunityLounge({ discordStats }: { discordStats: CommunityDiscordStats
             <DailyAwards />
           </div>
 
-          <div className="lounge-panel">
-            <div className="panel-heading">
-              <span>Pravidla lounge</span>
-              <small>krátké a použitelné</small>
-            </div>
-            <ul className="lounge-rules">
-              <li>Respektuj ostatní členy, i když hrají hůř než tvoje vzpomínky.</li>
-              <li>Žádný spam, toxicita ani hlasitý chaos mimo správný kanál.</li>
-              <li>Používej kanály podle tématu, ať se v tom dá žít.</li>
-              <li>Bav se. Tahle stránka existuje hlavně kvůli tomu.</li>
-            </ul>
-          </div>
-
-          <div className="lounge-panel compact-panel">
-            <div className="panel-heading">
-              <span>Nejaktivnější časy</span>
-              <small>CET / CEST</small>
-            </div>
-            <div className="lounge-schedule">
-              <div>
-                <strong>18:00 - 23:00</strong>
-                <span>všední dny</span>
-              </div>
-              <div>
-                <strong>13:00 - 01:00</strong>
-                <span>víkendy</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="lounge-panel status-panel">
+          <div className="lounge-panel status-panel compact-status-panel">
             <div className="panel-heading">
               <span>Aktuální stav</span>
               <small>komunitní diagnóza</small>
@@ -470,6 +510,198 @@ function CommunityLounge({ discordStats }: { discordStats: CommunityDiscordStats
             <ServerStatus />
           </div>
         </div>
+      </div>
+    </section>
+  );
+}
+
+function getGameMeta(title: string) {
+  if (title === 'League of Legends') {
+    return {
+      tag: 'MOBA',
+      code: '01',
+      accent: '#d6a531',
+      stat: 'Týmové strategie',
+    };
+  }
+
+  if (title === 'Counter Strike 2') {
+    return {
+      tag: 'FPS',
+      code: '02',
+      accent: '#ff8c00',
+      stat: 'Reflexy a přesnost',
+    };
+  }
+
+  if (title === 'WWE Games') {
+    return {
+      tag: 'Sport',
+      code: '03',
+      accent: '#ff4655',
+      stat: 'Nostalgie a zápasy',
+    };
+  }
+
+  return {
+    tag: 'Game',
+    code: '00',
+    accent: '#00ffff',
+    stat: 'Katalog',
+  };
+}
+
+function AboutArchive() {
+  const archiveFacts = [
+    { label: 'Založeno', value: '2016' },
+    { label: 'Hlavní éra', value: 'LoL / CS2' },
+    { label: 'Discord', value: 'Stále aktivní' },
+    { label: 'Status', value: 'Klan v důchodu' },
+  ];
+
+  return (
+    <section id="o-nas" className="about-archive section-heading-redesign">
+      <div className="about-archive-bg" aria-hidden="true">
+        <div className="about-archive-grid" />
+        <div className="about-archive-glow" />
+      </div>
+
+      <div className="about-archive-shell">
+        <header className="about-archive-header">
+          <h2 className="section-title">
+            O našem <span>klanu</span>
+          </h2>
+          <p>
+            Z kompetitivního hraní zůstala parta, Discord a dobré historky.
+            Zandavali jsme solidní bomby a pecky, teď už spíš vzpomínáme
+            na staré dobré časy.
+          </p>
+        </header>
+
+        <div className="about-archive-layout">
+          <article className="archive-story-panel">
+            <div className="archive-panel-topline">
+              <span className="archive-live-dot" />
+              <span>Clan archive</span>
+            </div>
+
+            <div className="archive-story-copy">
+              <p>
+                Jsme Komplexáci, herní klan z České republiky, který se
+                specializoval na League of Legends a Counter Strike 2.
+                Zandavali jsme solidní bomby a pecky, teď už bohužel
+                nezahrajeme a hlavně vzpomínáme na staré dobré časy.
+              </p>
+              <p>
+                Náš klan vznikl z lásky ke kompetitivnímu hraní a přátelství,
+                které se vytvořilo během dlouhých hodin strávených ve
+                virtuálních světech. Každý člen přinesl vlastní osobnost a
+                herní styl, což z nás udělalo nezapomenutelný tým.
+              </p>
+            </div>
+          </article>
+
+          <aside className="archive-facts-panel" aria-label="Clan archive facts">
+            {archiveFacts.map((fact) => (
+              <div key={fact.label} className="archive-fact">
+                <span>{fact.label}</span>
+                <strong>{fact.value}</strong>
+              </div>
+            ))}
+          </aside>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function GamesRedesign({ games, isLoaded }: { games: GameItem[]; isLoaded: boolean }) {
+  return (
+    <section id="hry" className="games-redesign">
+      <div className="games-bg" aria-hidden="true" />
+      <div className="games-shell">
+        <header className="games-header">
+          <div>
+            <h2>
+              Naše <span>hry</span>
+            </h2>
+          </div>
+        </header>
+
+        <div className="games-grid">
+          {games.map((game, index) => {
+            const meta = getGameMeta(game.title);
+
+            return (
+              <a
+                key={game.title}
+                href={game.link}
+                target={game.title === 'WWE Games' ? '_self' : '_blank'}
+                rel="noopener noreferrer"
+                className={`game-card ${isLoaded ? 'is-visible' : ''}`}
+                style={{
+                  '--game-accent': meta.accent,
+                  '--game-index': index,
+                } as CSSProperties}
+              >
+                <div className="game-card-image">
+                  <Image
+                    src={game.image}
+                    alt={game.title}
+                    fill
+                    className="object-cover"
+                    unoptimized
+                  />
+                </div>
+                <div className="game-card-topline">
+                  <span>Komplex</span>
+                  <span>#{meta.code}</span>
+                </div>
+                <div className="game-card-body">
+                  <span className="game-tag">{meta.tag}</span>
+                  <h3>{game.title}</h3>
+                  <p>{game.description}</p>
+                  <div className="game-card-footer">
+                    <span>{meta.stat}</span>
+                    <span className="game-more">
+                      Více informací
+                      <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0-7 7m7-7H3" />
+                      </svg>
+                    </span>
+                  </div>
+                </div>
+              </a>
+            );
+          })}
+        </div>
+
+        <a
+          href="https://retro.komplexaci.cz/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className={`games-retro ${isLoaded ? 'is-visible' : ''}`}
+        >
+          <div className="retro-mark" aria-hidden="true">
+            <span />
+          </div>
+          <div className="retro-copy">
+            <span className="retro-badge">Nový projekt</span>
+            <h3>
+              Komplexáci <span>RETRO</span>
+            </h3>
+            <p>
+              Klasické retro hry přímo v prohlížeči. NES, SNES, Sega, GBA,
+              PSX a další konzole připravené na nostalgický večer.
+            </p>
+          </div>
+          <div className="retro-action">
+            Vyzkoušet
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0-7 7m7-7H3" />
+            </svg>
+          </div>
+        </a>
       </div>
     </section>
   );
@@ -1626,41 +1858,13 @@ export default function HomePageClient({
       {/* Hero Section — Direction A redesign */}
       <HeroRedesign showMusicHint={!hasUserInteracted && isLoaded} />
 
-      {/* About Section - EXACT Recreation */}
-      <section id="o-nas" className="relative z-10 py-20" style={{ backgroundColor: 'var(--darker-bg)' }}>
-        <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold text-center mb-12" style={{
-            fontFamily: "'Exo 2', sans-serif",
-            fontSize: '2.5rem',
-            color: 'var(--light-text)'
-          }}>
-            O našem klanu
-          </h2>
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl p-8 border border-purple-500/20">
-              <p className="text-lg leading-relaxed" style={{ color: 'var(--medium-text)' }}>
-                Jsme Komplexáci, herní klan z České republiky, který se specializoval na hry League of Legends a Counter Strike 2.
-                Zandavali jsme solidní bomby a pecky, teď už bohužel nezahrajeme a pouze vzpomínáme na staré dobré časy.
-              </p>
-              <br />
-              <p className="text-lg leading-relaxed" style={{ color: 'var(--medium-text)' }}>
-                Náš klan vznikl z lásky ke kompetitivnímu hraní a přátelství, které se utvořilo během dlouhých hodin strávených
-                ve virtuálních světech. Každý člen přinesl svou jedinečnou osobnost a herní styl, což z nás udělalo nezapomenutelný tým.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
+      <AboutArchive />
 
       {/* Members Section — Direction A redesign (magazine cover flip) */}
-      <section ref={membersRef} id="clenove" className="relative z-10 py-20 members-redesign" style={{ backgroundColor: 'var(--dark-bg)' }}>
+      <section ref={membersRef} id="clenove" className="relative z-10 py-20 members-redesign section-heading-redesign" style={{ backgroundColor: 'var(--dark-bg)' }}>
         <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold text-center mb-12" style={{
-            fontFamily: "'Exo 2', sans-serif",
-            fontSize: '2.5rem',
-            color: 'var(--light-text)'
-          }}>
-            Naši členové
+          <h2 className="section-title">
+            Naši <span>členové</span>
           </h2>
           <div className="dirA-roster">
             {shuffledMembers.map((member, index) => (
@@ -1679,110 +1883,14 @@ export default function HomePageClient({
 
 
 
-      {/* Games Section */}
-      <section id="hry" className="relative z-10 py-20">
-        <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold text-center mb-12 bg-gradient-to-r from-purple-400 to-blue-400 bg-clip-text text-transparent">
-            Naše hry
-          </h2>
-          <div className="max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {games.map((game, index) => (
-              <a
-                key={game.title}
-                href={game.link}
-                target={game.title === 'WWE Games' ? '_self' : '_blank'}
-                rel="noopener noreferrer"
-                className={`group bg-gray-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-purple-500/20 transition-all duration-500 hover:scale-105 hover:shadow-xl hover:shadow-purple-500/25 hover:border-purple-400/50 cursor-pointer block ${
-                  isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'
-                }`}
-                style={{ transitionDelay: `${index * 300}ms` }}
-              >
-                <div className="relative h-48 overflow-hidden">
-                  <Image
-                    src={game.image}
-                    alt={game.title}
-                    fill
-                    className="object-cover transition-transform duration-500 group-hover:scale-110"
-                    unoptimized
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-gray-900 via-transparent to-transparent"></div>
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-bold mb-3 group-hover:text-purple-400 transition-colors">
-                    {game.title}
-                  </h3>
-                  <p className="text-gray-400 mb-4 leading-relaxed">
-                    {game.description}
-                  </p>
-                  <div className="inline-flex items-center text-purple-400 group-hover:text-purple-300 font-semibold transition-colors">
-                    Více informací
-                    <svg className="w-4 h-4 ml-2 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                    </svg>
-                  </div>
-                </div>
-              </a>
-            ))}
-            </div>
-
-            {/* Komplexáci RETRO Banner */}
-            <a
-              href="https://retro.komplexaci.cz/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className={`retro-banner group block mt-16 ${isLoaded ? 'opacity-100 translate-y-0' : 'opacity-0 translate-y-10'}`}
-              style={{ transitionDelay: '900ms' }}
-            >
-              <div className="retro-banner-inner">
-                {/* Scanlines overlay */}
-                <div className="retro-banner-scanlines"></div>
-
-                {/* Content */}
-                <div className="retro-banner-content">
-                  <div className="retro-banner-icon">🕹️</div>
-                  <div className="retro-banner-text">
-                    <div className="retro-new-badge">Nový projekt!</div>
-                    <h3 className="retro-banner-title">
-                      <span className="retro-title-komplexaci">Komplexáci</span>
-                      <span className="retro-title-retro">RETRO</span>
-                    </h3>
-                    <p className="retro-banner-description">
-                      Hraj klasické retro hry přímo v prohlížeči! NES, SNES, Sega, GBA, PSX a další konzole.
-                    </p>
-                  </div>
-                  <div className="retro-banner-cta">
-                    <span>Vyzkoušet</span>
-                    <svg className="w-5 h-5 ml-2 transition-transform group-hover:translate-x-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                    </svg>
-                  </div>
-                </div>
-
-                {/* Decorative console icons */}
-                <div className="retro-console-icons">
-                  <span className="retro-console-icon" style={{ animationDelay: '0s' }}>👾</span>
-                  <span className="retro-console-icon" style={{ animationDelay: '0.5s' }}>🎮</span>
-                  <span className="retro-console-icon" style={{ animationDelay: '1s' }}>📺</span>
-                  <span className="retro-console-icon" style={{ animationDelay: '1.5s' }}>🕹️</span>
-                </div>
-              </div>
-            </a>
-
-          </div>
-        </div>
-      </section>
+      <GamesRedesign games={games} isLoaded={isLoaded} />
 
       <CommunityLounge discordStats={discordStats} />
 
       {/* Contact Section */}
-      <section id="kontakt" className="relative z-10 py-20" style={{ backgroundColor: 'var(--darker-bg)' }}>
+      <section id="kontakt" className="relative z-10 py-20 section-heading-redesign" style={{ backgroundColor: 'var(--darker-bg)' }}>
         <div className="container mx-auto px-6">
-          <h2 className="text-4xl font-bold text-center mb-12" style={{
-            fontFamily: "'Exo 2', sans-serif",
-            fontSize: '2.5rem',
-            color: 'var(--light-text)'
-          }}>
+          <h2 className="section-title">
             Kontakt
           </h2>
           <div className="max-w-6xl mx-auto">

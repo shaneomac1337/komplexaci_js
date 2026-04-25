@@ -50,8 +50,10 @@
 /* The actual panel. */
 .user-stats-lounge .panel {
   position: relative;
-  width: 100%;
+  width: min(100%, 720px);
   max-width: 720px;
+  height: min(760px, calc(100dvh - 32px));
+  min-height: min(680px, calc(100dvh - 32px));
   max-height: 90vh;
   max-height: 90dvh;
   background: var(--lounge-bg);
@@ -66,6 +68,8 @@
 
 @media (min-width: 641px) {
   .user-stats-lounge .panel {
+    height: min(760px, calc(100dvh - 32px));
+    min-height: min(680px, calc(100dvh - 32px));
     max-height: 85vh;
     max-height: 85dvh;
     border-bottom: 1px solid var(--lounge-line-strong);
@@ -333,6 +337,228 @@
 .user-stats-lounge .tab .tab-icon {
   font-size: 16px;
   line-height: 1;
+}
+
+@media (max-width: 760px) {
+  .user-stats-lounge.scrim {
+    padding: 8px;
+  }
+
+  .user-stats-lounge .panel {
+    width: 100%;
+    height: auto;
+    min-height: 0;
+    max-height: calc(100dvh - 16px);
+    border-bottom: 1px solid var(--lounge-line-strong);
+    border-radius: 14px;
+  }
+
+  .user-stats-lounge .header {
+    gap: 9px;
+    padding: 12px;
+  }
+
+  .user-stats-lounge .header .avatar-wrap {
+    width: 36px;
+    height: 36px;
+  }
+
+  .user-stats-lounge .header .meta .name {
+    font-size: 15px;
+  }
+
+  .user-stats-lounge .header .meta .sub {
+    font-size: 8px;
+    letter-spacing: 0.12em;
+  }
+
+  .user-stats-lounge .live-pill {
+    padding: 4px 8px;
+    font-size: 8px;
+    letter-spacing: 0.12em;
+  }
+
+  .user-stats-lounge .close-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .user-stats-lounge .tabs {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 6px;
+    padding: 8px 10px;
+    overflow: visible;
+  }
+
+  .user-stats-lounge .tab {
+    justify-content: center;
+    min-width: 0;
+    min-height: 36px;
+    padding: 0 8px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.035);
+    font-size: 12px;
+    overflow: hidden;
+  }
+
+  .user-stats-lounge .tab .tab-label {
+    display: inline;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .user-stats-lounge .tab.is-active::after {
+    left: 8px;
+    right: 8px;
+    bottom: 0;
+  }
+
+  .user-stats-lounge .body {
+    padding: 12px 12px 16px;
+  }
+
+  .user-stats-lounge .footer {
+    padding: 9px 12px 10px;
+    font-size: 8px;
+    letter-spacing: 0.13em;
+  }
+}
+
+@media (max-width: 420px) {
+  .user-stats-lounge.scrim {
+    padding: 0;
+  }
+
+  .user-stats-lounge .panel {
+    height: auto;
+    min-height: 0;
+    max-height: 92dvh;
+    border-bottom: 0;
+    border-radius: 14px 14px 0 0;
+  }
+
+  .user-stats-lounge .tabs {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    padding-inline: 8px;
+  }
+
+  .user-stats-lounge .tab {
+    min-height: 42px;
+    padding: 0 4px;
+  }
+
+  .user-stats-lounge .tab .tab-label {
+    display: none;
+  }
+
+  .user-stats-lounge .tab .tab-icon {
+    font-size: 17px;
+  }
+}
+
+@media (max-height: 560px) {
+  .user-stats-lounge.scrim {
+    align-items: stretch;
+    padding: 8px;
+  }
+
+  .user-stats-lounge .panel {
+    height: calc(100dvh - 16px);
+    min-height: 0;
+    max-height: none;
+    border-bottom: 1px solid var(--lounge-line-strong);
+    border-radius: 12px;
+  }
+
+  .user-stats-lounge .drag-handle {
+    display: none;
+  }
+
+  .user-stats-lounge .header {
+    padding: 8px 10px;
+    gap: 8px;
+  }
+
+  .user-stats-lounge .header .avatar-wrap {
+    width: 34px;
+    height: 34px;
+  }
+
+  .user-stats-lounge .header .meta .name {
+    font-size: 14px;
+  }
+
+  .user-stats-lounge .header .meta .sub {
+    font-size: 8px;
+    letter-spacing: 0.1em;
+  }
+
+  .user-stats-lounge .live-pill {
+    padding: 4px 8px;
+    font-size: 8px;
+    letter-spacing: 0.11em;
+  }
+
+  .user-stats-lounge .close-btn {
+    width: 34px;
+    height: 34px;
+  }
+
+  .user-stats-lounge .tabs {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 4px;
+    padding: 6px 8px;
+    overflow: visible;
+  }
+
+  .user-stats-lounge .tab {
+    justify-content: center;
+    min-width: 0;
+    min-height: 34px;
+    padding: 0 6px;
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.035);
+    font-size: 11px;
+  }
+
+  .user-stats-lounge .tab .tab-label {
+    display: none;
+  }
+
+  .user-stats-lounge .tab .tab-icon {
+    font-size: 16px;
+  }
+
+  .user-stats-lounge .tab.is-active::after {
+    left: 7px;
+    right: 7px;
+    bottom: 0;
+  }
+
+  .user-stats-lounge .body {
+    padding: 10px;
+  }
+
+  .user-stats-lounge .footer {
+    display: none;
+  }
+
+  .user-stats-lounge .error-card {
+    min-height: 120px;
+    padding: 14px;
+  }
+
+  .user-stats-lounge .overview-hero {
+    margin-bottom: 10px;
+  }
+
+  .user-stats-lounge .overview-hero .headline {
+    font-size: 32px;
+  }
 }
 
 /* ============ Overview tab ============ */
