@@ -62,6 +62,13 @@ interface CommunityDiscordStats {
     totalStreaming?: number;
     totalInVoice?: number;
   };
+  channels?: Array<{
+    id: string;
+    name: string;
+    type: 'text' | 'voice';
+    voiceMemberCount?: number;
+    recentMessageCount?: number;
+  }>;
 }
 
 type GameItem = (typeof defaultGames)[number];
@@ -402,24 +409,53 @@ function CommunityLounge({ discordStats }: { discordStats: CommunityDiscordStats
               </div>
             </div>
             <div className="server-channel-list">
-              <div className="server-channel is-active">
-                <span>#</span>
-                <strong>obecné</strong>
-              </div>
-              <div className="server-channel">
-                <span>#</span>
-                <strong>gaming</strong>
-                {onlineCount > 0 && <em>{Math.min(onlineCount, 9)}</em>}
-              </div>
-              <div className="server-channel">
-                <span>#</span>
-                <strong>music-bot</strong>
-              </div>
-              <div className="server-channel">
-                <span>VC</span>
-                <strong>Lobby</strong>
-                {voiceCount > 0 && <em>{voiceCount}</em>}
-              </div>
+              {discordStats?.channels && discordStats.channels.length > 0 ? (
+                (() => {
+                  const firstTextIdx = discordStats.channels.findIndex((c) => c.type === 'text');
+                  return discordStats.channels.map((channel, idx) => {
+                    const isVoice = channel.type === 'voice';
+                    const isFirstText = !isVoice && idx === firstTextIdx;
+                    const badge = isVoice
+                      ? channel.voiceMemberCount && channel.voiceMemberCount > 0
+                        ? <em>{channel.voiceMemberCount}</em>
+                        : null
+                      : channel.recentMessageCount && channel.recentMessageCount > 0
+                        ? <em className="server-channel-rate">{channel.recentMessageCount}/h</em>
+                        : null;
+                    return (
+                      <div
+                        key={channel.id}
+                        className={`server-channel${isFirstText ? ' is-active' : ''}`}
+                      >
+                        <span>{isVoice ? 'VC' : '#'}</span>
+                        <strong>{channel.name}</strong>
+                        {badge}
+                      </div>
+                    );
+                  });
+                })()
+              ) : (
+                <>
+                  <div className="server-channel is-active">
+                    <span>#</span>
+                    <strong>obecné</strong>
+                  </div>
+                  <div className="server-channel">
+                    <span>#</span>
+                    <strong>gaming</strong>
+                    {onlineCount > 0 && <em>{Math.min(onlineCount, 9)}</em>}
+                  </div>
+                  <div className="server-channel">
+                    <span>#</span>
+                    <strong>music-bot</strong>
+                  </div>
+                  <div className="server-channel">
+                    <span>VC</span>
+                    <strong>Lobby</strong>
+                    {voiceCount > 0 && <em>{voiceCount}</em>}
+                  </div>
+                </>
+              )}
             </div>
           </aside>
         </article>
