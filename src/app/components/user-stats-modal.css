@@ -331,6 +331,209 @@
   line-height: 1;
 }
 
+/* ============ Overview tab ============ */
+.user-stats-lounge .overview-hero {
+  margin-bottom: 18px;
+}
+.user-stats-lounge .overview-hero .eyebrow {
+  font-family: var(--lounge-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #8f98ff;
+  margin-bottom: 6px;
+}
+.user-stats-lounge .overview-hero .headline {
+  margin: 0;
+  font-family: var(--lounge-font-display);
+  font-weight: 900;
+  font-size: clamp(36px, 12vw, 52px);
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  background: linear-gradient(135deg, var(--lounge-cyan) 0%, var(--lounge-pink) 60%, var(--lounge-orange) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.user-stats-lounge .overview-hero .sub {
+  margin: 6px 0 0;
+  color: var(--lounge-muted);
+  font-size: 13px;
+}
+.user-stats-lounge .overview-hero .compare-line {
+  margin-top: 10px;
+  font-family: var(--lounge-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lounge-faint);
+}
+
+/* Hero tile row */
+.user-stats-lounge .hero-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+@media (min-width: 641px) {
+  .user-stats-lounge .hero-tiles {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+.user-stats-lounge .hero-tile {
+  border: 1px solid var(--lounge-line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.045);
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-height: 92px;
+}
+.user-stats-lounge .hero-tile .label {
+  font-family: var(--lounge-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lounge-faint);
+}
+.user-stats-lounge .hero-tile .value {
+  font-family: var(--lounge-font-display);
+  font-weight: 900;
+  font-size: 22px;
+  line-height: 1;
+  letter-spacing: -0.01em;
+}
+.user-stats-lounge .hero-tile.tone-game .value { color: var(--lounge-discord); }
+.user-stats-lounge .hero-tile.tone-voice .value { color: var(--lounge-orange); }
+.user-stats-lounge .hero-tile.tone-spotify .value { color: var(--lounge-pink); }
+.user-stats-lounge .hero-tile.tone-stream .value { color: var(--lounge-cyan); }
+
+.user-stats-lounge .hero-tile .pill {
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  font-family: var(--lounge-font-mono);
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.user-stats-lounge .hero-tile .pill.up { background: rgba(16, 185, 129, 0.15); color: #34d399; }
+.user-stats-lounge .hero-tile .pill.down { background: rgba(248, 113, 113, 0.15); color: var(--lounge-error); }
+.user-stats-lounge .hero-tile .pill.eq { background: rgba(255, 255, 255, 0.06); color: var(--lounge-muted); }
+.user-stats-lounge .hero-tile .pill.top-90 { background: rgba(255, 140, 0, 0.18); color: #ffa64d; }
+.user-stats-lounge .hero-tile .pill.top-75 { background: rgba(255, 110, 199, 0.18); color: #ff8edb; }
+.user-stats-lounge .hero-tile .pill.top-50 { background: rgba(88, 101, 242, 0.18); color: #a3acff; }
+.user-stats-lounge .hero-tile .pill.top-low { background: rgba(255, 255, 255, 0.06); color: var(--lounge-muted); }
+.user-stats-lounge .hero-tile .pill.faint { background: transparent; padding-left: 0; color: var(--lounge-faint); }
+
+/* Další statistiky strip */
+.user-stats-lounge .micro-strip {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  border: 1px solid var(--lounge-line);
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.025);
+  padding: 12px;
+  margin-bottom: 18px;
+}
+@media (min-width: 641px) {
+  .user-stats-lounge .micro-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+.user-stats-lounge .micro-strip .item {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.user-stats-lounge .micro-strip .item .micro-label {
+  font-family: var(--lounge-font-mono);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lounge-faint);
+}
+.user-stats-lounge .micro-strip .item .micro-value {
+  font-family: var(--lounge-font-display);
+  font-weight: 800;
+  font-size: 16px;
+  color: var(--lounge-text);
+}
+
+/* Timeline list */
+.user-stats-lounge .timeline-heading {
+  font-family: var(--lounge-font-mono);
+  font-size: 10px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--lounge-faint);
+  margin: 0 0 8px;
+}
+.user-stats-lounge .timeline-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+.user-stats-lounge .timeline-row {
+  display: grid;
+  grid-template-columns: 54px 1fr auto;
+  gap: 10px;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px dashed rgba(255, 255, 255, 0.08);
+}
+.user-stats-lounge .timeline-row:last-child { border-bottom: 0; }
+.user-stats-lounge .timeline-row .time {
+  font-family: var(--lounge-font-mono);
+  font-size: 11px;
+  color: #8f98ff;
+}
+.user-stats-lounge .timeline-row .body {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+.user-stats-lounge .timeline-row .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.user-stats-lounge .timeline-row.tone-game   .dot { background: var(--lounge-discord); box-shadow: 0 0 8px var(--lounge-discord); }
+.user-stats-lounge .timeline-row.tone-voice  .dot { background: var(--lounge-orange);  box-shadow: 0 0 8px var(--lounge-orange);  }
+.user-stats-lounge .timeline-row.tone-spotify .dot { background: var(--lounge-pink);    box-shadow: 0 0 8px var(--lounge-pink);    }
+.user-stats-lounge .timeline-row.tone-default .dot { background: var(--lounge-cyan);    box-shadow: 0 0 8px var(--lounge-cyan);    }
+.user-stats-lounge .timeline-row .name {
+  font-family: var(--lounge-font-display);
+  font-weight: 800;
+  font-size: 13px;
+  color: var(--lounge-text);
+  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.user-stats-lounge .timeline-row .details {
+  font-size: 11px;
+  color: var(--lounge-faint);
+  margin-top: 2px;
+}
+.user-stats-lounge .timeline-row .duration {
+  font-family: var(--lounge-font-mono);
+  font-size: 11px;
+  color: var(--lounge-muted);
+  text-align: right;
+}
+
 /* Reduced motion fallback. */
 @media (prefers-reduced-motion: reduce) {
   .user-stats-lounge,
