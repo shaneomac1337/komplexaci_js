@@ -1,0 +1,44 @@
+/* ================================================================
+   Shared section typography pass
+   Keeps older sections aligned with the Esports Pro chapters.
+   ================================================================ */
+
+.section-heading-redesign {
+  --section-title-text: #ffffff;
+  --section-title-cyan: #00ffff;
+  --section-title-pink: #ff6ec7;
+  --section-title-orange: #ff8c00;
+  --section-title-font: 'Exo 2', system-ui, sans-serif;
+}
+
+.section-heading-redesign .section-title {
+  width: min(100%, 980px);
+  margin: 0 auto 48px;
+  color: var(--section-title-text);
+  font-family: var(--section-title-font);
+  font-size: clamp(44px, 6vw, 78px);
+  font-weight: 900;
+  line-height: 0.94;
+  letter-spacing: -0.035em;
+  text-align: center;
+}
+
+.section-heading-redesign .section-title span {
+  background: linear-gradient(
+    135deg,
+    var(--section-title-cyan) 0%,
+    var(--section-title-pink) 58%,
+    var(--section-title-orange) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+@media (max-width: 640px) {
+  .section-heading-redesign .section-title {
+    margin-bottom: 34px;
+    font-size: clamp(38px, 13vw, 58px);
+    letter-spacing: -0.03em;
+  }
+}

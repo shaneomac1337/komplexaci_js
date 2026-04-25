@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect, useRef, useId } from 'react';
+import { createPortal } from 'react-dom';
 import SafeImage from './SafeImage';
 import type {
   UserStatsModalProps,
@@ -30,6 +31,7 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
   const [initialLoading, setInitialLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'spotify' | 'gaming' | 'voice' | 'achievements'>('overview');
+  const [mounted, setMounted] = useState(false);
   const prevDataRef = useRef<string>('');
 
   const headingId = useId();
@@ -37,6 +39,10 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
   const closeBtnRef = useRef<HTMLButtonElement | null>(null);
   const previouslyFocusedRef = useRef<HTMLElement | null>(null);
   const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Focus management: capture previously-focused element, focus close button on open, restore on close
   useEffect(() => {
@@ -137,7 +143,7 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
     }
   };
 
-  if (!isOpen) return null;
+  if (!isOpen || !mounted) return null;
 
   const todayLabel = new Date().toLocaleDateString('cs-CZ', {
     day: '2-digit',
@@ -149,7 +155,7 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
   const liveLabel =
     liveState === 'is-loading' ? 'Načítání' : liveState === 'is-error' ? 'Offline' : 'Live';
 
-  return (
+  return createPortal(
     <div className="user-stats-lounge scrim" onClick={onClose}>
       <div
         ref={panelRef}
@@ -271,6 +277,7 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
 
         <div className="footer">Data se resetují každý den o půlnoci (CET)</div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

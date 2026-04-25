@@ -1,7 +1,9 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import SafeImage from './SafeImage';
+import './daily-awards-redesign.css';
 
 interface DailyAward {
   id: string;
@@ -42,6 +44,7 @@ export default function DailyAwards() {
   const [standings, setStandings] = useState<StandingsEntry[]>([]);
   const [standingsLoading, setStandingsLoading] = useState(false);
   const [statistics, setStatistics] = useState<StandingsStatistics | null>(null);
+  const [mounted, setMounted] = useState(false);
   const prevDataRef = useRef<string>('');
 
   const fetchAwards = async (isInitial = false) => {
@@ -109,6 +112,10 @@ export default function DailyAwards() {
   };
 
   useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  useEffect(() => {
     fetchAwards(true);
 
     // 🔄 REAL-TIME UPDATES: Refresh every minute for live competition tracking
@@ -118,16 +125,19 @@ export default function DailyAwards() {
 
   if (initialLoading) {
     return (
-      <div className="bg-gray-700/30 rounded-xl p-4 border border-yellow-500/20">
-        <div className="flex items-center mb-3">
-          <svg className="w-6 h-6 mr-3 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-          </svg>
-          <h4 className="text-lg font-semibold text-white">Ocenění dne</h4>
+      <div className="daily-awards-lounge">
+        <div className="awards-widget-head">
+          <div className="awards-title">
+            <span className="awards-title-icon">★</span>
+            <div>
+              <h4>Ocenění dne</h4>
+              <p>Žebříčky se právě načítají</p>
+            </div>
+          </div>
         </div>
-        <div className="text-center py-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400 mx-auto"></div>
-          <div className="text-gray-400 text-sm mt-2">Načítání ocenění...</div>
+        <div className="awards-state">
+          <div className="awards-spinner" aria-hidden="true" />
+          <span>Načítání ocenění...</span>
         </div>
       </div>
     );
@@ -135,18 +145,22 @@ export default function DailyAwards() {
 
   if (error) {
     return (
-      <div className="bg-gray-700/30 rounded-xl p-4 border border-red-500/20">
-        <div className="flex items-center mb-3">
-          <svg className="w-6 h-6 mr-3 text-red-400" fill="currentColor" viewBox="0 0 24 24">
-            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-          </svg>
-          <h4 className="text-lg font-semibold text-white">Ocenění dne</h4>
+      <div className="daily-awards-lounge is-error">
+        <div className="awards-widget-head">
+          <div className="awards-title">
+            <span className="awards-title-icon">!</span>
+            <div>
+              <h4>Ocenění dne</h4>
+              <p>Data se nepovedlo načíst</p>
+            </div>
+          </div>
         </div>
-        <div className="text-center py-4">
-          <div className="text-red-400 text-sm">❌ {error}</div>
+        <div className="awards-state">
+          <span className="awards-error-text">{error}</span>
           <button
+            type="button"
             onClick={() => fetchAwards(true)}
-            className="mt-2 px-3 py-1 bg-red-600 hover:bg-red-700 text-white text-xs rounded transition-colors"
+            className="awards-retry"
           >
             Zkusit znovu
           </button>
@@ -156,15 +170,22 @@ export default function DailyAwards() {
   }
 
   return (
-    <div className="bg-gray-700/30 rounded-xl p-4 border border-yellow-500/20">
-      <div className="flex items-center mb-3">
-        <svg className="w-6 h-6 mr-3 text-yellow-400" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
-        </svg>
-        <h4 className="text-lg font-semibold text-white">Ocenění dne</h4>
+    <div className="daily-awards-lounge">
+      <div className="awards-widget-head">
+        <div className="awards-title">
+          <span className="awards-title-icon">★</span>
+          <div>
+            <h4>Ocenění dne</h4>
+            <p>Klikni na kategorii pro detailní žebříček</p>
+          </div>
+        </div>
+        <span className="awards-live-pill">
+          <i />
+          Live
+        </span>
       </div>
 
-      <div className="space-y-3">
+      <div className="awards-list">
         {awards.map((award) => (
           <div
             key={award.id}
@@ -177,23 +198,17 @@ export default function DailyAwards() {
                 handleAwardClick(award);
               }
             }}
-            className="flex items-center justify-between p-3 rounded-lg bg-gray-800/30 border border-gray-600/30 cursor-pointer hover:bg-gray-700/40 active:bg-gray-700/50 hover:border-gray-500/40 transition-all duration-200 min-h-[68px]"
+            className="award-row"
           >
-            {/* Award Info */}
-            <div className="flex items-center gap-3 flex-1 min-w-0">
-              <span className="text-2xl sm:text-3xl">{award.icon}</span>
-              <div className="min-w-0">
-                <div className="text-white text-sm font-medium">
-                  {award.title}
-                </div>
-                <div className="text-gray-400 text-xs">
-                  {award.participantCount} účastníků
-                </div>
+            <div className="award-info">
+              <span className="award-icon">{award.icon}</span>
+              <div className="award-copy">
+                <strong>{award.title}</strong>
+                <span>{award.participantCount} účastníků</span>
               </div>
             </div>
 
-            {/* Winner */}
-            <div className="flex items-center gap-2 flex-shrink-0">
+            <div className="award-winner">
               {award.winner ? (
                 <>
                   <SafeImage
@@ -201,28 +216,20 @@ export default function DailyAwards() {
                     alt={award.winner.displayName}
                     width={40}
                     height={40}
-                    className="rounded-full border border-gray-600"
+                    className="award-avatar"
                     fallback={
-                      <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center border border-gray-600">
-                        <span className="text-white text-sm font-bold">
-                          {award.winner.displayName.charAt(0).toUpperCase()}
-                        </span>
+                      <div className="award-avatar award-avatar-fallback">
+                        {award.winner.displayName.charAt(0).toUpperCase()}
                       </div>
                     }
                   />
-                  <div className="text-right">
-                    <div className="text-white text-sm font-medium max-w-24 truncate">
-                      {award.winner.displayName}
-                    </div>
-                    <div className="text-yellow-400 text-xs font-bold">
-                      {award.winner.value} {award.winner.unit}
-                    </div>
+                  <div className="award-winner-copy">
+                    <strong>{award.winner.displayName}</strong>
+                    <span>{award.winner.value} {award.winner.unit}</span>
                   </div>
                 </>
               ) : (
-                <div className="text-gray-500 text-sm">
-                  Nikdo
-                </div>
+                <span className="award-empty">Nikdo</span>
               )}
             </div>
           </div>
@@ -230,154 +237,119 @@ export default function DailyAwards() {
       </div>
 
       {/* Standings Modal */}
-      {selectedAward && (
-        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-end sm:items-center justify-center z-50 p-0 sm:p-4">
-          <div className="bg-gray-800 w-full sm:max-w-md rounded-t-2xl sm:rounded-xl max-h-[90vh] sm:max-h-[80vh] overflow-hidden border-t border-x sm:border border-gray-600 animate-slide-up sm:animate-fade-in">
-            {/* Drag handle for mobile */}
-            <div className="sm:hidden flex justify-center pt-2 pb-1">
-              <div className="w-10 h-1 bg-gray-600 rounded-full"></div>
-            </div>
+      {selectedAward && mounted && createPortal(
+        <div className="daily-awards-lounge awards-modal-scrim" onClick={closeModal}>
+          <div
+            className="awards-modal-panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="daily-awards-modal-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="awards-drag-handle" aria-hidden="true"><i /></div>
 
-            {/* Modal Header */}
-            <div className="p-3 sm:p-4 border-b border-gray-600">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2 sm:gap-3 flex-1 min-w-0">
-                  <span className="text-2xl">{selectedAward.icon}</span>
-                  <div className="min-w-0 flex-1">
-                    <h3 className="text-base sm:text-lg font-semibold text-white">
-                      {selectedAward.title}
-                    </h3>
-                    <p className="text-xs sm:text-sm text-gray-400 truncate">
-                      {selectedAward.description}
-                    </p>
-                  </div>
+            <div className="awards-modal-header">
+              <div className="awards-modal-title-row">
+                <span className="awards-modal-icon">{selectedAward.icon}</span>
+                <div className="awards-modal-title-copy">
+                  <h3 id="daily-awards-modal-title">{selectedAward.title}</h3>
+                  <p>{selectedAward.description}</p>
+                  <span className="awards-modal-kicker">Dnešní pořadí · live tracking</span>
                 </div>
                 <button
+                  type="button"
                   onClick={closeModal}
-                  className="text-gray-400 hover:text-white transition-colors p-2 min-h-[44px] min-w-[44px] flex items-center justify-center flex-shrink-0"
+                  className="awards-close-btn"
                   aria-label="Zavřít"
                 >
-                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                   </svg>
                 </button>
               </div>
 
-              {/* Date and Statistics */}
-              <div className="bg-gray-700/30 rounded-lg p-3 border border-gray-600/30">
-                <div className="flex items-center justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <svg className="w-4 h-4 text-blue-400" fill="currentColor" viewBox="0 0 24 24">
-                      <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z"/>
-                    </svg>
-                    <span className="text-sm font-medium text-blue-400">
-                      {new Date().toLocaleDateString('cs-CZ', {
-                        weekday: 'long',
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric'
-                      })}
-                    </span>
-                  </div>
+              <div className="awards-date-strip">
+                <div className="awards-date-label">
+                  <svg fill="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
+                  </svg>
+                  <span>
+                    {new Date().toLocaleDateString('cs-CZ', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </span>
                 </div>
 
                 {statistics && (
-                  <div className="grid grid-cols-3 gap-3 text-xs">
-                    <div className="text-center">
-                      <div className="text-white font-semibold">{statistics.totalParticipants}</div>
-                      <div className="text-gray-400">účastníků</div>
+                  <div className="awards-stat-grid">
+                    <div>
+                      <strong>{statistics.totalParticipants}</strong>
+                      <span>účastníků</span>
                     </div>
-                    <div className="text-center">
-                      <div className="text-white font-semibold">{statistics.totalValue}</div>
-                      <div className="text-gray-400">celkem {statistics.unit}</div>
+                    <div>
+                      <strong>{statistics.totalValue}</strong>
+                      <span>celkem {statistics.unit}</span>
                     </div>
-                    <div className="text-center">
-                      <div className="text-white font-semibold">{statistics.averageValue}</div>
-                      <div className="text-gray-400">průměr {statistics.unit}</div>
+                    <div>
+                      <strong>{statistics.averageValue}</strong>
+                      <span>průměr {statistics.unit}</span>
                     </div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Modal Content */}
-            <div className="p-3 sm:p-4 max-h-[70vh] sm:max-h-96 overflow-y-auto overscroll-contain touch-pan-y">
+            <div className="awards-modal-body">
               {standingsLoading ? (
-                <div className="text-center py-8">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-yellow-400 mx-auto"></div>
-                  <div className="text-gray-400 text-sm mt-2">Načítání žebříčku...</div>
+                <div className="awards-state">
+                  <div className="awards-spinner" aria-hidden="true" />
+                  <span>Načítání žebříčku...</span>
                 </div>
               ) : standings.length > 0 ? (
-                <div className="space-y-2">
+                <div className="standings-list">
                   {standings.map((entry, index) => (
                     <div
                       key={entry.userId}
-                      className={`flex items-center gap-3 p-3 rounded-lg min-h-[68px] ${
-                        index === 0 ? 'bg-yellow-500/20 border border-yellow-500/30' :
-                        index === 1 ? 'bg-gray-400/20 border border-gray-400/30' :
-                        index === 2 ? 'bg-orange-500/20 border border-orange-500/30' :
-                        'bg-gray-700/30 border border-gray-600/30'
-                      }`}
+                      className={`standing-row standing-rank-${Math.min(index + 1, 4)}`}
                     >
-                      {/* Rank */}
-                      <div className="flex-shrink-0 w-10 h-10 rounded-full bg-gray-600 flex items-center justify-center">
-                        <span className={`text-sm font-bold ${
-                          index === 0 ? 'text-yellow-400' :
-                          index === 1 ? 'text-gray-300' :
-                          index === 2 ? 'text-orange-400' :
-                          'text-gray-400'
-                        }`}>
-                          {index + 1}
-                        </span>
-                      </div>
+                      <div className="standing-rank">#{entry.rank || index + 1}</div>
 
-                      {/* Avatar */}
                       <SafeImage
                         src={entry.avatar}
                         alt={entry.displayName}
                         width={40}
                         height={40}
-                        className="rounded-full border border-gray-600"
+                        className="standing-avatar"
                         fallback={
-                          <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center border border-gray-600">
-                            <span className="text-white text-sm font-bold">
-                              {entry.displayName.charAt(0).toUpperCase()}
-                            </span>
+                          <div className="standing-avatar standing-avatar-fallback">
+                            {entry.displayName.charAt(0).toUpperCase()}
                           </div>
                         }
                       />
 
-                      {/* Name and Value */}
-                      <div className="flex-1 min-w-0">
-                        <div className="text-white text-sm font-medium truncate">
-                          {entry.displayName}
-                        </div>
+                      <div className="standing-name">
+                        <strong>{entry.displayName}</strong>
                       </div>
 
-                      {/* Score */}
-                      <div className="text-right flex-shrink-0">
-                        <div className={`text-sm font-bold ${
-                          index === 0 ? 'text-yellow-400' :
-                          index === 1 ? 'text-gray-300' :
-                          index === 2 ? 'text-orange-400' :
-                          'text-gray-300'
-                        }`}>
-                          {entry.value} {entry.unit}
-                        </div>
+                      <div className="standing-score">
+                        <strong>{entry.value}</strong>
+                        <span>{entry.unit}</span>
                       </div>
                     </div>
                   ))}
                 </div>
               ) : (
-                <div className="text-center py-8">
-                  <div className="text-gray-400 text-sm">
-                    Žádní účastníci v této kategorii
-                  </div>
+                <div className="awards-empty-state">
+                  Žádní účastníci v této kategorii
                 </div>
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );
