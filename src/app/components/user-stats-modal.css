@@ -866,6 +866,92 @@
   padding: 6px 0;
 }
 
+/* ============ Skeleton ============ */
+.user-stats-lounge .skeleton {
+  background: linear-gradient(
+    100deg,
+    rgba(255, 255, 255, 0.04) 0%,
+    rgba(255, 255, 255, 0.1) 45%,
+    rgba(255, 255, 255, 0.04) 90%
+  );
+  background-size: 200% 100%;
+  border-radius: 8px;
+  animation: lounge-shimmer 1.4s ease-in-out infinite;
+}
+@keyframes lounge-shimmer {
+  0% { background-position: 100% 0; }
+  100% { background-position: -100% 0; }
+}
+
+.user-stats-lounge .skeleton-headline {
+  height: 48px;
+  width: 60%;
+  max-width: 320px;
+  margin-bottom: 18px;
+}
+.user-stats-lounge .skeleton-tiles {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 14px;
+}
+@media (min-width: 641px) {
+  .user-stats-lounge .skeleton-tiles { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+.user-stats-lounge .skeleton-tile {
+  height: 92px;
+  border-radius: 10px;
+}
+.user-stats-lounge .skeleton-strip {
+  height: 60px;
+  border-radius: 10px;
+  margin-bottom: 18px;
+}
+.user-stats-lounge .skeleton-row {
+  height: 36px;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+.user-stats-lounge .skeleton-row:last-child { margin-bottom: 0; }
+
+/* ============ Error card ============ */
+.user-stats-lounge .error-card {
+  border: 1px solid rgba(248, 113, 113, 0.3);
+  border-radius: 12px;
+  background: rgba(248, 113, 113, 0.06);
+  padding: 18px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+.user-stats-lounge .error-card .error-msg {
+  margin: 0;
+  color: var(--lounge-error);
+  font-size: 14px;
+}
+.user-stats-lounge .error-card .lounge-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: 1px solid var(--lounge-line-strong);
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--lounge-text);
+  font-family: var(--lounge-font-body);
+  font-weight: 700;
+  font-size: 13px;
+  cursor: pointer;
+  transition: background 0.15s ease, transform 0.15s ease;
+}
+.user-stats-lounge .error-card .lounge-button:hover {
+  background: rgba(255, 255, 255, 0.12);
+  transform: translateY(-1px);
+}
+
 /* Reduced motion fallback. */
 @media (prefers-reduced-motion: reduce) {
   .user-stats-lounge,
