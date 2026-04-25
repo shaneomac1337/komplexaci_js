@@ -467,9 +467,20 @@ function CommunityLounge({ discordStats }: { discordStats: CommunityDiscordStats
             </svg>
           </div>
           <div className="music-strip-copy">
-            <span className="feature-eyebrow">KompG Trax</span>
-            <h3>Hudba, fronta a statistiky z webu</h3>
-            <p>Ovládej Discord music bot přímo z webového rozhraní a sleduj přehrávání v reálném čase.</p>
+            <span className="feature-eyebrow">KompG Music Bot · open source</span>
+            <h3>Náš Discord music bot, ovládaný z webu</h3>
+            <p>
+              KompG Music Bot je naše varianta open-source bota{' '}
+              <a
+                href="https://github.com/shaneomac1337/lavamusic"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="music-strip-source-link"
+              >
+                lavamusic
+              </a>
+              , která běží přímo na Discordu Komplexáků. Pouštěj hudbu, spravuj frontu a sleduj přehrávání v reálném čase z webového rozhraní.
+            </p>
           </div>
           <div className="music-chip-grid">
             {musicFeatures.map((feature) => (
