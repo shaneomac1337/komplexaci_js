@@ -557,13 +557,6 @@
 .user-stats-lounge .tab-hero.accent-game::after    { background: linear-gradient(90deg, transparent, var(--lounge-discord), transparent); }
 .user-stats-lounge .tab-hero.accent-voice::after   { background: linear-gradient(90deg, transparent, var(--lounge-orange), transparent); }
 
-.user-stats-lounge .tab-hero .tab-hero-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
-  flex-wrap: wrap;
-}
 .user-stats-lounge .tab-hero .tab-hero-title {
   margin: 0;
   font-family: var(--lounge-font-display);
