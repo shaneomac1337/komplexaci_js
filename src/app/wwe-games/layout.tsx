@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "WWE Games | Komplexáci",
   description: "Kompletní kolekce WWE/WWF wrestlingových her - od klasických arkádových her až po moderní WWE 2K série. Objevte historii wrestlingových videoher.",
-  keywords: ["WWE", "WWF", "wrestling", "hry", "videohry", "2K", "SmackDown", "WrestleMania", "Komplexáci"],
   alternates: {
     canonical: "/wwe-games",
   },

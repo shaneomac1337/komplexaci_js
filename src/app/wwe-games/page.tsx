@@ -11,6 +11,7 @@ import AnimatedSection from '../components/AnimatedSection';
 import SmartGrid from '../components/SmartGrid';
 import WWEMusicPlayer from '../components/WWEMusicPlayer';
 import Header from '../components/Header';
+import { Icon } from '../components/Icon';
 
 // Optimized WWE 2K25 Screenshots from VGTimes (WebP format for better performance)
 const wwe2k25Screenshots = [
@@ -293,7 +294,7 @@ export default function WWEGamesPage() {
             {currentScreenshot && (
               <div className="mt-4 text-sm text-blue-300 opacity-75"
                    style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.6)' }}>
-                <i className="fas fa-camera mr-2"></i>
+                <Icon name="camera" className="mr-2" />
                 Od herních počátků až po současnost
               </div>
             )}
@@ -406,7 +407,7 @@ export default function WWEGamesPage() {
                 onClick={resetFilters}
                 className={styles.filterResetBtn}
               >
-                <i className="fas fa-undo"></i> Reset filtrů
+                <Icon name="undo" /> Reset filtrů
               </button>
             </div>
 
@@ -440,7 +441,7 @@ export default function WWEGamesPage() {
                 onClick={resetFilters}
                 className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 hover:scale-105"
               >
-                <i className="fas fa-undo mr-2"></i> Resetovat filtry
+                <Icon name="undo" className="mr-2" /> Resetovat filtry
               </button>
             </div>
           ) : (

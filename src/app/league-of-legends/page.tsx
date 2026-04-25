@@ -6,6 +6,7 @@ import Image from 'next/image';
 import styles from './lol.module.css';
 import '../komplexaci.css';
 import Header from '../components/Header';
+import { Icon } from '../components/Icon';
 import SummonerSearch from './components/SummonerSearch';
 import KomplexaciStatus from './components/KomplexaciStatus';
 
@@ -699,7 +700,7 @@ export default function LeagueOfLegendsNextJS() {
                   {currentChampionSplash && currentChampionName && (
                     <div className="mt-4 text-sm text-blue-300 opacity-75"
                          style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.6)' }}>
-                      <i className="fas fa-star mr-2"></i>
+                      <Icon name="star" className="mr-2" />
                       Aktuální šampion: {currentChampionName}
                     </div>
                   )}

@@ -3,7 +3,6 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
   title: "League of Legends | Komplexáci",
   description: "League of Legends - MOBA hra od Riot Games, ve které se specializuje klan Komplexáci. Objevte více než 160 unikátních šampionů a jejich schopnosti.",
-  keywords: ["League of Legends", "LoL", "MOBA", "Riot Games", "šampioni", "champions", "esports", "Komplexáci"],
   alternates: {
     canonical: "/league-of-legends",
   },

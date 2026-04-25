@@ -12,6 +12,7 @@ import StaggeredGrid from '../components/StaggeredGrid';
 import WeaponCardSkeleton from '../components/WeaponCardSkeleton';
 import MapCardSkeleton from '../components/MapCardSkeleton';
 import Header from '../components/Header';
+import { Icon } from '../components/Icon';
 
 // CS2 Screenshots from SteamDB for random display
 const cs2Screenshots = [
@@ -239,7 +240,7 @@ export default function CS2Page() {
                 {currentScreenshot && (
                   <div className="mt-4 text-sm text-red-300 opacity-75"
                        style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.6)' }}>
-                    <i className="fas fa-camera mr-2"></i>
+                    <Icon name="camera" className="mr-2" />
                     Oficiální screenshoty ze hry
                   </div>
                 )}
