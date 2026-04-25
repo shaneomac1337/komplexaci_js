@@ -53,6 +53,7 @@
   width: 100%;
   max-width: 720px;
   max-height: 90vh;
+  max-height: 90dvh;
   background: var(--lounge-bg);
   border: 1px solid var(--lounge-line-strong);
   border-bottom: 0;
@@ -66,6 +67,7 @@
 @media (min-width: 641px) {
   .user-stats-lounge .panel {
     max-height: 85vh;
+    max-height: 85dvh;
     border-bottom: 1px solid var(--lounge-line-strong);
     border-radius: 16px;
   }
@@ -104,10 +106,12 @@
 
 /* Body wrapper that scrolls. */
 .user-stats-lounge .body {
-  flex: 1 1 auto;
+  flex: 1 1 0;
   min-height: 0;
   overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
   overscroll-behavior: contain;
+  touch-action: pan-y;
   padding: 16px 16px 20px;
 }
 
