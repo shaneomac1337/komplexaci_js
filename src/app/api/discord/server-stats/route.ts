@@ -142,6 +142,7 @@ export async function GET() {
           boostLevel: stats.boostLevel,
           boostCount: stats.boostCount,
           verificationLevel: stats.verificationLevel,
+          channels: stats.channels,
           onlineMembers: onlineMembersWithDetails,
           streamingStats: {
             totalStreaming: streamingUsers.length,
@@ -339,6 +340,7 @@ export async function GET() {
       boostLevel: serverData.premium_tier || 0,
       boostCount: serverData.premium_subscription_count || 0,
       verificationLevel: serverData.verification_level || 0,
+      channels: [],
       onlineMembers: allServerMembers,
       streamingStats: {
         totalStreaming: 0,
@@ -366,6 +368,7 @@ export async function GET() {
       boostLevel: 0,
       boostCount: 0,
       verificationLevel: 1,
+      channels: [],
       onlineMembers: [
         {
           id: '1',
