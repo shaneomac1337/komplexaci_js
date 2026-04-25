@@ -73,14 +73,3 @@ export const calculateAchievementProgress = (
   return { current, unlocked, progress };
 };
 
-export const getUnlockedAchievements = (stats: UserStats | null): Achievement[] =>
-  ACHIEVEMENTS.filter((achievement) => calculateAchievementProgress(achievement, stats).unlocked);
-
-export const getInProgressAchievements = (stats: UserStats | null): Achievement[] =>
-  ACHIEVEMENTS
-    .filter((achievement) => !calculateAchievementProgress(achievement, stats).unlocked)
-    .sort(
-      (a, b) =>
-        calculateAchievementProgress(b, stats).progress -
-        calculateAchievementProgress(a, stats).progress
-    );
