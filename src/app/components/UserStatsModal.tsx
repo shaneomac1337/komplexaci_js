@@ -250,7 +250,7 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
           )}
 
           {stats && !initialLoading && (
-            <div className="space-y-4">
+            <div key={activeTab} className="space-y-4">
               {/* Overview Tab */}
               {activeTab === 'overview' && <OverviewTab stats={stats} />}
 
