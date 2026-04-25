@@ -6,12 +6,8 @@ import type {
   UserStatsModalProps,
   UserStats,
 } from './userStats/types';
-import {
-  formatOnlineTime,
-  formatDate,
-  getSessionTypeIcon,
-  getPercentileBadgeClass,
-} from './userStats/formatters';
+import { formatOnlineTime } from './userStats/formatters';
+import OverviewTab from './userStats/OverviewTab';
 import {
   ACHIEVEMENTS,
   calculateAchievementProgress,
@@ -74,46 +70,6 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
         setInitialLoading(false);
       }
     }
-  };
-
-  const renderComparisonStat = (
-    label: string,
-    value: number | string,
-    valueColor: string,
-    vsAverage?: number,
-    percentile?: number,
-    isTimeValue: boolean = true
-  ) => {
-    return (
-      <div className="bg-gray-700/30 rounded-lg p-3 min-h-[80px] flex flex-col justify-center">
-        <div className="text-sm text-gray-400">{label}</div>
-        <div className={`text-lg sm:text-xl font-bold ${valueColor}`}>{value}</div>
-
-        {vsAverage !== undefined && (
-          <div className="flex items-center gap-2 mt-1">
-            {vsAverage > 0 ? (
-              <span className="text-green-400 text-sm">
-                ↑ +{isTimeValue ? formatOnlineTime(vsAverage) : Math.round(vsAverage)} vs průměr
-              </span>
-            ) : vsAverage < 0 ? (
-              <span className="text-red-400 text-sm">
-                ↓ {isTimeValue ? formatOnlineTime(Math.abs(vsAverage)) : Math.round(Math.abs(vsAverage))} vs průměr
-              </span>
-            ) : (
-              <span className="text-gray-400 text-sm">= průměr</span>
-            )}
-          </div>
-        )}
-
-        {percentile !== undefined && (
-          <div className="mt-2">
-            <span className={`text-xs px-2 py-0.5 rounded-full ${getPercentileBadgeClass(percentile)}`}>
-              Top {100 - percentile}%
-            </span>
-          </div>
-        )}
-      </div>
-    );
   };
 
   if (!isOpen) return null;
@@ -209,120 +165,7 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
           {stats && !initialLoading && (
             <div className="space-y-4">
               {/* Overview Tab */}
-              {activeTab === 'overview' && (
-                <div className="space-y-4">
-                  {/* Server Comparison Info */}
-                  {stats.data.serverAverages && (
-                    <div className="bg-purple-500/10 border border-purple-500/20 rounded-lg p-3">
-                      <div className="text-xs text-purple-300 font-semibold mb-1">
-                        📊 Porovnání se serverem
-                      </div>
-                      <div className="text-xs text-gray-400">
-                        Srovnání s {stats.data.serverAverages.totalActiveUsers} aktivními uživateli
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Daily Overview with Comparisons */}
-                  <div>
-                    <h4 className="text-sm font-semibold text-purple-300 mb-3">📊 Dnešní přehled</h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {/* Game Time */}
-                      {renderComparisonStat(
-                        'Herní čas',
-                        formatOnlineTime(stats.data.totals.totalGameTime),
-                        'text-blue-400',
-                        stats.data.serverAverages ? stats.data.totals.totalGameTime - stats.data.serverAverages.avgGameTime : undefined,
-                        stats.data.percentiles?.gameTimePercentile
-                      )}
-
-                      {/* Voice Time */}
-                      {renderComparisonStat(
-                        'Voice čas',
-                        formatOnlineTime(stats.data.totals.totalVoiceTime),
-                        'text-yellow-400',
-                        stats.data.serverAverages ? stats.data.totals.totalVoiceTime - stats.data.serverAverages.avgVoiceTime : undefined,
-                        stats.data.percentiles?.voiceTimePercentile
-                      )}
-
-                      {/* Songs Played */}
-                      {renderComparisonStat(
-                        'Spotify písně',
-                        stats.data.totals.totalSongsPlayed.toString(),
-                        'text-purple-400',
-                        stats.data.serverAverages ? stats.data.totals.totalSongsPlayed - stats.data.serverAverages.avgSongsPlayed : undefined,
-                        stats.data.percentiles?.songsPlayedPercentile,
-                        false
-                      )}
-
-                      {/* Online Time (no comparison) */}
-                      <div className="bg-gray-700/30 rounded-lg p-3 min-h-[80px] flex flex-col justify-center">
-                        <div className="text-sm text-gray-400">Online čas celkem</div>
-                        <div className="text-lg sm:text-xl font-bold text-green-400">
-                          {formatOnlineTime(stats.data.totals.totalOnlineTime)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Additional Stats */}
-                  <div className="bg-gray-700/30 rounded-lg p-3 sm:p-4">
-                    <h4 className="text-sm font-semibold text-gray-300 mb-3">📈 Další statistiky</h4>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
-                      <div>
-                        <div className="text-gray-400">Různých her</div>
-                        <div className="text-blue-400 font-semibold">
-                          {stats.data.totals.gamesPlayed || 0}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-gray-400">Voice kanálů</div>
-                        <div className="text-yellow-400 font-semibold">
-                          {stats.data.totals.voiceChannelsUsed || 0}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-gray-400">Různých interpretů</div>
-                        <div className="text-purple-400 font-semibold">
-                          {stats.data.totals.artistsListened || 0}
-                        </div>
-                      </div>
-                      <div>
-                        <div className="text-gray-400">Screen share</div>
-                        <div className="text-yellow-400 font-semibold">
-                          {formatOnlineTime(stats.data.totals.totalScreenShareTime || 0)}
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Recent Activity */}
-                  {stats.data.recentSessions && stats.data.recentSessions.length > 0 && (
-                    <div className="bg-gray-700/30 rounded-lg p-4">
-                      <h4 className="text-sm font-semibold text-purple-300 mb-3">🕒 Nedávná aktivita</h4>
-                      <div className="space-y-2">
-                        {stats.data.recentSessions.slice(0, 5).map((session, index) => (
-                          <div key={index} className="flex items-center justify-between text-sm">
-                            <div className="flex items-center space-x-2">
-                              <span className="text-lg">{getSessionTypeIcon(session.type)}</span>
-                              <div>
-                                <div className="text-white">{session.name}</div>
-                                {session.details && (
-                                  <div className="text-gray-400 text-xs">{session.details}</div>
-                                )}
-                              </div>
-                            </div>
-                            <div className="text-right">
-                              <div className="text-gray-300">{formatOnlineTime(session.duration_minutes)}</div>
-                              <div className="text-gray-500 text-xs">{formatDate(session.start_time)}</div>
-                            </div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+              {activeTab === 'overview' && <OverviewTab stats={stats} />}
 
               {/* Spotify Tab */}
               {activeTab === 'spotify' && (
