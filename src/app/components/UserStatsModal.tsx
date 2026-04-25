@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useId } from 'react';
 import SafeImage from './SafeImage';
 import type {
   UserStatsModalProps,
@@ -13,12 +13,80 @@ import VoiceTab from './userStats/VoiceTab';
 import AchievementsTab from './userStats/AchievementsTab';
 import './user-stats-modal.css';
 
+const TABS: Array<{
+  id: 'overview' | 'spotify' | 'gaming' | 'voice' | 'achievements';
+  label: string;
+  icon: string;
+}> = [
+  { id: 'overview', label: 'Přehled', icon: '📊' },
+  { id: 'spotify', label: 'Spotify', icon: '🎵' },
+  { id: 'gaming', label: 'Hry', icon: '🎮' },
+  { id: 'voice', label: 'Voice', icon: '🎤' },
+  { id: 'achievements', label: 'Úspěchy', icon: '🏆' },
+];
+
 export default function UserStatsModal({ isOpen, onClose, userId, displayName, avatar }: UserStatsModalProps) {
   const [stats, setStats] = useState<UserStats | null>(null);
   const [initialLoading, setInitialLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'spotify' | 'gaming' | 'voice' | 'achievements'>('overview');
   const prevDataRef = useRef<string>('');
+
+  const headingId = useId();
+  const panelRef = useRef<HTMLDivElement | null>(null);
+  const closeBtnRef = useRef<HTMLButtonElement | null>(null);
+  const previouslyFocusedRef = useRef<HTMLElement | null>(null);
+  const tabRefs = useRef<Array<HTMLButtonElement | null>>([]);
+
+  // Focus management: capture previously-focused element, focus close button on open, restore on close
+  useEffect(() => {
+    if (!isOpen) return;
+    previouslyFocusedRef.current = document.activeElement as HTMLElement | null;
+    const t = setTimeout(() => closeBtnRef.current?.focus(), 0);
+    return () => {
+      clearTimeout(t);
+      previouslyFocusedRef.current?.focus?.();
+    };
+  }, [isOpen]);
+
+  // Escape to close + focus trap (Tab / Shift+Tab cycles within the panel)
+  useEffect(() => {
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const panel = panelRef.current;
+      if (!panel) return;
+      const focusables = panel.querySelectorAll<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [isOpen, onClose]);
+
+  const onTabKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>, currentIndex: number) => {
+    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
+    e.preventDefault();
+    const dir = e.key === 'ArrowRight' ? 1 : -1;
+    const nextIndex = (currentIndex + dir + TABS.length) % TABS.length;
+    setActiveTab(TABS[nextIndex].id);
+    tabRefs.current[nextIndex]?.focus();
+  };
 
   useEffect(() => {
     if (isOpen && userId) {
@@ -81,17 +149,16 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
   const liveLabel =
     liveState === 'is-loading' ? 'Načítání' : liveState === 'is-error' ? 'Offline' : 'Live';
 
-  const TABS: Array<{ id: 'overview' | 'spotify' | 'gaming' | 'voice' | 'achievements'; label: string; icon: string }> = [
-    { id: 'overview', label: 'Přehled', icon: '📊' },
-    { id: 'spotify', label: 'Spotify', icon: '🎵' },
-    { id: 'gaming', label: 'Hry', icon: '🎮' },
-    { id: 'voice', label: 'Voice', icon: '🎤' },
-    { id: 'achievements', label: 'Úspěchy', icon: '🏆' },
-  ];
-
   return (
     <div className="user-stats-lounge scrim" onClick={onClose}>
-      <div className="panel" onClick={(e) => e.stopPropagation()}>
+      <div
+        ref={panelRef}
+        className="panel"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby={headingId}
+        onClick={(e) => e.stopPropagation()}
+      >
         <div className="drag-handle" aria-hidden="true"><i /></div>
 
         <div className="header">
@@ -109,29 +176,40 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
             />
           </div>
           <div className="meta">
-            <span className="name">{displayName}</span>
+            <span id={headingId} className="name">{displayName}</span>
             <span className="sub">Dnešní aktivita · {todayLabel}</span>
           </div>
           <span className={`live-pill ${liveState}`} aria-live="polite">
             <i />
             {liveLabel}
           </span>
-          <button type="button" className="close-btn" onClick={onClose} aria-label="Zavřít">
+          <button
+            ref={closeBtnRef}
+            type="button"
+            className="close-btn"
+            onClick={onClose}
+            aria-label="Zavřít"
+          >
             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
           </button>
         </div>
 
-        <div className="tabs" role="tablist">
-          {TABS.map((tab) => (
+        <div className="tabs" role="tablist" aria-label="Statistiky">
+          {TABS.map((tab, i) => (
             <button
               key={tab.id}
+              ref={(el) => { tabRefs.current[i] = el; }}
               type="button"
               role="tab"
+              id={`stats-tab-${tab.id}`}
               aria-selected={activeTab === tab.id}
+              aria-controls={`stats-panel-${tab.id}`}
+              tabIndex={activeTab === tab.id ? 0 : -1}
               className={`tab ${activeTab === tab.id ? 'is-active' : ''}`}
               onClick={() => setActiveTab(tab.id)}
+              onKeyDown={(e) => onTabKeyDown(e, i)}
             >
               <span className="tab-icon" aria-hidden="true">{tab.icon}</span>
               <span className="tab-label">{tab.label}</span>
@@ -139,7 +217,12 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
           ))}
         </div>
 
-        <div className="body">
+        <div
+          className="body"
+          role="tabpanel"
+          id={`stats-panel-${activeTab}`}
+          aria-labelledby={`stats-tab-${activeTab}`}
+        >
           {initialLoading && (
             <div aria-busy="true" aria-label="Načítání statistik">
               <div className="skeleton skeleton-headline" />

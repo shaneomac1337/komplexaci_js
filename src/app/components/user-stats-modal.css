@@ -952,6 +952,32 @@
   transform: translateY(-1px);
 }
 
+/* ============ Motion ============ */
+.user-stats-lounge.scrim { animation: lounge-scrim-in 160ms ease-out; }
+@keyframes lounge-scrim-in {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+.user-stats-lounge .panel { animation: lounge-panel-in-mobile 280ms ease-out; }
+@keyframes lounge-panel-in-mobile {
+  from { transform: translateY(20%); opacity: 0; }
+  to   { transform: translateY(0);   opacity: 1; }
+}
+@media (min-width: 641px) {
+  .user-stats-lounge .panel { animation: lounge-panel-in-desktop 200ms ease-out; }
+  @keyframes lounge-panel-in-desktop {
+    from { transform: scale(0.96); opacity: 0; }
+    to   { transform: scale(1);    opacity: 1; }
+  }
+}
+
+.user-stats-lounge .body > * { animation: lounge-tab-fade 120ms ease-out; }
+@keyframes lounge-tab-fade {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
 /* Reduced motion fallback. */
 @media (prefers-reduced-motion: reduce) {
   .user-stats-lounge,
