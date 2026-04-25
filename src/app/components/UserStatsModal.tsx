@@ -5,7 +5,6 @@ import SafeImage from './SafeImage';
 import type {
   UserStatsModalProps,
   UserStats,
-  Achievement,
 } from './userStats/types';
 import {
   formatOnlineTime,
@@ -13,25 +12,12 @@ import {
   getSessionTypeIcon,
   getPercentileBadgeClass,
 } from './userStats/formatters';
-
-// Achievement definitions
-const ACHIEVEMENTS: Achievement[] = [
-  // Gaming
-  { id: 'marathon-gamer', title: 'Maratonec', description: 'Hraj 6+ hodin v jednom dni', icon: '🎮', threshold: 360, category: 'gaming' },
-  { id: 'game-variety', title: 'Všeuměl', description: 'Zahraj 5 různých her za den', icon: '🎲', threshold: 5, category: 'gaming' },
-
-  // Voice
-  { id: 'social-butterfly', title: 'Společenský', description: '10+ hodin ve voice za den', icon: '🎤', threshold: 600, category: 'voice' },
-  { id: 'streamer', title: 'Streamer', description: '2+ hodiny streamování za den', icon: '📺', threshold: 120, category: 'voice' },
-
-  // Spotify
-  { id: 'music-lover', title: 'Meloman', description: '100+ skladeb za den', icon: '🎵', threshold: 100, category: 'spotify' },
-  { id: 'dj', title: 'DJ', description: '20+ různých interpretů za den', icon: '🎧', threshold: 20, category: 'spotify' },
-
-  // Special
-  { id: 'night-owl', title: 'Noční sova', description: 'Aktivní po půlnoci', icon: '🦉', threshold: 1, category: 'special' },
-  { id: 'early-bird', title: 'Ranní ptáče', description: 'Aktivní před 6:00', icon: '🐦', threshold: 1, category: 'special' },
-];
+import {
+  ACHIEVEMENTS,
+  calculateAchievementProgress,
+  getUnlockedAchievements,
+  getInProgressAchievements,
+} from './userStats/achievements';
 
 export default function UserStatsModal({ isOpen, onClose, userId, displayName, avatar }: UserStatsModalProps) {
   const [stats, setStats] = useState<UserStats | null>(null);
@@ -127,75 +113,6 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
         )}
       </div>
     );
-  };
-
-  // Calculate achievement progress
-  const calculateAchievementProgress = (achievement: Achievement): { current: number; unlocked: boolean; progress: number } => {
-    if (!stats) return { current: 0, unlocked: false, progress: 0 };
-
-    let current = 0;
-
-    switch (achievement.id) {
-      case 'marathon-gamer':
-        current = stats.data.totals.totalGameTime;
-        break;
-      case 'game-variety':
-        current = stats.data.totals.gamesPlayed || stats.data.gameSessions?.length || 0;
-        break;
-      case 'social-butterfly':
-        current = stats.data.totals.totalVoiceTime;
-        break;
-      case 'streamer':
-        current = stats.data.totals.totalScreenShareTime || 0;
-        break;
-      case 'music-lover':
-        current = stats.data.totals.totalSongsPlayed;
-        break;
-      case 'dj':
-        current = stats.data.totals.artistsListened || stats.data.spotifyActivity?.length || 0;
-        break;
-      case 'night-owl':
-        // Check if any session was after midnight
-        current = stats.data.recentSessions?.some(session => {
-          const hour = new Date(session.start_time).getHours();
-          return hour >= 0 && hour < 6;
-        }) ? 1 : 0;
-        break;
-      case 'early-bird':
-        // Check if any session was before 6 AM
-        current = stats.data.recentSessions?.some(session => {
-          const hour = new Date(session.start_time).getHours();
-          return hour >= 4 && hour < 6;
-        }) ? 1 : 0;
-        break;
-      default:
-        current = 0;
-    }
-
-    const unlocked = current >= achievement.threshold;
-    const progress = Math.min((current / achievement.threshold) * 100, 100);
-
-    return { current, unlocked, progress };
-  };
-
-  // Get unlocked achievements
-  const getUnlockedAchievements = () => {
-    return ACHIEVEMENTS.filter(achievement => {
-      const { unlocked } = calculateAchievementProgress(achievement);
-      return unlocked;
-    });
-  };
-
-  // Get in-progress achievements
-  const getInProgressAchievements = () => {
-    return ACHIEVEMENTS.filter(achievement => {
-      const { unlocked } = calculateAchievementProgress(achievement);
-      return !unlocked;
-    }).sort((a, b) => {
-      const progressA = calculateAchievementProgress(a).progress;
-      const progressB = calculateAchievementProgress(b).progress;
-      return progressB - progressA;
-    });
   };
 
   if (!isOpen) return null;
@@ -647,14 +564,14 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
               {activeTab === 'achievements' && (
                 <div className="space-y-4">
                   {/* Unlocked Achievements */}
-                  {getUnlockedAchievements().length > 0 && (
+                  {getUnlockedAchievements(stats).length > 0 && (
                     <div className="bg-gray-700/30 rounded-lg p-4">
                       <h4 className="text-sm font-semibold text-green-300 mb-3">
-                        ✨ Odemčené úspěchy ({getUnlockedAchievements().length}/{ACHIEVEMENTS.length})
+                        ✨ Odemčené úspěchy ({getUnlockedAchievements(stats).length}/{ACHIEVEMENTS.length})
                       </h4>
                       <div className="grid grid-cols-1 gap-3">
-                        {getUnlockedAchievements().map((achievement) => {
-                          const { current } = calculateAchievementProgress(achievement);
+                        {getUnlockedAchievements(stats).map((achievement) => {
+                          const { current } = calculateAchievementProgress(achievement, stats);
                           return (
                             <div key={achievement.id} className="bg-gradient-to-r from-green-500/10 to-emerald-500/10 rounded-lg p-3 border border-green-500/30">
                               <div className="flex items-center gap-3">
@@ -684,14 +601,14 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
                   )}
 
                   {/* In-Progress Achievements */}
-                  {getInProgressAchievements().length > 0 && (
+                  {getInProgressAchievements(stats).length > 0 && (
                     <div className="bg-gray-700/30 rounded-lg p-4">
                       <h4 className="text-sm font-semibold text-purple-300 mb-3">
                         🎯 Rozpracované úspěchy
                       </h4>
                       <div className="grid grid-cols-1 gap-3">
-                        {getInProgressAchievements().map((achievement) => {
-                          const { current, progress } = calculateAchievementProgress(achievement);
+                        {getInProgressAchievements(stats).map((achievement) => {
+                          const { current, progress } = calculateAchievementProgress(achievement, stats);
                           return (
                             <div key={achievement.id} className="bg-gray-700/50 rounded-lg p-3">
                               <div className="flex items-center gap-3">
@@ -727,7 +644,7 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
                   )}
 
                   {/* No Achievements Yet */}
-                  {getUnlockedAchievements().length === 0 && (
+                  {getUnlockedAchievements(stats).length === 0 && (
                     <div className="bg-gray-700/30 rounded-lg p-6 text-center">
                       <div className="text-4xl mb-3">🎯</div>
                       <div className="text-gray-400 text-sm mb-2">Zatím nemáš žádné odemčené úspěchy</div>
