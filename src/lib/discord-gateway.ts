@@ -1,6 +1,15 @@
 // Note: Using discord.js without native compression modules
 // This avoids the need for Visual Studio build tools
-import { Client, GatewayIntentBits, Presence, GuildMember, Activity } from 'discord.js';
+import {
+  Client,
+  GatewayIntentBits,
+  Presence,
+  GuildMember,
+  Activity,
+  Message,
+  GuildBasedChannel,
+  ChannelType,
+} from 'discord.js';
 import { getAnalyticsService } from './analytics/service';
 import { getAnalyticsDatabase } from './analytics/database';
 import { initializeAnalytics } from './analytics';
@@ -87,6 +96,16 @@ interface CachedMember {
   sessionStartTime: Date | null;
 }
 
+interface ChannelInfo {
+  id: string;
+  name: string;
+  type: 'text' | 'voice';
+  position: number;
+  parentId: string | null;
+  voiceMemberCount?: number;
+  recentMessageCount?: number;
+}
+
 interface ServerStats {
   name: string;
   memberCount: number;
@@ -98,6 +117,7 @@ interface ServerStats {
   boostCount: number;
   verificationLevel: number;
   onlineMembers: CachedMember[];
+  channels: ChannelInfo[];
   lastUpdated: Date;
 }
 
@@ -105,6 +125,9 @@ class DiscordGatewayService {
   private client: Client;
   private isConnected = false;
   private memberCache = new Map<string, CachedMember>();
+  private channelCache = new Map<string, ChannelInfo>();
+  private messageTimestamps = new Map<string, number[]>();
+  private static readonly MESSAGE_WINDOW_MS = 60 * 60 * 1000; // 1 hour
   private serverStats: ServerStats | null = null;
   private serverId: string;
   private updateInterval: NodeJS.Timeout | null = null;
@@ -118,7 +141,8 @@ class DiscordGatewayService {
         GatewayIntentBits.Guilds,
         GatewayIntentBits.GuildMembers,
         GatewayIntentBits.GuildPresences,
-        GatewayIntentBits.GuildVoiceStates
+        GatewayIntentBits.GuildVoiceStates,
+        GatewayIntentBits.GuildMessages,
       ]
     });
 
@@ -188,6 +212,34 @@ class DiscordGatewayService {
       }
     });
 
+    this.client.on('messageCreate', (message: Message) => {
+      if (!message.inGuild()) return;
+      if (message.guildId !== this.serverId) return;
+      if (message.author.bot) return;
+      const arr = this.messageTimestamps.get(message.channelId) ?? [];
+      arr.push(Date.now());
+      this.messageTimestamps.set(message.channelId, arr);
+    });
+
+    this.client.on('channelCreate', (channel) => {
+      if (!('guildId' in channel) || channel.guildId !== this.serverId) return;
+      this.upsertChannel(channel as GuildBasedChannel);
+      this.updateServerStats();
+    });
+
+    this.client.on('channelDelete', (channel) => {
+      if (!('id' in channel)) return;
+      this.channelCache.delete(channel.id);
+      this.messageTimestamps.delete(channel.id);
+      this.updateServerStats();
+    });
+
+    this.client.on('channelUpdate', (_oldChannel, newChannel) => {
+      if (!('guildId' in newChannel) || newChannel.guildId !== this.serverId) return;
+      this.upsertChannel(newChannel as GuildBasedChannel);
+      this.updateServerStats();
+    });
+
     this.client.on('error', (error) => {
       console.error('Discord Gateway error:', error);
     });
@@ -227,7 +279,9 @@ class DiscordGatewayService {
 
       // Fetch all members
       await guild.members.fetch();
-      
+
+      this.initializeChannelCache(guild);
+
       // Cache all members and restore daily online time from database
       const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
 
@@ -1066,13 +1120,82 @@ class DiscordGatewayService {
     console.log(`🔄 Re-initialized analytics tracking for ${reinitializedCount} online users`);
   }
 
+  private upsertChannel(channel: GuildBasedChannel) {
+    let type: 'text' | 'voice';
+    if (channel.type === ChannelType.GuildText) {
+      type = 'text';
+    } else if (channel.type === ChannelType.GuildVoice) {
+      type = 'voice';
+    } else {
+      return;
+    }
+
+    this.channelCache.set(channel.id, {
+      id: channel.id,
+      name: channel.name,
+      type,
+      position: channel.position ?? 0,
+      parentId: channel.parentId ?? null,
+    });
+  }
+
+  private initializeChannelCache(guild: ReturnType<DiscordGatewayService['getGuild']>) {
+    if (!guild) return;
+    this.channelCache.clear();
+    guild.channels.cache.forEach((channel) => this.upsertChannel(channel as GuildBasedChannel));
+    console.log(`Initialized channel cache with ${this.channelCache.size} text/voice channels`);
+  }
+
+  private selectPreviewChannels(): ChannelInfo[] {
+    const configured = (process.env.DISCORD_PREVIEW_CHANNEL_IDS ?? '')
+      .split(',')
+      .map((id) => id.trim())
+      .filter(Boolean);
+
+    if (configured.length > 0) {
+      return configured
+        .map((id) => this.channelCache.get(id))
+        .filter((c): c is ChannelInfo => Boolean(c));
+    }
+
+    const all = Array.from(this.channelCache.values()).sort((a, b) => a.position - b.position);
+    const text = all.filter((c) => c.type === 'text').slice(0, 3);
+    const voice = all.filter((c) => c.type === 'voice').slice(0, 1);
+    return [...text, ...voice];
+  }
+
   private updateServerStats() {
     const guild = this.client.guilds.cache.get(this.serverId);
     if (!guild) return;
 
     const onlineMembers = Array.from(this.memberCache.values())
-      .filter(member => member.status !== 'offline')
+      .filter((member) => member.status !== 'offline')
       .sort((a, b) => b.lastSeen.getTime() - a.lastSeen.getTime());
+
+    const voiceCounts = new Map<string, number>();
+    for (const member of this.memberCache.values()) {
+      const vcId = member.voice?.channel?.id;
+      if (!vcId) continue;
+      voiceCounts.set(vcId, (voiceCounts.get(vcId) ?? 0) + 1);
+    }
+
+    const cutoff = Date.now() - DiscordGatewayService.MESSAGE_WINDOW_MS;
+    const recentMessageCounts = new Map<string, number>();
+    for (const [channelId, timestamps] of this.messageTimestamps) {
+      const fresh = timestamps.filter((t) => t >= cutoff);
+      if (fresh.length === 0) {
+        this.messageTimestamps.delete(channelId);
+      } else if (fresh.length !== timestamps.length) {
+        this.messageTimestamps.set(channelId, fresh);
+      }
+      recentMessageCounts.set(channelId, fresh.length);
+    }
+
+    const channels = this.selectPreviewChannels().map((info) => ({
+      ...info,
+      voiceMemberCount: info.type === 'voice' ? voiceCounts.get(info.id) ?? 0 : undefined,
+      recentMessageCount: info.type === 'text' ? recentMessageCounts.get(info.id) ?? 0 : undefined,
+    }));
 
     this.serverStats = {
       name: guild.name,
@@ -1085,7 +1208,8 @@ class DiscordGatewayService {
       boostCount: guild.premiumSubscriptionCount || 0,
       verificationLevel: guild.verificationLevel,
       onlineMembers,
-      lastUpdated: new Date()
+      channels,
+      lastUpdated: new Date(),
     };
   }
 
@@ -1159,4 +1283,4 @@ export function getDiscordGateway(): DiscordGatewayService {
   return globalThis.__komplexaciDiscordGateway;
 }
 
-export type { CachedMember, ServerStats };
+export type { CachedMember, ServerStats, ChannelInfo };
