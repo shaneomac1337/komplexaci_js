@@ -84,7 +84,7 @@ export function AuthButton({ variant = 'default' }: AuthButtonProps) {
           {user?.image ? (
             <img src={user.image} alt={user.name || 'User'} />
           ) : (
-            <span className="pill-nav-avatar-fallback">{(user?.name || '?').charAt(0).toUpperCase()}</span>
+            <span className="mobile-nav-avatar-fallback">{(user?.name || '?').charAt(0).toUpperCase()}</span>
           )}
         </div>
         <span className="mobile-nav-username">{user?.name}</span>
