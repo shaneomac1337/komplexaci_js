@@ -3922,3 +3922,199 @@
 .pill-nav-hamburger.is-open .pill-nav-hamburger-line:nth-child(3) {
     transform: translateY(0) rotate(-45deg);
 }
+
+/* ================================================================
+   Mobile overlay — full-screen menu opened by the hamburger button.
+   Hidden above 768px and when not open. Slides down with stagger-
+   fade-in items. The container is rendered always; visibility
+   controlled by display + transform.
+   ================================================================ */
+.mobile-nav-overlay {
+    --pill-accent: var(--synthwave-cyan);
+    display: none;
+    position: fixed;
+    inset: 0;
+    z-index: 1001;
+    background: rgba(5, 5, 10, 0.94);
+    backdrop-filter: blur(20px) saturate(140%);
+    -webkit-backdrop-filter: blur(20px) saturate(140%);
+    overflow-y: auto;
+    transform: translateY(-100%);
+    transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1),
+                opacity 0.22s ease-out;
+    opacity: 0;
+}
+
+.mobile-nav-overlay.is-open {
+    transform: translateY(0);
+    opacity: 1;
+}
+
+.mobile-nav-overlay-inner {
+    padding: 80px 16px 24px 16px;
+    max-width: 540px;
+    margin: 0 auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.mobile-nav-list {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mobile-nav-list-item {
+    margin: 0;
+    padding: 0;
+}
+
+.mobile-nav-item {
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    min-height: 56px;
+    padding: 14px 20px;
+    background: transparent;
+    border: 0;
+    border-radius: 12px;
+    color: #d8d8e8;
+    font-family: 'Exo 2', system-ui, sans-serif;
+    font-size: 17px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    text-align: left;
+    cursor: pointer;
+    box-sizing: border-box;
+    transition: background-color 0.18s ease-out, color 0.18s ease-out;
+}
+
+.mobile-nav-item:hover,
+.mobile-nav-item:active,
+.mobile-nav-item:focus-visible {
+    background: rgba(255, 255, 255, 0.06);
+    outline: none;
+}
+
+.mobile-nav-item:focus-visible {
+    outline: 2px solid var(--pill-accent);
+    outline-offset: -2px;
+}
+
+.mobile-nav-item.on {
+    color: #fff;
+}
+
+.mobile-nav-item.on::before {
+    content: '';
+    position: absolute;
+    left: 6px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 4px;
+    height: 24px;
+    background: var(--pill-accent);
+    border-radius: 2px;
+    box-shadow: 0 0 12px 1px color-mix(in srgb, var(--pill-accent) 60%, transparent);
+}
+
+.mobile-nav-caret {
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #888;
+}
+
+.mobile-nav-caret.rotated {
+    transform: rotate(180deg);
+    color: var(--pill-accent);
+}
+
+.mobile-nav-submenu {
+    list-style: none;
+    margin: 4px 0 8px 0;
+    padding: 0 0 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.mobile-nav-submenu li {
+    margin: 0;
+    padding: 0;
+}
+
+.mobile-nav-submenu-item {
+    display: flex;
+    align-items: center;
+    min-height: 48px;
+    padding: 12px 16px;
+    background: transparent;
+    border-radius: 10px;
+    color: #b8b8c8;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 13px;
+    text-decoration: none;
+    transition: background-color 0.18s ease-out, color 0.18s ease-out;
+}
+
+.mobile-nav-submenu-item:hover,
+.mobile-nav-submenu-item:active,
+.mobile-nav-submenu-item:focus-visible {
+    background: rgba(255, 255, 255, 0.05);
+    color: #fff;
+    outline: none;
+}
+
+.mobile-nav-submenu-item:focus-visible {
+    outline: 2px solid var(--pill-accent);
+    outline-offset: -2px;
+}
+
+/* Stagger-fade for items when overlay opens. */
+.mobile-nav-overlay.is-open .mobile-nav-auth,
+.mobile-nav-overlay.is-open .mobile-nav-list-item {
+    animation: mobile-nav-stagger 0.4s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+.mobile-nav-overlay.is-open .mobile-nav-auth { animation-delay: 0.05s; }
+.mobile-nav-overlay.is-open .mobile-nav-list-item:nth-child(1) { animation-delay: 0.10s; }
+.mobile-nav-overlay.is-open .mobile-nav-list-item:nth-child(2) { animation-delay: 0.13s; }
+.mobile-nav-overlay.is-open .mobile-nav-list-item:nth-child(3) { animation-delay: 0.16s; }
+.mobile-nav-overlay.is-open .mobile-nav-list-item:nth-child(4) { animation-delay: 0.19s; }
+.mobile-nav-overlay.is-open .mobile-nav-list-item:nth-child(5) { animation-delay: 0.22s; }
+.mobile-nav-overlay.is-open .mobile-nav-list-item:nth-child(6) { animation-delay: 0.25s; }
+
+@keyframes mobile-nav-stagger {
+    0%   { opacity: 0; transform: translateY(8px); }
+    100% { opacity: 1; transform: translateY(0); }
+}
+
+/* Show the overlay container at mobile widths. Above 768px it stays
+   display:none even when .is-open is somehow set. */
+@media (max-width: 768px) {
+    .mobile-nav-overlay {
+        display: block;
+    }
+}
+
+/* Reduced motion: opacity-only, no slide, no stagger. */
+@media (prefers-reduced-motion: reduce) {
+    .mobile-nav-overlay {
+        transform: none;
+        transition: opacity 0.12s ease-out;
+    }
+    .mobile-nav-overlay.is-open {
+        transform: none;
+    }
+    .mobile-nav-overlay.is-open .mobile-nav-auth,
+    .mobile-nav-overlay.is-open .mobile-nav-list-item {
+        animation: none;
+    }
+    .pill-nav-hamburger-line {
+        transition: none;
+    }
+}
