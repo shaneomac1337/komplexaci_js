@@ -219,10 +219,8 @@
     padding: 10px 20px;
     justify-content: center;
     background: rgba(5, 5, 10, 0.94);
-    border-color: rgba(255, 255, 255, 0.14);
-    border-top-color: transparent;
-    border-left-color: transparent;
-    border-right-color: transparent;
+    border-color: transparent;
+    /* No chassis borders when docked — the ::after light-bar is the sole divider. */
     border-radius: 0;
     box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
     /* Chassis morph relies on the box-shadow transition declared on .pill-nav
@@ -547,14 +545,15 @@
 @media (max-width: 768px) {
     .pill-nav {
         top: 10px;
-        gap: 0;
-        padding: 4px 4px 4px 6px;
+        gap: 8px;
+        padding: 4px 6px;
         justify-content: space-between;
         width: max-content;
     }
     .pill-nav-brand {
-        padding: 6px 8px;
-        font-size: 11px;
+        padding: 6px 14px;
+        font-size: 17px;
+        letter-spacing: 0.08em;
         margin-right: 0;
     }
     /* Hide desktop items list, indicator, divider, and pill-variant
@@ -565,9 +564,44 @@
     .pill-nav-auth {
         display: none;
     }
-    /* Show hamburger button. */
+    /* Show hamburger button with synthwave accent ring. */
     .pill-nav-hamburger {
         display: inline-flex;
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.03);
+        transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
+    }
+    .pill-nav-hamburger:hover,
+    .pill-nav-hamburger:focus-visible {
+        border-color: color-mix(in srgb, var(--pill-accent) 60%, transparent);
+        background: color-mix(in srgb, var(--pill-accent) 10%, transparent);
+        box-shadow: 0 0 18px color-mix(in srgb, var(--pill-accent) 40%, transparent);
+    }
+    /* Docked mobile: bigger brand mark, fully opaque chassis, less prominent accent line. */
+    .pill-nav.is-docked {
+        background: rgba(5, 5, 10, 1);
+        backdrop-filter: blur(24px) saturate(140%);
+        -webkit-backdrop-filter: blur(24px) saturate(140%);
+        padding: 12px 18px;
+    }
+    /* Pin the magenta accent line to the actual bottom of the docked nav
+       (mobile chassis is taller than desktop, so the fixed top: 50px from
+       the desktop rule leaves a visible dark strip beneath the line). */
+    .pill-nav.is-docked::after {
+        position: absolute;
+        top: auto;
+        bottom: -1px;
+        left: 0;
+        right: 0;
+        height: 2px;
+        opacity: 1;
+        background: linear-gradient(90deg,
+            transparent 0%,
+            color-mix(in srgb, var(--pill-accent) 50%, transparent) 18%,
+            color-mix(in srgb, var(--pill-accent) 100%, transparent) 50%,
+            color-mix(in srgb, var(--pill-accent) 50%, transparent) 82%,
+            transparent 100%);
+        box-shadow: 0 0 12px color-mix(in srgb, var(--pill-accent) 60%, transparent);
     }
 }
 
