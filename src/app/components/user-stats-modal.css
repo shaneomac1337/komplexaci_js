@@ -346,7 +346,10 @@
 
   .user-stats-lounge .panel {
     width: 100%;
-    height: auto;
+    /* Explicit height — without it, height:auto + body flex-basis:0
+       collapses the panel to ~200px and the body becomes unscrollable
+       even though its content is much taller. Matches max-height. */
+    height: calc(100dvh - 16px);
     min-height: 0;
     max-height: calc(100dvh - 16px);
     border-bottom: 1px solid var(--lounge-line-strong);
@@ -432,7 +435,9 @@
   }
 
   .user-stats-lounge .panel {
-    height: auto;
+    /* Explicit height matches max-height for the same reason as the
+       760px breakpoint — body's flex:1 needs a real parent height. */
+    height: 92dvh;
     min-height: 0;
     max-height: 92dvh;
     border-bottom: 0;
