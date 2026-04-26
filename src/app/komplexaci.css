@@ -564,15 +564,20 @@
     .pill-nav-auth {
         display: none;
     }
-    /* Show hamburger button with synthwave accent ring. */
+    /* Show hamburger button. The synthwave accent ring only appears when the
+       chassis is docked — in the un-docked state the floating pill already
+       has its own border, so a second ring on the hamburger reads as
+       border-inside-border clutter. */
     .pill-nav-hamburger {
         display: inline-flex;
-        border: 1px solid rgba(255, 255, 255, 0.12);
-        background: rgba(255, 255, 255, 0.03);
         transition: border-color 0.2s ease, background 0.2s ease, box-shadow 0.2s ease;
     }
-    .pill-nav-hamburger:hover,
-    .pill-nav-hamburger:focus-visible {
+    .pill-nav.is-docked .pill-nav-hamburger {
+        border: 1px solid rgba(255, 255, 255, 0.12);
+        background: rgba(255, 255, 255, 0.03);
+    }
+    .pill-nav.is-docked .pill-nav-hamburger:hover,
+    .pill-nav.is-docked .pill-nav-hamburger:focus-visible {
         border-color: color-mix(in srgb, var(--pill-accent) 60%, transparent);
         background: color-mix(in srgb, var(--pill-accent) 10%, transparent);
         box-shadow: 0 0 18px color-mix(in srgb, var(--pill-accent) 40%, transparent);
@@ -584,17 +589,26 @@
         -webkit-backdrop-filter: blur(24px) saturate(140%);
         padding: 12px 18px;
     }
-    /* Pin the magenta accent line to the actual bottom of the docked nav
-       (mobile chassis is taller than desktop, so the fixed top: 50px from
-       the desktop rule leaves a visible dark strip beneath the line). */
-    .pill-nav.is-docked::after {
+    /* Magenta accent line on mobile.
+       Parent the line to the nav (position:absolute; bottom:-1px) so it
+       always tracks the pill's bottom edge as the chassis morphs — no
+       hardcoded viewport y, no 0.22s vs 0.56s timing mismatch, and the line
+       collapses into the pill's actual bottom on un-dock instead of into
+       empty space below it.
+       Extend the line -50vw past the nav on both sides so even when the
+       chassis shrinks back to the small floating pill, the line still spans
+       the full viewport width. The visible portion is always clipped to
+       0–100vw, so scaleX(1)↔scaleX(0) animates between viewport center and
+       viewport edges in both states. */
+    .pill-nav::after {
         position: absolute;
         top: auto;
         bottom: -1px;
-        left: 0;
-        right: 0;
+        left: -50vw;
+        right: -50vw;
+    }
+    .pill-nav.is-docked::after {
         height: 2px;
-        opacity: 1;
         background: linear-gradient(90deg,
             transparent 0%,
             color-mix(in srgb, var(--pill-accent) 50%, transparent) 18%,
