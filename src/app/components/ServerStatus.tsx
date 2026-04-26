@@ -1,130 +1,137 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import './daily-awards-redesign.css';
 
-interface ServerStatus {
+type Status = 'online' | 'offline' | 'checking';
+
+interface ServerEntry {
   name: string;
   url: string;
-  status: 'online' | 'offline' | 'checking';
+  flavor: string;
+  icon: string;
+  status: Status;
   responseTime?: number;
   lastChecked?: string;
 }
 
+const initialServers: ServerEntry[] = [
+  {
+    name: 'KompG Website',
+    url: 'https://www.komplexaci.cz',
+    flavor: 'Klan v důchodu',
+    icon: '🌐',
+    status: 'checking',
+  },
+  {
+    name: 'KompG Music Bot',
+    url: 'https://music.komplexaci.cz/health',
+    flavor: 'Nostalgie připravena',
+    icon: '🎵',
+    status: 'checking',
+  },
+  {
+    name: 'Komplexáci API',
+    url: 'http://localhost:3000/api/health',
+    flavor: 'Stále na příjmu',
+    icon: '⚙️',
+    status: 'checking',
+  },
+];
+
+const statusLabel = (s: Status) =>
+  s === 'online' ? 'Online' : s === 'offline' ? 'Offline' : 'Kontroluji';
 
 export default function ServerStatus() {
-  const [webServers, setWebServers] = useState<ServerStatus[]>([
-    { name: 'KompG Website', url: 'https://www.komplexaci.cz', status: 'checking' },
-    { name: 'KompG Music Bot Dashboard', url: 'https://music.komplexaci.cz/health', status: 'checking' },
-    { name: 'Komplexáci API', url: 'http://localhost:3000/api/health', status: 'checking' }
-  ]);
+  const [servers, setServers] = useState<ServerEntry[]>(initialServers);
 
-
-  const checkServerHealth = async (server: ServerStatus): Promise<ServerStatus> => {
+  const checkServerHealth = async (server: ServerEntry): Promise<ServerEntry> => {
     try {
-      // Use our health-check API endpoint to avoid CORS issues
-      const response = await fetch(`/api/health-check?url=${encodeURIComponent(server.url)}`);
+      const response = await fetch(
+        `/api/health-check?url=${encodeURIComponent(server.url)}`
+      );
       const data = await response.json();
-      
+      const lastChecked = new Date(
+        data.lastChecked ?? Date.now()
+      ).toLocaleTimeString('cs-CZ');
+
       if (response.ok) {
         return {
           ...server,
-          status: data.status as 'online' | 'offline',
+          status: data.status as Status,
           responseTime: data.responseTime,
-          lastChecked: new Date(data.lastChecked).toLocaleTimeString('cs-CZ')
-        };
-      } else {
-        return {
-          ...server,
-          status: 'offline',
-          responseTime: data.responseTime || 0,
-          lastChecked: new Date().toLocaleTimeString('cs-CZ')
+          lastChecked,
         };
       }
-    } catch (error) {
+
+      return {
+        ...server,
+        status: 'offline',
+        responseTime: data.responseTime ?? 0,
+        lastChecked,
+      };
+    } catch {
       return {
         ...server,
         status: 'offline',
         responseTime: 0,
-        lastChecked: new Date().toLocaleTimeString('cs-CZ')
+        lastChecked: new Date().toLocaleTimeString('cs-CZ'),
       };
     }
   };
 
   const checkAllServers = async () => {
-    const updatedServers = await Promise.all(
-      webServers.map(server => checkServerHealth(server))
-    );
-    setWebServers(updatedServers);
+    const updated = await Promise.all(servers.map(checkServerHealth));
+    setServers(updated);
   };
 
   useEffect(() => {
     checkAllServers();
-    
-    // Check servers every 30 seconds
     const interval = setInterval(checkAllServers, 30000);
-    
     return () => clearInterval(interval);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'online': return 'text-green-400';
-      case 'offline': return 'text-red-400';
-      case 'checking': return 'text-yellow-400';
-      default: return 'text-gray-400';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'online': return '🟢';
-      case 'offline': return '🔴';
-      case 'checking': return '🟡';
-      default: return '⚪';
-    }
-  };
-
-
   return (
-    <div className="bg-gray-700/30 rounded-xl p-4 border border-green-500/20">
-      <div className="flex items-center mb-3">
-        <svg className="w-6 h-6 mr-2 text-green-400" fill="currentColor" viewBox="0 0 24 24">
-          <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
-        </svg>
-        <h4 className="text-lg font-semibold text-white">Website Status</h4>
+    <div className="daily-awards-lounge status-card">
+      <div className="awards-widget-head">
+        <div className="awards-title">
+          <span className="awards-title-icon">◉</span>
+          <div>
+            <h4>Aktuální stav</h4>
+            <p>Stav klanu a serverů live</p>
+          </div>
+        </div>
+        <span className="awards-live-pill">
+          <i />
+          Live
+        </span>
       </div>
 
-
-        <div className="space-y-1 text-sm">
-          {webServers.map((server, index) => (
-            <div key={index} className="flex items-center justify-between">
-              <span className="text-gray-300">{server.name}</span>
-              <div className="flex items-center space-x-2">
-                <span className={getStatusColor(server.status)}>
-                  {getStatusIcon(server.status)} {server.status}
-                </span>
-                {server.responseTime && (
-                  <span className="text-gray-400 text-xs">
-                    {server.responseTime}ms
-                  </span>
-                )}
+      <div className="awards-list">
+        {servers.map((server) => (
+          <div key={server.name} className="award-row status-row">
+            <div className="award-info">
+              <span className="award-icon">{server.icon}</span>
+              <div className="award-copy">
+                <strong>{server.name}</strong>
+                <span>{server.flavor}</span>
               </div>
             </div>
-          ))}
-        </div>
-        
-        {webServers.some(s => s.lastChecked) && (
-          <div className="text-xs text-gray-400 mt-2">
-            Poslední kontrola: {webServers.find(s => s.lastChecked)?.lastChecked}
+
+            <div className="award-winner">
+              <div className="award-winner-copy">
+                <strong className={`status-label is-${server.status}`}>
+                  {statusLabel(server.status)}
+                </strong>
+                <span>
+                  {server.responseTime ? `${server.responseTime} ms` : '—'}
+                </span>
+              </div>
+            </div>
           </div>
-        )}
-        
-        <button 
-          onClick={checkAllServers}
-          className="text-xs text-blue-400 hover:text-blue-300 mt-2 flex items-center"
-        >
-          🔄 Obnovit status
-        </button>
+        ))}
+      </div>
     </div>
   );
 }

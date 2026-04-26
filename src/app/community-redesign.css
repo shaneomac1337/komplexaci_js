@@ -622,6 +622,13 @@
   min-height: 280px;
 }
 
+/* Let the active-members list fill more of the panel — matches the
+   natural height of the Live server card on the left so the top row
+   reads as symmetric. */
+.community-redesign .most-active-members .members-list {
+  max-height: 36rem;
+}
+
 .community-redesign .panel-heading {
   padding-bottom: 12px;
   margin-bottom: 14px;
@@ -642,90 +649,37 @@
   text-align: right;
 }
 
-.community-redesign .status-list {
-  display: grid;
-  gap: 10px;
+/* Status card mirrors the awards-card visual rhythm — non-clickable rows. */
+.community-redesign .status-card .award-row {
+  cursor: default;
 }
 
-.community-redesign .status-list div {
-  padding: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 8px;
+.community-redesign .status-card .award-row:hover {
+  transform: none;
+  border-color: var(--awards-line);
   background: rgba(255, 255, 255, 0.045);
+  box-shadow: none;
 }
 
-.community-redesign .status-list strong {
-  display: block;
-  color: #fff;
-  font-family: var(--lounge-font-display);
-  font-weight: 800;
-  font-size: 18px;
-  line-height: 1.1;
-}
-
-.community-redesign .status-list span {
-  display: block;
-  margin-top: 4px;
-  color: var(--lounge-muted);
-  font-family: var(--lounge-font-mono);
-  font-size: 10px;
-  letter-spacing: 0.12em;
+.community-redesign .status-label {
   text-transform: uppercase;
+  letter-spacing: 0.04em;
 }
 
-.community-redesign .status-panel .status-list {
-  margin-bottom: 14px;
+.community-redesign .status-label.is-online {
+  color: #53e4a6;
 }
 
-/* Removed `align-self: start` so this panel inherits the grid's
-   align-items: stretch and matches the height of Ocenění dne — keeps the
-   two-column dashboard visually symmetric. */
-
-.community-redesign .compact-status-panel .status-list {
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 8px;
+.community-redesign .status-label.is-offline {
+  color: #f87171;
 }
 
-.community-redesign .compact-status-panel .status-list div {
-  padding: 10px;
-}
-
-.community-redesign .compact-status-panel .status-list strong {
-  font-size: 16px;
-}
-
-.community-redesign .compact-status-panel > div:not(.panel-heading):not(.status-list) {
-  padding: 12px !important;
-}
-
-.community-redesign .compact-status-panel .text-lg {
-  font-size: 16px !important;
-  line-height: 1.2 !important;
-}
-
-.community-redesign .compact-status-panel .text-sm {
-  font-size: 12px !important;
-}
-
-.community-redesign .compact-status-panel .text-xs {
-  font-size: 10px !important;
-}
-
-.community-redesign .compact-status-panel .mb-3 {
-  margin-bottom: 8px !important;
-}
-
-.community-redesign .compact-status-panel .mt-2 {
-  margin-top: 6px !important;
-}
-
-.community-redesign .compact-status-panel svg.w-6 {
-  width: 18px !important;
-  height: 18px !important;
+.community-redesign .status-label.is-checking {
+  color: #facc15;
 }
 
 /* Restyle imported live widgets only inside this lounge. */
-.community-redesign .lounge-panel > div:not(.panel-heading):not(.status-list),
+.community-redesign .lounge-panel > div:not(.panel-heading),
 .community-redesign .lounge-panel .bg-gray-700\/30,
 .community-redesign .lounge-panel .bg-gray-800\/30 {
   border-color: rgba(255, 255, 255, 0.11) !important;
@@ -843,8 +797,7 @@
     text-align: left;
   }
 
-  .community-redesign .music-chip-grid,
-  .community-redesign .compact-status-panel .status-list {
+  .community-redesign .music-chip-grid {
     grid-template-columns: 1fr;
   }
 
@@ -859,5 +812,290 @@
   .community-redesign *::after {
     animation: none !important;
     transition: none !important;
+  }
+}
+
+/* Contact section redesign — paired primary tiles + Videotvorba pill + monochrome social row. */
+.contact-redesign {
+  padding: 88px 0 110px;
+}
+
+.contact-redesign .contact-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.contact-redesign .contact-primary-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18px;
+}
+
+.contact-redesign .contact-tile {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  padding: 30px;
+  border: 1px solid var(--lounge-line-strong);
+  border-radius: 16px;
+  background:
+    linear-gradient(135deg, rgba(0, 255, 255, 0.07), transparent 45%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.018)),
+    var(--lounge-panel);
+  text-decoration: none;
+  color: var(--lounge-text);
+  overflow: hidden;
+  isolation: isolate;
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.contact-redesign .contact-tile::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto;
+  height: 3px;
+  background: linear-gradient(90deg, var(--lounge-cyan), var(--lounge-pink), var(--lounge-orange));
+  z-index: 1;
+}
+
+.contact-redesign .contact-tile--discord {
+  background:
+    linear-gradient(135deg, rgba(88, 101, 242, 0.12), transparent 45%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.018)),
+    var(--lounge-panel);
+}
+
+.contact-redesign .contact-tile--discord::before {
+  background: linear-gradient(90deg, var(--lounge-discord), var(--lounge-cyan), var(--lounge-pink));
+}
+
+.contact-redesign .contact-tile-aurora {
+  position: absolute;
+  inset: -40% -20% auto auto;
+  width: 360px;
+  height: 360px;
+  background: radial-gradient(circle, rgba(0, 255, 255, 0.18), transparent 65%);
+  filter: blur(20px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.contact-redesign .contact-tile--discord .contact-tile-aurora {
+  background: radial-gradient(circle, rgba(88, 101, 242, 0.28), transparent 65%);
+}
+
+.contact-redesign .contact-tile:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0, 255, 255, 0.4);
+  box-shadow: 0 28px 60px rgba(0, 0, 0, 0.45), inset 0 0 0 1px rgba(0, 255, 255, 0.18);
+}
+
+.contact-redesign .contact-tile--discord:hover {
+  border-color: rgba(88, 101, 242, 0.6);
+  box-shadow: 0 28px 60px rgba(88, 101, 242, 0.28), inset 0 0 0 1px rgba(88, 101, 242, 0.35);
+}
+
+.contact-redesign .contact-tile-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.contact-redesign .contact-tile-icon {
+  display: grid;
+  place-items: center;
+  width: 56px;
+  height: 56px;
+  flex-shrink: 0;
+  border: 1px solid var(--lounge-line-strong);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--lounge-cyan);
+}
+
+.contact-redesign .contact-tile--discord .contact-tile-icon {
+  color: var(--lounge-discord);
+}
+
+.contact-redesign .contact-tile-icon svg {
+  width: 28px;
+  height: 28px;
+}
+
+.contact-redesign .contact-tile-kicker {
+  font-family: var(--lounge-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--lounge-faint);
+}
+
+.contact-redesign .contact-tile-body {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.contact-redesign .contact-tile-body strong {
+  font-family: var(--lounge-font-display);
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  color: var(--lounge-text);
+}
+
+.contact-redesign .contact-tile-meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--lounge-muted);
+}
+
+.contact-redesign .contact-tile-action {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  align-self: flex-start;
+  margin-top: 4px;
+  padding: 9px 16px;
+  border: 1px solid var(--lounge-line-strong);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--lounge-text);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: background 0.18s ease, border-color 0.18s ease;
+}
+
+.contact-redesign .contact-tile:hover .contact-tile-action {
+  background: rgba(0, 255, 255, 0.12);
+  border-color: rgba(0, 255, 255, 0.4);
+}
+
+.contact-redesign .contact-tile--discord:hover .contact-tile-action {
+  background: rgba(88, 101, 242, 0.18);
+  border-color: rgba(88, 101, 242, 0.5);
+}
+
+.contact-redesign .contact-tile-arrow {
+  display: inline-block;
+  transition: transform 0.18s ease;
+}
+
+.contact-redesign .contact-tile:hover .contact-tile-arrow {
+  transform: translateX(3px);
+}
+
+.contact-redesign .contact-secondary {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  align-self: center;
+  padding: 10px 22px 10px 12px;
+  border: 1px solid var(--lounge-line-strong);
+  border-radius: 999px;
+  background: rgba(255, 110, 199, 0.06);
+  color: var(--lounge-text);
+  text-decoration: none;
+  transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
+}
+
+.contact-redesign .contact-secondary:hover {
+  border-color: rgba(255, 110, 199, 0.5);
+  background: rgba(255, 110, 199, 0.12);
+  transform: translateY(-1px);
+}
+
+.contact-redesign .contact-secondary-icon {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: rgba(255, 110, 199, 0.18);
+  color: var(--lounge-pink);
+  font-size: 14px;
+}
+
+.contact-redesign .contact-secondary-copy {
+  display: flex;
+  flex-direction: column;
+  text-align: left;
+}
+
+.contact-redesign .contact-secondary-copy strong {
+  font-family: var(--lounge-font-display);
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.2;
+}
+
+.contact-redesign .contact-secondary-copy span {
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  color: var(--lounge-faint);
+}
+
+.contact-redesign .contact-socials {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding-top: 6px;
+}
+
+.contact-redesign .contact-socials-label {
+  font-family: var(--lounge-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--lounge-faint);
+}
+
+.contact-redesign .contact-socials-icons {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.contact-redesign .contact-social {
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 1px solid var(--lounge-line);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--lounge-muted);
+  transition: color 0.18s ease, background 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+}
+
+.contact-redesign .contact-social:hover {
+  color: var(--lounge-text);
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.3);
+  transform: translateY(-2px);
+}
+
+.contact-redesign .contact-social svg {
+  width: 22px;
+  height: 22px;
+  fill: currentColor;
+}
+
+@media (max-width: 720px) {
+  .contact-redesign .contact-primary-grid {
+    grid-template-columns: 1fr;
   }
 }

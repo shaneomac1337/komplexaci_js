@@ -116,7 +116,7 @@ export default function MostActiveMembers({ members, dataSource, totalMemberCoun
   }
 
   return (
-    <div className="bg-gray-700/30 rounded-xl p-4 border border-purple-500/20 transition-all duration-300 ease-in-out">
+    <div className="most-active-members bg-gray-700/30 rounded-xl p-4 border border-purple-500/20 transition-all duration-300 ease-in-out">
       <div className="flex items-center mb-3">
         <div className="flex items-center mr-3">
           <svg className="w-6 h-6 text-purple-400" fill="currentColor" viewBox="0 0 24 24">
@@ -133,7 +133,7 @@ export default function MostActiveMembers({ members, dataSource, totalMemberCoun
         </div>
       </div>
 
-      <div className="space-y-2 max-h-96 overflow-y-auto pr-2" style={{
+      <div className="members-list space-y-2 overflow-y-auto pr-2" style={{
         scrollbarWidth: 'thin',
         scrollbarColor: '#4B5563 #1F2937'
       }}>
