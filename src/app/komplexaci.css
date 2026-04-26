@@ -3791,6 +3791,14 @@
     justify-content: center;
 }
 
+.mobile-nav-auth-loading .pill-nav-auth-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.18);
+    animation: pill-nav-pulse 1.2s ease-in-out infinite;
+}
+
 .mobile-nav-login {
     justify-content: center;
     gap: 10px;
@@ -3808,8 +3816,11 @@
 }
 
 .mobile-nav-login:hover,
-.mobile-nav-login:active {
+.mobile-nav-login:active,
+.mobile-nav-login:focus-visible {
     background: #4752C4;
+    outline: 2px solid #fff;
+    outline-offset: 2px;
 }
 
 .mobile-nav-user {
@@ -3838,6 +3849,13 @@
     object-fit: cover;
 }
 
+.mobile-nav-avatar-fallback {
+    font-family: 'Exo 2', system-ui, sans-serif;
+    font-size: 16px;
+    font-weight: 700;
+    color: #fff;
+}
+
 .mobile-nav-username {
     flex: 1;
     font-family: 'JetBrains Mono', ui-monospace, monospace;
@@ -3861,4 +3879,9 @@
     text-transform: uppercase;
     cursor: pointer;
     flex-shrink: 0;
+}
+
+.mobile-nav-logout:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
 }
