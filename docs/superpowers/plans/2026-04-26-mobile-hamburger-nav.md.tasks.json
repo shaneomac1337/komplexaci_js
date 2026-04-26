@@ -4,30 +4,30 @@
     {
       "id": 0,
       "subject": "Task 0: Add `mobile` variant to AuthButton",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** AuthButton supports a `variant=\"mobile\"` prop that renders a full-width prominent button suitable for the mobile overlay, in three states (loading / not-authenticated / authenticated).\n\n**Files:**\n- Modify: `src/components/AuthButton.tsx` — add a new `variant === 'mobile'` branch\n- Modify: `src/app/komplexaci.css` — append CSS for `.mobile-nav-auth*`, `.mobile-nav-login`, `.mobile-nav-user`, `.mobile-nav-avatar`, `.mobile-nav-username`, `.mobile-nav-logout`\n\n**Acceptance Criteria:**\n- `<AuthButton variant=\"mobile\" />` renders without crashing\n- Not-authenticated: full-width Discord-purple button with icon, ≥48px tall\n- Authenticated: avatar + username + Logout, full-width\n- Loading: pulsing dot reusing pill-nav-pulse keyframe\n- No regressions to pill or default variants\n\n**Verify:** preview_console_logs level: error → no new errors. Visual verification deferred to Task 2 when overlay mounts the component.\n\n```json:metadata\n{\"files\": [\"src/components/AuthButton.tsx\", \"src/app/komplexaci.css\"], \"verifyCommand\": \"preview_console_logs serverId:<id> level:error lines:10\", \"acceptanceCriteria\": [\"variant=mobile renders\", \"not-auth: full-width Discord button >=48px tall\", \"auth: avatar+username+Logout\", \"loading: pulsing dot\", \"no regressions to pill/default\"]}\n```"
     },
     {
       "id": 1,
       "subject": "Task 1: Add hamburger button + responsive pill rearrangement",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [0],
       "description": "**Goal:** At ≤768px the floating pill shows only KOMPLEXÁCI brand + hamburger button. Desktop nav items + AuthButton hidden via CSS. Hamburger always in DOM. Tapping hamburger toggles `isMenuOpen` state and morphs lines to ×; no overlay yet.\n\n**Files:**\n- Modify: `src/app/components/Header.tsx` — add `isMenuOpen` state, hamburger `<button>` JSX with toggle handler\n- Modify: `src/app/komplexaci.css` — add `.pill-nav-hamburger` styles + `.is-open` morph; overhaul `@media (max-width: 768px)` and remove the `@media (max-width: 520px)` block\n\n**Acceptance Criteria:**\n- Desktop >768px: zero visual change\n- ≤768px: pill shows brand + hamburger only; no overflow at 375 or 320\n- Hamburger ≥44×44 tap area\n- Tap toggles `is-open` class (× morph), no overlay yet\n- Dock-on-scroll still works at mobile width\n\n**Verify:** preview_resize desktop+screenshot for regression; preview_resize mobile+screenshot for layout; preview_inspect for tap area; preview_click for toggle; scroll test for dock.\n\n```json:metadata\n{\"files\": [\"src/app/components/Header.tsx\", \"src/app/komplexaci.css\"], \"verifyCommand\": \"preview_screenshot at desktop and mobile widths; preview_inspect .pill-nav-hamburger\", \"acceptanceCriteria\": [\"desktop unchanged\", \"mobile: brand+hamburger no overflow\", \"hamburger >=44x44\", \"tap toggles is-open class\", \"dock-on-scroll works\"]}\n```"
     },
     {
       "id": 2,
       "subject": "Task 2: Add mobile overlay (state, JSX, effects, styles, animations)",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [1],
       "description": "**Goal:** Tapping hamburger opens full-screen overlay with Login + Domů + O nás + Členové + Hry (inline expandable submenu) + Discord + Kontakt. Body scroll locked, ESC closes, focus trap inside, focus returns to hamburger on close. Open: 0.32s slide + stagger-fade items.\n\n**Files:**\n- Modify: `src/app/components/Header.tsx` — add `hrySubmenuOpenMobile` state, `hamburgerRef` + `overlayRef`, body-scroll-lock + ESC effect, focus-restore effect, focus-trap effect, modify `navigateToSection` to close overlay, render overlay JSX with `<AuthButton variant=\"mobile\" />` and items with active-section indicator\n- Modify: `src/app/komplexaci.css` — `.mobile-nav-overlay*`, `.mobile-nav-list*`, `.mobile-nav-item`, `.mobile-nav-submenu*`, `.mobile-nav-caret`, stagger keyframes, `@media (max-width: 768px)` to show overlay container, `@media (prefers-reduced-motion: reduce)` overrides\n\n**Acceptance Criteria:**\n- Tap hamburger opens overlay with all items\n- Login button visible at top\n- Hry expands inline showing 3 sub-items\n- Tap section item closes overlay AND scrolls/navigates\n- ESC closes overlay\n- Body scroll locked while open\n- Focus returns to hamburger on close\n- Focus trap cycles Tab among focusable elements\n- Active section: 4px left-edge accent bar in section color\n- Reduced motion: opacity-only, no slide, no stagger\n- Desktop unaffected (no overlay visible)\n\n**Verify:** preview_click hamburger + screenshot; preview_eval for body.style.overflow, ESC dispatch, focus checks; preview_inspect for accent bar; desktop regression screenshot.\n\n```json:metadata\n{\"files\": [\"src/app/components/Header.tsx\", \"src/app/komplexaci.css\"], \"verifyCommand\": \"preview_click .pill-nav-hamburger; preview_screenshot; preview_eval document.body.style.overflow\", \"acceptanceCriteria\": [\"overlay opens with all items+login\", \"Hry inline submenu 3 items\", \"section tap closes+scrolls\", \"ESC closes\", \"body scroll locked\", \"focus returns to hamburger\", \"focus trap cycles\", \"active section 4px accent bar\", \"reduced motion opacity-only\", \"desktop unaffected\"]}\n```"
     },
     {
       "id": 3,
       "subject": "Task 3: End-to-end acceptance verification",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [2],
       "description": "**Goal:** Run through every acceptance criterion from the spec via preview tools and confirm. Fix any issues inline.\n\n**Files:** None modified unless an issue is found.\n\n**Acceptance Criteria:**\n- All spec acceptance criteria pass\n\n**Verify:** Run all 11 verification steps from Task 3 of plan. preview_resize across 320/375/768/769/1024/1920; tap+nav+ESC+dock+undock+overlay-from-docked; final console check.\n\n```json:metadata\n{\"files\": [], \"verifyCommand\": \"preview_resize across 320/375/768/769/1024/1920 + interaction sequence per Task 3 steps\", \"acceptanceCriteria\": [\"all spec criteria pass\"]}\n```"
     }
   ],
-  "lastUpdated": "2026-04-26"
+  "lastUpdated": "2026-04-26T00:01:00Z"
 }
