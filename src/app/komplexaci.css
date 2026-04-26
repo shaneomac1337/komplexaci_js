@@ -127,10 +127,18 @@
     opacity: 0;
     transform: translateY(-8px);
     clip-path: inset(0 50% 0 50%);
+    /* Undock transition: shelf snaps off near-instantly. Even matching the
+       chassis morph (~0.5s) left a faintly visible dark band fading behind
+       the returning pill for too long — reads as a phantom shadow border.
+       The shelf's only job is to mask page text behind the docked bar;
+       once undock starts, the chassis is rapidly shrinking away from the
+       text it covered and the shelf serves no purpose. Dropping it in
+       0.12s puts it below the perceptible threshold. The ::after light
+       bar carries the slow trail-off solo. */
     transition:
-        clip-path 0.22s cubic-bezier(0.4, 0, 0.2, 1),
-        opacity 0.18s ease-out,
-        transform 0.18s ease-out;
+        clip-path 0.12s ease-out,
+        opacity 0.12s ease-out,
+        transform 0.12s ease-out;
     pointer-events: none;
 }
 
@@ -177,9 +185,13 @@
     opacity: 0;
     transform: scaleX(0);
     transform-origin: center;
+    /* Undock transition: light bar slowly retracts toward center over 1.4s
+       on the same expo-out curve as the draw, so it reads as the same beat
+       played in reverse. Opacity holds bright through most of the retract
+       and dims out at the end — the line shrinks first, then fades. */
     transition:
-        transform 0.22s cubic-bezier(0.4, 0, 0.2, 1),
-        opacity 0.18s ease-out,
+        transform 1.4s cubic-bezier(0.16, 1, 0.3, 1),
+        opacity 1s ease-out 0.4s,
         top 0.22s ease-out;
 }
 
@@ -215,40 +227,10 @@
     box-shadow:
         0 6px 24px rgba(0, 0, 0, 0.55),
         0 2px 0 0 color-mix(in srgb, var(--pill-accent) 35%, transparent);
-    /* Apple-tier deploy: the chassis crouches (squash anticipation), fires up
-       with a confident overshoot, takes a small back-bounce, then settles.
-       In parallel the accent line pulses out a saturated halo and decays to
-       its static 2px state. Two keyframe animations layered so the layout
-       transitions (width / radius) handle reflow while the spring + halo
-       carry the personality. Keyframe fill is `both` so the final state
-       composes cleanly with the static styles above. */
-    animation: pill-nav-deploy 0.72s cubic-bezier(0.22, 1, 0.36, 1) both;
-}
-
-@keyframes pill-nav-deploy {
-    0% {
-        box-shadow:
-            0 12px 40px rgba(0, 0, 0, 0.45),
-            0 2px 0 0 transparent;
-    }
-    32% {
-        box-shadow:
-            0 8px 30px rgba(0, 0, 0, 0.5),
-            0 4px 0 0 color-mix(in srgb, var(--pill-accent) 95%, transparent),
-            0 14px 36px -2px color-mix(in srgb, var(--pill-accent) 75%, transparent),
-            0 0 26px 2px color-mix(in srgb, var(--pill-accent) 35%, transparent);
-    }
-    62% {
-        box-shadow:
-            0 6px 24px rgba(0, 0, 0, 0.55),
-            0 2px 0 0 color-mix(in srgb, var(--pill-accent) 80%, transparent),
-            0 9px 24px -3px color-mix(in srgb, var(--pill-accent) 45%, transparent);
-    }
-    100% {
-        box-shadow:
-            0 6px 24px rgba(0, 0, 0, 0.55),
-            0 2px 0 0 color-mix(in srgb, var(--pill-accent) 35%, transparent);
-    }
+    /* Chassis morph relies on the box-shadow transition declared on .pill-nav
+       to fade the drop shadow to its docked state. The colored halo pulse was
+       intentionally removed — the slow ::after light-bar draw is the sole
+       accent moment on dock. */
 }
 
 /* Spring animation runs in parallel on viewports where the chassis is
@@ -268,9 +250,7 @@
 
 @media (min-width: 521px) {
     .pill-nav.is-docked {
-        animation:
-            pill-nav-deploy 0.72s cubic-bezier(0.22, 1, 0.36, 1) both,
-            pill-nav-spring 0.66s cubic-bezier(0.4, 0, 0.2, 1) both;
+        animation: pill-nav-spring 0.66s cubic-bezier(0.4, 0, 0.2, 1) both;
     }
 }
 
