@@ -166,45 +166,50 @@
    the edges plus a soft outer glow in the synthwave accent color. */
 .pill-nav::after {
     content: '';
-    position: fixed;
-    top: 50px;
-    left: 0;
-    right: 0;
+    /* Parent the line to the nav (absolute, bottom:-1px) so it always sits
+       at the chassis bottom edge as it morphs between docked and un-docked,
+       regardless of viewport size or chassis height. Extending -50vw past
+       both sides means the visible portion is always a full-width screen
+       stripe — even when the nav is collapsed back to the small floating
+       pill, the line still spans 100vw on screen. */
+    position: absolute;
+    top: auto;
+    bottom: -1px;
+    left: -50vw;
+    right: -50vw;
     height: 2px;
     background: linear-gradient(90deg,
         transparent 0%,
-        color-mix(in srgb, var(--pill-accent) 55%, transparent) 12%,
+        color-mix(in srgb, var(--pill-accent) 50%, transparent) 18%,
         color-mix(in srgb, var(--pill-accent) 100%, transparent) 50%,
-        color-mix(in srgb, var(--pill-accent) 55%, transparent) 88%,
+        color-mix(in srgb, var(--pill-accent) 50%, transparent) 82%,
         transparent 100%);
-    box-shadow:
-        0 0 22px 1px color-mix(in srgb, var(--pill-accent) 55%, transparent),
-        0 0 6px 0 color-mix(in srgb, var(--pill-accent) 85%, transparent);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--pill-accent) 60%, transparent);
     z-index: 1003;
     pointer-events: none;
+    /* Drop-fade animation: on un-dock the line is "released" — falls a few
+       pixels below the chassis while opacity fades out and a soft blur
+       softens the edge, like a glow being released from gravity. On dock-in
+       the same motion plays in reverse: the line falls into place from
+       above, sharpens, and lights up. */
     opacity: 0;
-    transform: scaleX(0);
-    transform-origin: center;
-    /* Undock transition: light bar slowly retracts toward center over 1.4s
-       on the same expo-out curve as the draw, so it reads as the same beat
-       played in reverse. Opacity holds bright through most of the retract
-       and dims out at the end — the line shrinks first, then fades. */
+    transform: translate3d(0, 10px, 0);
+    filter: blur(3px);
     transition:
-        transform 1.4s cubic-bezier(0.16, 1, 0.3, 1),
-        opacity 1s ease-out 0.4s,
-        top 0.22s ease-out;
+        transform 0.5s cubic-bezier(0.4, 0, 0.2, 1),
+        opacity 0.4s ease-out,
+        filter 0.45s ease-out;
 }
 
 .pill-nav.is-docked::after {
     opacity: 1;
-    transform: scaleX(1);
-    /* Long, deliberate draw with a slight delay so it starts just as the
-       chassis lands. Expo-out easing makes the leading edge "shoot" outward
-       fast and decelerate at the viewport edges — the most visible part of
-       the animation. */
+    transform: translate3d(0, 0, 0);
+    filter: blur(0);
+    /* Slight delay so the line lands just as the chassis settles. */
     transition:
-        transform 1.4s cubic-bezier(0.16, 1, 0.3, 1) 0.2s,
-        opacity 0.32s ease-out 0.18s;
+        transform 0.55s cubic-bezier(0.22, 1, 0.36, 1) 0.12s,
+        opacity 0.4s ease-out 0.18s,
+        filter 0.45s ease-out 0.18s;
 }
 
 /* Docked: morph into a full-width bar that occupies the reserved top band.
@@ -588,34 +593,6 @@
         backdrop-filter: blur(24px) saturate(140%);
         -webkit-backdrop-filter: blur(24px) saturate(140%);
         padding: 12px 18px;
-    }
-    /* Magenta accent line on mobile.
-       Parent the line to the nav (position:absolute; bottom:-1px) so it
-       always tracks the pill's bottom edge as the chassis morphs — no
-       hardcoded viewport y, no 0.22s vs 0.56s timing mismatch, and the line
-       collapses into the pill's actual bottom on un-dock instead of into
-       empty space below it.
-       Extend the line -50vw past the nav on both sides so even when the
-       chassis shrinks back to the small floating pill, the line still spans
-       the full viewport width. The visible portion is always clipped to
-       0–100vw, so scaleX(1)↔scaleX(0) animates between viewport center and
-       viewport edges in both states. */
-    .pill-nav::after {
-        position: absolute;
-        top: auto;
-        bottom: -1px;
-        left: -50vw;
-        right: -50vw;
-    }
-    .pill-nav.is-docked::after {
-        height: 2px;
-        background: linear-gradient(90deg,
-            transparent 0%,
-            color-mix(in srgb, var(--pill-accent) 50%, transparent) 18%,
-            color-mix(in srgb, var(--pill-accent) 100%, transparent) 50%,
-            color-mix(in srgb, var(--pill-accent) 50%, transparent) 82%,
-            transparent 100%);
-        box-shadow: 0 0 12px color-mix(in srgb, var(--pill-accent) 60%, transparent);
     }
 }
 
