@@ -92,13 +92,17 @@
 
 .games-redesign .game-card {
   --game-accent: var(--games-cyan);
+  --game-image-position: 50% 50%;
+  --game-image-scale: 1;
   position: relative;
   display: block;
   min-height: 500px;
   overflow: hidden;
   border: 1px solid color-mix(in srgb, var(--game-accent) 38%, var(--games-line));
   border-radius: 8px;
-  background: var(--games-panel);
+  background:
+    radial-gradient(circle at 18% 20%, color-mix(in srgb, var(--game-accent) 18%, transparent), transparent 38%),
+    linear-gradient(180deg, #111521 0%, var(--games-panel) 62%, #050509 100%);
   color: var(--games-text);
   isolation: isolate;
   opacity: 0;
@@ -126,18 +130,35 @@
 
 .games-redesign .game-card-image {
   position: absolute;
-  inset: 0;
+  inset: 0 0 auto;
+  height: 61%;
   z-index: -2;
+  overflow: hidden;
   background: var(--games-bg-soft);
 }
 
+.games-redesign .game-card-image::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(7, 7, 13, 0.02) 0%, rgba(7, 7, 13, 0.08) 44%, rgba(7, 7, 13, 0.84) 100%),
+    linear-gradient(90deg, color-mix(in srgb, var(--game-accent) 16%, transparent), transparent 48%);
+}
+
 .games-redesign .game-card-image img {
+  object-fit: cover;
+  object-position: var(--game-image-position);
+  transform: scale(var(--game-image-scale));
+  filter: saturate(0.94) contrast(1.03) brightness(0.9);
   transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.35s ease;
 }
 
 .games-redesign .game-card:hover .game-card-image img {
-  transform: scale(1.06);
-  filter: saturate(1.1) contrast(1.04);
+  transform: scale(calc(var(--game-image-scale) + 0.045));
+  filter: saturate(1.04) contrast(1.06) brightness(0.96);
 }
 
 .games-redesign .game-card::before,
@@ -151,8 +172,8 @@
 .games-redesign .game-card::before {
   z-index: -1;
   background:
-    linear-gradient(180deg, rgba(7, 7, 13, 0.08) 0%, rgba(7, 7, 13, 0.48) 46%, rgba(7, 7, 13, 0.96) 100%),
-    radial-gradient(circle at 18% 10%, color-mix(in srgb, var(--game-accent) 34%, transparent), transparent 35%);
+    linear-gradient(180deg, rgba(7, 7, 13, 0) 0%, rgba(7, 7, 13, 0.2) 36%, rgba(7, 7, 13, 0.95) 66%, rgba(7, 7, 13, 0.98) 100%),
+    radial-gradient(circle at 18% 10%, color-mix(in srgb, var(--game-accent) 28%, transparent), transparent 34%);
 }
 
 .games-redesign .game-card::after {

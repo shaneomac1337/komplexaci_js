@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getAnalyticsDatabase } from '@/lib/analytics/database';
+import { getPragueDateStartUtcString, getPragueDateString } from '@/lib/czech-time';
 
 export async function GET(
   request: NextRequest,
@@ -73,7 +74,7 @@ export async function GET(
     let dailySnapshots;
     if (timeRange === '1d') {
       // For daily view, only show today's snapshot (which gets reset to 0 by daily reset)
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const today = getPragueDateString(new Date());
       dailySnapshots = db.getDailySnapshots(userId, today, today);
     } else {
       // For other time ranges, use the original date range
@@ -89,13 +90,7 @@ export async function GET(
       if (userStats?.last_daily_reset) {
         sessionStartTime = userStats.last_daily_reset;
       } else {
-        // Fallback: Use today's midnight in Czech time (CET/CEST)
-        const czechMidnight = new Date();
-        czechMidnight.setHours(0, 0, 0, 0);
-        // Adjust for Czech timezone (UTC+1 or UTC+2)
-        const timezoneOffset = czechMidnight.getTimezoneOffset();
-        czechMidnight.setMinutes(czechMidnight.getMinutes() + timezoneOffset + 60); // +60 for CET
-        sessionStartTime = czechMidnight.toISOString();
+        sessionStartTime = getPragueDateStartUtcString(getPragueDateString(new Date()));
       }
       sessionEndTime = endDate.toISOString();
     } else {
@@ -232,6 +227,7 @@ export async function GET(
           (start_time >= ? AND status IN ('active', 'ended')) OR
           (status = 'active')
         )
+        AND (duration_minutes >= 1 OR status = 'active')
         GROUP BY artist
         ORDER BY plays_count DESC
         LIMIT 10
@@ -247,6 +243,7 @@ export async function GET(
           (start_time >= ? AND status IN ('active', 'ended')) OR
           (status = 'active')
         )
+        AND (duration_minutes >= 1 OR status = 'active')
         GROUP BY track_name, artist
         ORDER BY play_count DESC
         LIMIT 10
@@ -424,7 +421,9 @@ export async function GET(
     }
 
     // Use saved daily snapshots for online time (this comes from Discord Gateway's real tracking)
-    const totalOnlineTime = dailySnapshots.reduce((sum, day) => sum + day.online_minutes, 0);
+    const totalOnlineTime = timeRange === '1d'
+      ? (userStats?.daily_online_minutes || 0)
+      : dailySnapshots.reduce((sum, day) => sum + day.online_minutes, 0);
 
     const totals = {
       totalOnlineTime: Math.round(totalOnlineTime),

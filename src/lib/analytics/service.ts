@@ -1,4 +1,5 @@
 import { getAnalyticsDatabase, DailySnapshot, GameSession, VoiceSession, SpotifySession } from './database';
+import { getPragueDateStartUtcString, getPragueDateString } from '../czech-time';
 
 export interface UserActivity {
   userId: string;
@@ -707,7 +708,7 @@ class AnalyticsService {
     try {
       // Get user's last daily reset time to only count sessions after reset
       const initialUserStats = this.db.getUserStats(userId);
-      const resetTime = initialUserStats?.last_daily_reset || new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
+      const resetTime = initialUserStats?.last_daily_reset || getPragueDateStartUtcString(getPragueDateString(new Date()));
 
       // BUG FIX #2: For active sessions that started before reset, only count the portion after reset
       // Previously counted the full duration of active sessions even if they started before reset
@@ -808,7 +809,7 @@ class AnalyticsService {
     try {
       // Get user's last daily reset time to only count sessions after reset
       const initialUserStats = this.db.getUserStats(userId);
-      const resetTime = initialUserStats?.last_daily_reset || new Date().toISOString().split('T')[0] + 'T00:00:00.000Z';
+      const resetTime = initialUserStats?.last_daily_reset || getPragueDateStartUtcString(getPragueDateString(new Date()));
 
       // Count voice time since last daily reset (including active sessions for real-time updates)
       // For active sessions, include them regardless of start time (they may have been recovered)
@@ -898,14 +899,16 @@ class AnalyticsService {
   // Save daily online time from Discord Gateway
   public saveDailyOnlineTime(userId: string, displayName: string, date: string, onlineMinutes: number) {
     try {
+      const existingSnapshot = this.db.getDailySnapshot(userId, date);
+
       // Upsert daily snapshot with the current online time
       this.db.upsertDailySnapshot({
         user_id: userId,
         date: date,
         online_minutes: onlineMinutes,
-        voice_minutes: 0, // Will be calculated separately
-        games_played: 0,  // Will be calculated separately
-        spotify_minutes: 0 // Will be calculated separately
+        voice_minutes: existingSnapshot?.voice_minutes || 0,
+        games_played: existingSnapshot?.games_played || 0,
+        spotify_minutes: existingSnapshot?.spotify_minutes || 0
       });
 
       console.log(`💾 Saved daily online time: ${displayName} - ${onlineMinutes}m on ${date}`);
