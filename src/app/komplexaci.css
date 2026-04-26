@@ -3772,3 +3772,93 @@
         transform: none;
     }
 }
+
+/* ================================================================
+   Mobile overlay: auth button styles. Used inside the hamburger
+   overlay at top of the items list. Full-width, large tap target.
+   ================================================================ */
+.mobile-nav-auth {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    min-height: 56px;
+    padding: 14px 20px;
+    box-sizing: border-box;
+    flex-shrink: 0;
+}
+
+.mobile-nav-auth-loading {
+    justify-content: center;
+}
+
+.mobile-nav-login {
+    justify-content: center;
+    gap: 10px;
+    background: #5865F2;
+    color: #fff;
+    border: 0;
+    border-radius: 12px;
+    cursor: pointer;
+    font-family: 'Exo 2', system-ui, sans-serif;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    transition: background-color 0.2s ease;
+}
+
+.mobile-nav-login:hover,
+.mobile-nav-login:active {
+    background: #4752C4;
+}
+
+.mobile-nav-user {
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 12px;
+}
+
+.mobile-nav-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #3b82f6, #a855f7);
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    overflow: hidden;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.mobile-nav-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.mobile-nav-username {
+    flex: 1;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 13px;
+    color: #d8d8e8;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.mobile-nav-logout {
+    background: var(--pill-accent, var(--synthwave-cyan));
+    color: #000;
+    padding: 8px 14px;
+    border: 0;
+    border-radius: 8px;
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    flex-shrink: 0;
+}
