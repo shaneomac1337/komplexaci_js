@@ -509,6 +509,25 @@
     transform: translateY(-1px);
 }
 
+/* Hamburger button — hidden on desktop, shown via @media (max-width: 768px).
+   The full interaction/morph styles are declared at the end of this file. */
+.pill-nav-hamburger {
+    display: none;
+    position: relative;
+    width: 36px;
+    height: 36px;
+    padding: 6px;
+    margin-left: 4px;
+    background: transparent;
+    border: 0;
+    border-radius: 999px;
+    cursor: pointer;
+    flex-shrink: 0;
+    box-sizing: content-box;
+    align-items: center;
+    justify-content: center;
+}
+
 /* ----- Responsive ----- */
 @media (max-width: 1024px) {
     .pill-nav {
@@ -531,50 +550,26 @@
     .pill-nav {
         top: 10px;
         gap: 0;
-        padding: 4px;
+        padding: 4px 4px 4px 6px;
+        justify-content: space-between;
+        width: max-content;
     }
     .pill-nav-brand {
         padding: 6px 8px;
         font-size: 11px;
+        margin-right: 0;
     }
-    .pill-nav-item {
-        padding: 6px 10px;
-    }
-    .pill-nav-divider {
-        margin: 0 4px;
-    }
-    .pill-nav-username {
-        display: none;
-    }
+    /* Hide desktop items list, indicator, divider, and pill-variant
+       AuthButton at mobile widths — content moves into the overlay
+       (overlay added in Task 2). */
+    .pill-nav-items,
+    .pill-nav-divider,
     .pill-nav-auth {
-        padding: 2px 2px 2px 4px;
-    }
-}
-
-@media (max-width: 520px) {
-    .pill-nav {
-        left: 8px;
-        right: 8px;
-        transform: none;
-        max-width: none;
-        width: calc(100vw - 16px);
-    }
-    .pill-nav.is-docked {
-        left: 0;
-        right: 0;
-    }
-    .pill-nav-brand {
         display: none;
     }
-    /* Only enable horizontal scrolling where items can actually overflow.
-       On desktop this would clip the Hry dropdown. */
-    .pill-nav-items {
-        overflow-x: auto;
-        scrollbar-width: none;
-        -ms-overflow-style: none;
-    }
-    .pill-nav-items::-webkit-scrollbar {
-        display: none;
+    /* Show hamburger button. */
+    .pill-nav-hamburger {
+        display: inline-flex;
     }
 }
 
@@ -3884,4 +3879,46 @@
 .mobile-nav-logout:focus-visible {
     outline: 2px solid #fff;
     outline-offset: 2px;
+}
+
+/* ================================================================
+   Hamburger button interaction & morph styles. The base layout
+   rule (.pill-nav-hamburger { display: none; ... }) lives before
+   the responsive section so the @media (max-width: 768px) override
+   that sets display: inline-flex wins via cascade order.
+   ================================================================ */
+.pill-nav-hamburger:hover {
+    background: rgba(255, 255, 255, 0.06);
+}
+
+.pill-nav-hamburger:focus-visible {
+    outline: 2px solid #fff;
+    outline-offset: 2px;
+}
+
+.pill-nav-hamburger-line {
+    position: absolute;
+    left: 50%;
+    top: 50%;
+    width: 22px;
+    height: 2px;
+    margin-left: -11px;
+    background: #d8d8e8;
+    border-radius: 2px;
+    transition: transform 0.22s cubic-bezier(0.4, 0, 0.2, 1),
+                opacity 0.18s ease-out;
+}
+
+.pill-nav-hamburger-line:nth-child(1) { transform: translateY(-7px); }
+.pill-nav-hamburger-line:nth-child(2) { transform: translateY(0); }
+.pill-nav-hamburger-line:nth-child(3) { transform: translateY(7px); }
+
+.pill-nav-hamburger.is-open .pill-nav-hamburger-line:nth-child(1) {
+    transform: translateY(0) rotate(45deg);
+}
+.pill-nav-hamburger.is-open .pill-nav-hamburger-line:nth-child(2) {
+    opacity: 0;
+}
+.pill-nav-hamburger.is-open .pill-nav-hamburger-line:nth-child(3) {
+    transform: translateY(0) rotate(-45deg);
 }

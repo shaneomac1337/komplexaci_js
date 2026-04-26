@@ -50,6 +50,7 @@ const Header = () => {
   const [submenuOpen, setSubmenuOpen] = useState(false);
   // Sub-pages have no #hero to float over, so dock immediately there.
   const [isDocked, setIsDocked] = useState(() => pathname !== '/');
+  const [isMenuOpen, setIsMenuOpen] = useState(false);
   const itemsRef = useRef<HTMLDivElement>(null);
   const hrySubmenuCloseTimer = useRef<number | null>(null);
   const lastActiveSectionRef = useRef<string>('');
@@ -325,6 +326,18 @@ const Header = () => {
       <span className="pill-nav-divider" aria-hidden="true" />
 
       <AuthButton variant="pill" />
+      <button
+        type="button"
+        className={`pill-nav-hamburger ${isMenuOpen ? 'is-open' : ''}`}
+        onClick={() => setIsMenuOpen((v) => !v)}
+        aria-label={isMenuOpen ? 'Close menu' : 'Open menu'}
+        aria-expanded={isMenuOpen}
+        aria-controls="mobile-nav-overlay"
+      >
+        <span className="pill-nav-hamburger-line" aria-hidden="true" />
+        <span className="pill-nav-hamburger-line" aria-hidden="true" />
+        <span className="pill-nav-hamburger-line" aria-hidden="true" />
+      </button>
     </nav>
     <div className="pill-nav-spacer" aria-hidden="true" />
     </>
