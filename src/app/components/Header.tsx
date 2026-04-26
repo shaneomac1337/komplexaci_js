@@ -54,6 +54,9 @@ const Header = () => {
   const itemsRef = useRef<HTMLDivElement>(null);
   const hrySubmenuCloseTimer = useRef<number | null>(null);
   const lastActiveSectionRef = useRef<string>('');
+  const hamburgerRef = useRef<HTMLButtonElement>(null);
+  const overlayRef = useRef<HTMLDivElement>(null);
+  const [hrySubmenuOpenMobile, setHrySubmenuOpenMobile] = useState(false);
 
   const accent =
     pathname !== '/' && PAGE_COLOR_MAP[pathname]
@@ -202,8 +205,69 @@ const Header = () => {
     };
   }, [pathname]);
 
+  // Body scroll-lock + ESC keydown while the mobile overlay is open
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setIsMenuOpen(false);
+      }
+    };
+    document.addEventListener('keydown', onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKey);
+    };
+  }, [isMenuOpen]);
+
+  // Move focus into the overlay when it opens; restore to hamburger on close
+  useEffect(() => {
+    if (isMenuOpen) {
+      const overlay = overlayRef.current;
+      if (overlay) {
+        const first = overlay.querySelector<HTMLElement>(
+          'button, a, [tabindex]:not([tabindex="-1"])'
+        );
+        first?.focus();
+      }
+    } else {
+      hamburgerRef.current?.focus();
+    }
+  }, [isMenuOpen]);
+
+  // Focus trap inside the overlay while open
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    const overlay = overlayRef.current;
+    if (!overlay) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== 'Tab') return;
+      const focusables = Array.from(
+        overlay.querySelectorAll<HTMLElement>(
+          'button, a, [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((el) => !el.hasAttribute('disabled') && el.offsetParent !== null);
+      if (focusables.length === 0) return;
+      const first = focusables[0];
+      const last = focusables[focusables.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    overlay.addEventListener('keydown', onKey);
+    return () => overlay.removeEventListener('keydown', onKey);
+  }, [isMenuOpen]);
+
   const navigateToSection = (sectionId: string) => {
     setSubmenuOpen(false);
+    setIsMenuOpen(false);
+    setHrySubmenuOpenMobile(false);
     if (pathname === '/') {
       const el = document.getElementById(sectionId);
       if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -327,6 +391,7 @@ const Header = () => {
 
       <AuthButton variant="pill" />
       <button
+        ref={hamburgerRef}
         type="button"
         className={`pill-nav-hamburger ${isMenuOpen ? 'is-open' : ''}`}
         onClick={() => setIsMenuOpen((v) => !v)}
@@ -339,6 +404,81 @@ const Header = () => {
         <span className="pill-nav-hamburger-line" aria-hidden="true" />
       </button>
     </nav>
+    <div
+      ref={overlayRef}
+      id="mobile-nav-overlay"
+      className={`mobile-nav-overlay ${isMenuOpen ? 'is-open' : ''}`}
+      role="dialog"
+      aria-modal="true"
+      aria-label="Site navigation"
+      aria-hidden={!isMenuOpen}
+    >
+      <div className="mobile-nav-overlay-inner" style={navStyle}>
+        <AuthButton variant="mobile" />
+        <ul className="mobile-nav-list">
+          {NAV_ITEMS.map((item) => {
+            if (item.children) {
+              return (
+                <li key={item.id} className="mobile-nav-list-item">
+                  <button
+                    type="button"
+                    data-id={item.id}
+                    className={`mobile-nav-item has-submenu ${isActive(item.id) ? 'on' : ''} ${hrySubmenuOpenMobile ? 'submenu-open' : ''}`}
+                    onClick={() => setHrySubmenuOpenMobile((v) => !v)}
+                    aria-haspopup="menu"
+                    aria-expanded={hrySubmenuOpenMobile}
+                  >
+                    <span>{item.label}</span>
+                    <svg
+                      className={`mobile-nav-caret ${hrySubmenuOpenMobile ? 'rotated' : ''}`}
+                      width="14"
+                      height="14"
+                      viewBox="0 0 14 14"
+                      aria-hidden="true"
+                    >
+                      <path d="M3 5 L7 9 L11 5" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                    </svg>
+                  </button>
+                  {hrySubmenuOpenMobile && (
+                    <ul className="mobile-nav-submenu" role="menu">
+                      {item.children.map((child) => (
+                        <li key={child.href}>
+                          <Link
+                            href={child.href}
+                            className="mobile-nav-submenu-item"
+                            role="menuitem"
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            onClick={() => {
+                              setIsMenuOpen(false);
+                              setHrySubmenuOpenMobile(false);
+                            }}
+                          >
+                            {child.label}
+                          </Link>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </li>
+              );
+            }
+            return (
+              <li key={item.id} className="mobile-nav-list-item">
+                <button
+                  type="button"
+                  data-id={item.id}
+                  className={`mobile-nav-item ${isActive(item.id) ? 'on' : ''}`}
+                  onClick={() => navigateToSection(item.id)}
+                >
+                  {item.label}
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      </div>
+    </div>
     <div className="pill-nav-spacer" aria-hidden="true" />
     </>
   );
