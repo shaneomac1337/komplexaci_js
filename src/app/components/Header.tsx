@@ -56,6 +56,7 @@ const Header = () => {
   const lastActiveSectionRef = useRef<string>('');
   const hamburgerRef = useRef<HTMLButtonElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
+  const wasMenuOpenRef = useRef(false);
   const [hrySubmenuOpenMobile, setHrySubmenuOpenMobile] = useState(false);
 
   const accent =
@@ -222,9 +223,26 @@ const Header = () => {
     };
   }, [isMenuOpen]);
 
-  // Move focus into the overlay when it opens; restore to hamburger on close
+  // Close the overlay if the viewport grows past the mobile breakpoint
+  // while the overlay is open. Otherwise the overlay disappears via
+  // display:none but isMenuOpen stays true and body scroll stays locked.
+  useEffect(() => {
+    if (!isMenuOpen) return;
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    const mq = window.matchMedia('(min-width: 769px)');
+    const onChange = (e: MediaQueryListEvent) => {
+      if (e.matches) setIsMenuOpen(false);
+    };
+    mq.addEventListener('change', onChange);
+    return () => mq.removeEventListener('change', onChange);
+  }, [isMenuOpen]);
+
+  // Move focus into the overlay when it opens; restore focus to the hamburger
+  // only on a true open→closed transition (not on initial mount, where the
+  // false branch would otherwise steal focus from autofocus targets etc).
   useEffect(() => {
     if (isMenuOpen) {
+      wasMenuOpenRef.current = true;
       const overlay = overlayRef.current;
       if (overlay) {
         const first = overlay.querySelector<HTMLElement>(
@@ -232,7 +250,8 @@ const Header = () => {
         );
         first?.focus();
       }
-    } else {
+    } else if (wasMenuOpenRef.current) {
+      wasMenuOpenRef.current = false;
       hamburgerRef.current?.focus();
     }
   }, [isMenuOpen]);
