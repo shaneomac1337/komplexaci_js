@@ -224,13 +224,11 @@
     border-left-color: transparent;
     border-right-color: transparent;
     border-radius: 0;
-    box-shadow:
-        0 6px 24px rgba(0, 0, 0, 0.55),
-        0 2px 0 0 color-mix(in srgb, var(--pill-accent) 35%, transparent);
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.55);
     /* Chassis morph relies on the box-shadow transition declared on .pill-nav
-       to fade the drop shadow to its docked state. The colored halo pulse was
-       intentionally removed — the slow ::after light-bar draw is the sole
-       accent moment on dock. */
+       to fade the drop shadow to its docked state. The colored halo pulse and
+       the redundant 2px accent line on the chassis bottom were both removed —
+       the slow ::after light-bar draw is the sole accent moment on dock. */
 }
 
 /* Spring animation runs in parallel on viewports where the chassis is
