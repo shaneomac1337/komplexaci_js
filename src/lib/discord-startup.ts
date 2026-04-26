@@ -18,6 +18,10 @@ export async function initializeDiscordGateway() {
     return;
   }
 
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return;
+  }
+
   // Mark as initializing up-front so concurrent callers (parallel API
   // requests during cold-start) don't each kick off their own connect.
   globalThis.__komplexaciDiscordGatewayInit = true;
@@ -40,6 +44,7 @@ export async function initializeDiscordGateway() {
 
 // Auto-initialize when this module is imported (server-side only)
 if (typeof window === 'undefined' &&
+    process.env.NEXT_PHASE !== 'phase-production-build' &&
     (process.env.NODE_ENV === 'production' || process.env.ENABLE_DISCORD_GATEWAY === 'true')) {
   initializeDiscordGateway();
 }

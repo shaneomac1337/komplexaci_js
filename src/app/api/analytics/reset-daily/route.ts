@@ -2,6 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getAnalyticsDatabase } from '@/lib/analytics/database';
 import { getDiscordGateway } from '@/lib/discord-gateway';
 import { getAnalyticsService } from '@/lib/analytics/service';
+import {
+  getPragueDateStartUtcString,
+  getPragueDateString,
+  getPreviousPragueDateString
+} from '@/lib/czech-time';
 
 /**
  * Daily Analytics Reset API
@@ -14,8 +19,10 @@ export async function POST(request: NextRequest) {
   const db = getAnalyticsDatabase();
   const gateway = getDiscordGateway();
   const now = new Date();
-  const today = now.toISOString().split('T')[0]; // YYYY-MM-DD format
-  const yesterday = new Date(now.getTime() - 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+  const today = getPragueDateString(now);
+  const yesterday = getPreviousPragueDateString(now);
+  const yesterdayStart = getPragueDateStartUtcString(yesterday);
+  const todayStart = getPragueDateStartUtcString(today);
 
   // Variables to track reset results
   let resetResult: any;
@@ -60,20 +67,20 @@ export async function POST(request: NextRequest) {
           const gameStats = db.getDatabase().prepare(`
             SELECT SUM(duration_minutes) as total_minutes, COUNT(DISTINCT game_name) as games_played
             FROM game_sessions
-            WHERE user_id = ? AND date(start_time) = ?
-          `).get(userId, yesterday) as any;
+            WHERE user_id = ? AND start_time >= ? AND start_time < ?
+          `).get(userId, yesterdayStart, todayStart) as any;
 
           const voiceStats = db.getDatabase().prepare(`
             SELECT SUM(duration_minutes) as total_minutes
             FROM voice_sessions
-            WHERE user_id = ? AND date(start_time) = ?
-          `).get(userId, yesterday) as any;
+            WHERE user_id = ? AND start_time >= ? AND start_time < ?
+          `).get(userId, yesterdayStart, todayStart) as any;
 
           const spotifyStats = db.getDatabase().prepare(`
             SELECT COUNT(*) as plays_count
             FROM spotify_sessions
-            WHERE user_id = ? AND date(start_time) = ?
-          `).get(userId, yesterday) as any;
+            WHERE user_id = ? AND start_time >= ? AND start_time < ?
+          `).get(userId, yesterdayStart, todayStart) as any;
 
           // Get existing snapshot for online time (tracked separately by Discord Gateway)
           const existingSnapshot = db.getDailySnapshot(userId, yesterday);
@@ -230,7 +237,7 @@ export async function POST(request: NextRequest) {
 export async function GET(request: NextRequest) {
   try {
     const db = getAnalyticsDatabase();
-    const today = new Date().toISOString().split('T')[0];
+    const today = getPragueDateString(new Date());
     
     // Get current daily data to show what would be reset
     const currentUserStats = db.getAllUserStats();

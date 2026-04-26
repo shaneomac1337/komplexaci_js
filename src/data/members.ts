@@ -176,13 +176,13 @@ export const games = [
   {
     title: 'League of Legends',
     description: 'MOBA hra od Riot Games, ve které se specializujeme na týmové strategie a kompetitivní hraní.',
-    image: 'https://cdn.komplexaci.cz/komplexaci/img/lol.jpg',
+    image: 'https://cdn.komplexaci.cz/komplexaci/img/lol-summoners-rift-artwork.jpg',
     link: '/league-of-legends'
   },
   {
     title: 'Counter Strike 2',
     description: 'FPS střílečka od Valve, ve které zdokonalujeme naše týmové taktiky, reflexy a přesnost.',
-    image: 'https://cdn.komplexaci.cz/komplexaci/img/cs2.jpg',
+    image: 'https://cdn.komplexaci.cz/cs2/maps/mirage.jpg',
     link: '/cs2'
   },
   {

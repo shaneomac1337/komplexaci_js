@@ -14,63 +14,7 @@ import { getAnalyticsService } from './analytics/service';
 import { getAnalyticsDatabase } from './analytics/database';
 import { initializeAnalytics } from './analytics';
 import { getBestDiscordAvatarUrl } from './discord-avatar-utils';
-
-// === TIMEZONE HELPER FUNCTIONS ===
-// Robust Czech timezone handling without relying on unreliable toLocaleString parsing
-
-/**
- * Get the last Sunday of a given month (used for DST calculations)
- * @param year - The year
- * @param month - The month (0-indexed, so March = 2, October = 9)
- * @returns Date object for the last Sunday at 2:00 AM UTC
- */
-function getLastSundayOfMonth(year: number, month: number): Date {
-  const lastDay = new Date(Date.UTC(year, month + 1, 0, 2, 0, 0)); // Last day of month at 2:00 AM UTC
-  const dayOfWeek = lastDay.getUTCDay();
-  lastDay.setUTCDate(lastDay.getUTCDate() - dayOfWeek);
-  return lastDay;
-}
-
-/**
- * Get the UTC offset for Prague timezone (CET/CEST)
- * @param date - The date to check
- * @returns Offset in minutes (60 for CET, 120 for CEST)
- */
-function getPragueOffset(date: Date): number {
-  // Czech timezone: CET (UTC+1) or CEST (UTC+2)
-  // DST starts last Sunday of March at 2:00 AM UTC (clocks move forward to 3:00 AM)
-  // DST ends last Sunday of October at 3:00 AM local (2:00 AM UTC, clocks move back to 2:00 AM)
-  const year = date.getUTCFullYear();
-  const marchLastSunday = getLastSundayOfMonth(year, 2); // March = 2
-  const octoberLastSunday = getLastSundayOfMonth(year, 9); // October = 9
-
-  if (date >= marchLastSunday && date < octoberLastSunday) {
-    return 120; // CEST = UTC+2 = 120 minutes
-  }
-  return 60; // CET = UTC+1 = 60 minutes
-}
-
-/**
- * Convert a date to Czech time (Europe/Prague timezone)
- * @param date - The date to convert (defaults to current time)
- * @returns A new Date object representing the Czech local time
- */
-function getCzechTime(date: Date = new Date()): Date {
-  const utcTime = date.getTime();
-  const pragueOffset = getPragueOffset(date);
-  return new Date(utcTime + pragueOffset * 60 * 1000);
-}
-
-/**
- * Get midnight in Czech time for a given date
- * @param date - The date to get midnight for
- * @returns A Date object representing midnight Czech time
- */
-function getCzechMidnight(date: Date): Date {
-  const czechTime = getCzechTime(date);
-  czechTime.setUTCHours(0, 0, 0, 0);
-  return czechTime;
-}
+import { getPragueDateString, hasPragueDateChanged } from './czech-time';
 
 interface CachedMember {
   id: string;
@@ -293,7 +237,7 @@ class DiscordGatewayService {
       this.initializeChannelCache(guild);
 
       // Cache all members and restore daily online time from database
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
+      const today = getPragueDateString(new Date());
 
       guild.members.cache.forEach(member => {
         if (!member.user.bot) {
@@ -390,16 +334,13 @@ class DiscordGatewayService {
       }
     }
 
-    // Check for daily reset at midnight Czech time (using robust timezone calculation)
-    const czechTime = getCzechTime(currentTime);
-    const today = getCzechMidnight(currentTime);
-    const lastResetCzech = getCzechMidnight(lastDailyReset);
-
-    if (today.getTime() > lastResetCzech.getTime()) {
+    // Check for daily reset at midnight Czech time.
+    if (hasPragueDateChanged(lastDailyReset, currentTime)) {
       // Reset daily counters at midnight
       dailyOnlineTime = 0;
       lastDailyReset = currentTime;
-      sessionStartTime = null; // Reset session on new day
+      sessionStartTime = currentStatus !== 'offline' ? currentTime : null;
+      this.resetDailyUserStats(member.id);
       console.log(`🌅 Daily reset for ${member.displayName || member.user.username}`);
     }
 
@@ -462,14 +403,12 @@ class DiscordGatewayService {
       const oldStatus = member.status;
       const newStatus = presence.status;
 
-      // Check for daily reset at midnight Czech time (using robust timezone calculation)
-      const today = getCzechMidnight(currentTime);
-      const lastResetCzech = getCzechMidnight(member.lastDailyReset);
-
-      if (today.getTime() > lastResetCzech.getTime()) {
+      // Check for daily reset at midnight Czech time.
+      if (hasPragueDateChanged(member.lastDailyReset, currentTime)) {
         member.dailyOnlineTime = 0;
         member.lastDailyReset = currentTime;
-        member.sessionStartTime = null; // Reset session on new day
+        member.sessionStartTime = newStatus !== 'offline' ? currentTime : null;
+        this.resetDailyUserStats(presence.userId);
         console.log(`🌅 Daily reset for ${member.displayName}`);
       }
 
@@ -572,19 +511,26 @@ class DiscordGatewayService {
     console.log(`🎤 Voice state update: ${member.displayName} ${channelId ? 'joined' : 'left'} voice channel${channelName ? ` (${channelName})` : ''}`);
   }
 
+  private resetDailyUserStats(userId: string) {
+    try {
+      const analyticsDb = getAnalyticsDatabase();
+      analyticsDb.resetDailyStats(userId);
+    } catch (error) {
+      console.error(`❌ Error resetting daily user stats for ${userId}:`, error);
+    }
+  }
+
   private updateDailyOnlineTime() {
     const currentTime = new Date();
     let updatedCount = 0;
 
     for (const [userId, member] of this.memberCache) {
-      // Check for daily reset at midnight Czech time (using robust timezone calculation)
-      const today = getCzechMidnight(currentTime);
-      const lastResetCzech = getCzechMidnight(member.lastDailyReset);
-
-      if (today.getTime() > lastResetCzech.getTime()) {
+      // Check for daily reset at midnight Czech time.
+      if (hasPragueDateChanged(member.lastDailyReset, currentTime)) {
         member.dailyOnlineTime = 0;
         member.lastDailyReset = currentTime;
-        member.sessionStartTime = null; // Reset session on new day
+        member.sessionStartTime = member.status !== 'offline' ? currentTime : null;
+        this.resetDailyUserStats(userId);
         console.log(`🌅 Daily reset for ${member.displayName}`);
       }
 
@@ -637,7 +583,7 @@ class DiscordGatewayService {
   private saveDailyStatsToDatabase() {
     try {
       const now = new Date();
-      const today = now.toISOString().split('T')[0]; // YYYY-MM-DD format
+      const today = getPragueDateString(now);
       let savedCount = 0;
 
       this.memberCache.forEach((member, userId) => {
@@ -742,7 +688,6 @@ class DiscordGatewayService {
   private updateCalculatedStats() {
     try {
       const analyticsDb = getAnalyticsDatabase();
-      const today = new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
       let updatedCount = 0;
 
       // Get all users who have stats in user_stats table
@@ -757,28 +702,31 @@ class DiscordGatewayService {
             SUM(duration_minutes) as total_minutes,
             COUNT(DISTINCT game_name) as games_played
           FROM game_sessions
-          WHERE user_id = ? AND date(start_time) = ? AND start_time >= ? AND status IN ('active', 'ended')
-        `).get(userId, today, userStat.last_daily_reset) as any;
+          WHERE user_id = ? AND start_time >= ? AND status IN ('active', 'ended')
+        `).get(userId, userStat.last_daily_reset) as any;
 
         const voiceStats = analyticsDb.getDatabase().prepare(`
           SELECT SUM(duration_minutes) as total_minutes
           FROM voice_sessions
-          WHERE user_id = ? AND date(start_time) = ? AND start_time >= ? AND status IN ('active', 'ended')
-        `).get(userId, today, userStat.last_daily_reset) as any;
+          WHERE user_id = ? AND start_time >= ? AND status IN ('active', 'ended')
+        `).get(userId, userStat.last_daily_reset) as any;
 
         const spotifyStats = analyticsDb.getDatabase().prepare(`
           SELECT
             SUM(duration_minutes) as total_minutes,
             COUNT(*) as songs_played
           FROM spotify_sessions
-          WHERE user_id = ? AND date(start_time) = ? AND start_time >= ? AND status IN ('active', 'ended')
-        `).get(userId, today, userStat.last_daily_reset) as any;
+          WHERE user_id = ?
+            AND start_time >= ?
+            AND status IN ('active', 'ended')
+            AND (duration_minutes >= 1 OR status = 'active')
+        `).get(userId, userStat.last_daily_reset) as any;
 
         const streamingStats = analyticsDb.getDatabase().prepare(`
           SELECT SUM(screen_share_minutes) as total_minutes
           FROM voice_sessions
-          WHERE user_id = ? AND date(start_time) = ? AND start_time >= ? AND status IN ('active', 'ended')
-        `).get(userId, today, userStat.last_daily_reset) as any;
+          WHERE user_id = ? AND start_time >= ? AND status IN ('active', 'ended')
+        `).get(userId, userStat.last_daily_reset) as any;
 
         // Calculate new daily values
         const newDailyVoice = Math.round(voiceStats?.total_minutes || 0);
@@ -950,7 +898,7 @@ class DiscordGatewayService {
   // Public method to manually trigger saving stats (for testing/immediate population)
   public forceSaveDailyStats() {
     try {
-      const today = new Date().toISOString().split('T')[0];
+      const today = getPragueDateString(new Date());
       let savedCount = 0;
 
       this.memberCache.forEach((member, userId) => {
@@ -1288,12 +1236,24 @@ declare global {
   var __komplexaciDiscordGateway: DiscordGatewayService | undefined;
 }
 
+function shouldAutoConnectDiscordGateway() {
+  if (typeof window !== 'undefined') {
+    return false;
+  }
+
+  if (process.env.NEXT_PHASE === 'phase-production-build') {
+    return false;
+  }
+
+  return process.env.NODE_ENV === 'production' || process.env.ENABLE_DISCORD_GATEWAY === 'true';
+}
+
 export function getDiscordGateway(): DiscordGatewayService {
   if (!globalThis.__komplexaciDiscordGateway) {
     globalThis.__komplexaciDiscordGateway = new DiscordGatewayService();
 
     // Auto-connect in production or when explicitly enabled
-    if (process.env.NODE_ENV === 'production' || process.env.ENABLE_DISCORD_GATEWAY === 'true') {
+    if (shouldAutoConnectDiscordGateway()) {
       globalThis.__komplexaciDiscordGateway.connect().catch(console.error);
     }
   }

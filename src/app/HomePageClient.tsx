@@ -569,6 +569,8 @@ function getGameMeta(title: string) {
       code: '01',
       accent: '#d6a531',
       stat: 'Týmové strategie',
+      imagePosition: '58% 48%',
+      imageScale: '1.04',
     };
   }
 
@@ -578,6 +580,8 @@ function getGameMeta(title: string) {
       code: '02',
       accent: '#ff8c00',
       stat: 'Reflexy a přesnost',
+      imagePosition: '42% 50%',
+      imageScale: '1.03',
     };
   }
 
@@ -587,6 +591,8 @@ function getGameMeta(title: string) {
       code: '03',
       accent: '#ff4655',
       stat: 'Nostalgie a zápasy',
+      imagePosition: '52% 42%',
+      imageScale: '1',
     };
   }
 
@@ -595,6 +601,8 @@ function getGameMeta(title: string) {
     code: '00',
     accent: '#00ffff',
     stat: 'Katalog',
+    imagePosition: '50% 50%',
+    imageScale: '1',
   };
 }
 
@@ -689,6 +697,8 @@ function GamesRedesign({ games, isLoaded }: { games: GameItem[]; isLoaded: boole
                 style={{
                   '--game-accent': meta.accent,
                   '--game-index': index,
+                  '--game-image-position': meta.imagePosition,
+                  '--game-image-scale': meta.imageScale,
                 } as CSSProperties}
               >
                 <div className="game-card-image">
@@ -697,6 +707,7 @@ function GamesRedesign({ games, isLoaded }: { games: GameItem[]; isLoaded: boole
                     alt={game.title}
                     fill
                     className="object-cover"
+                    sizes="(max-width: 760px) calc(100vw - 28px), (max-width: 1020px) calc((100vw - 68px) / 2), 380px"
                     unoptimized
                   />
                 </div>
