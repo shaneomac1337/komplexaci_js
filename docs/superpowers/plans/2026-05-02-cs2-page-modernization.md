@@ -636,19 +636,16 @@ The existing `getRandomCS2Screenshot` helper can be inlined and removed.
 
 - [ ] **Step 2: Update imports and wrapper**
 
-Replace these imports near the top of `page.tsx`:
-
-```tsx
-import styles from './cs2.module.css';
-import '../komplexaci.css';
-```
-
-with:
+Add these imports near the top of `page.tsx` (after the existing `styles` and `komplexaci.css` imports):
 
 ```tsx
 import './cs2-redesign.css';
 import '../section-headings-redesign.css';
 ```
+
+Do NOT remove `import '../komplexaci.css';` — that file ships the global `.pill-nav-*` styles for the `Header` component, and every page that renders `<Header />` imports it. Removing it breaks the header on the CS2 page (verified in the original draft of this plan; corrected here).
+
+Also keep `import styles from './cs2.module.css';` for now — the loading state and the not-yet-migrated sections still reference `styles.*`. Task 9 deletes the module file after all sections are migrated.
 
 (Keep all other imports — `Image`, `Link`, types, `Header`, `AnimatedSection`, `StaggeredGrid`, `MapCardSkeleton`, `WeaponCardSkeleton`, `Icon`. They'll be used or pruned in later tasks.)
 
@@ -1260,7 +1257,7 @@ git commit -m "Match CS2 skeletons + loading state to redesign chassis"
 **Acceptance Criteria:**
 - [ ] `src/app/cs2/cs2.module.css` is deleted
 - [ ] No reference to `styles.*` (the CSS module) remains in `page.tsx`
-- [ ] No reference to `'../komplexaci.css'` remains in `page.tsx`
+- [ ] `import '../komplexaci.css';` IS still present (global Header pill-nav styles live there — every page that renders `<Header />` keeps this import)
 - [ ] No usage of `AnimatedSection` or `StaggeredGrid` remains in `page.tsx` (their imports are also removed; the components themselves stay because `wwe-games/page.tsx` still uses them)
 - [ ] No usage of `Icon` remains in `page.tsx` if no icons are referenced (remove import if so)
 - [ ] `src/app/cs2/loading.tsx` uses Esports Pro language (cs2-redesign scope, cyan spinner, dark bg, mono "// LOADING" kicker)
@@ -1280,11 +1277,12 @@ git rm src/app/cs2/cs2.module.css
 - [ ] **Step 2: Prune `page.tsx` imports**
 
 Open `src/app/cs2/page.tsx`. Remove any of these imports if no usage remains in the file:
-- `import styles from './cs2.module.css';` (must be gone)
-- `import '../komplexaci.css';` (must be gone)
+- `import styles from './cs2.module.css';` (must be gone — `cs2.module.css` is being deleted)
 - `import AnimatedSection from '../components/AnimatedSection';` (remove)
 - `import StaggeredGrid from '../components/StaggeredGrid';` (remove)
 - `import { Icon } from '../components/Icon';` (remove if Icon no longer used)
+
+Keep `import '../komplexaci.css';` — it provides the global `.pill-nav-*` styles for `<Header />`. Every page that uses Header imports it.
 
 Also confirm these imports are present:
 - `import './cs2-redesign.css';`
