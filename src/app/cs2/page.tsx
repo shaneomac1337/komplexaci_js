@@ -390,14 +390,12 @@ export default function CS2Page() {
         </section>
       )}
 
-      <AnimatedSection animation="fadeInUp" delay={0.5} className="text-center mt-12">
-        <Link
-          href="/"
-          className={`inline-block bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg ${styles.pulseGlow}`}
-        >
-          Zpět na hlavní stránku
+      <section className="cs2-cta-strip">
+        <div className="cta-kicker">// END · CHAPTER 03</div>
+        <Link href="/" className="cta-link">
+          Zpět na hlavní stránku <span className="arrow" aria-hidden="true">→</span>
         </Link>
-      </AnimatedSection>
+      </section>
     </div>
   );
 }
