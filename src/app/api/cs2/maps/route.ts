@@ -9,6 +9,7 @@ export interface GameMap {
   active: boolean;
   releaseDate?: string;
   features: string[];
+  theme?: string;
 }
 
 const maps: GameMap[] = [
@@ -20,7 +21,8 @@ const maps: GameMap[] = [
     type: 'defusal',
     active: true,
     releaseDate: '2020-12-03',
-    features: ['Jungle theme', 'Vertical gameplay', 'Water features', 'Tight corridors']
+    features: ['Jungle theme', 'Vertical gameplay', 'Water features', 'Tight corridors'],
+    theme: 'Jungle'
   },
   {
     id: 'anubis',
@@ -30,7 +32,8 @@ const maps: GameMap[] = [
     type: 'defusal',
     active: true,
     releaseDate: '2021-05-21',
-    features: ['Egyptian theme', 'Water elements', 'Complex rotations', 'Multiple levels']
+    features: ['Egyptian theme', 'Water elements', 'Complex rotations', 'Multiple levels'],
+    theme: 'Egypt'
   },
   {
     id: 'dust2',
@@ -40,7 +43,8 @@ const maps: GameMap[] = [
     type: 'defusal',
     active: true,
     releaseDate: '2001-03-13',
-    features: ['Iconic design', 'Long sightlines', 'Balanced gameplay', 'Desert theme']
+    features: ['Iconic design', 'Long sightlines', 'Balanced gameplay', 'Desert theme'],
+    theme: 'Desert'
   },
   {
     id: 'inferno',
@@ -50,7 +54,8 @@ const maps: GameMap[] = [
     type: 'defusal',
     active: true,
     releaseDate: '1999-08-19',
-    features: ['Italian village', 'Narrow passages', 'Banana control', 'Close quarters']
+    features: ['Italian village', 'Narrow passages', 'Banana control', 'Close quarters'],
+    theme: 'Italy'
   },
   {
     id: 'mirage',
@@ -60,7 +65,8 @@ const maps: GameMap[] = [
     type: 'defusal',
     active: true,
     releaseDate: '2013-06-11',
-    features: ['Moroccan theme', 'Open mid area', 'Utility-heavy', 'Balanced rotations']
+    features: ['Moroccan theme', 'Open mid area', 'Utility-heavy', 'Balanced rotations'],
+    theme: 'Morocco'
   },
   {
     id: 'nuke',
@@ -70,7 +76,8 @@ const maps: GameMap[] = [
     type: 'defusal',
     active: true,
     releaseDate: '2000-05-01',
-    features: ['Nuclear plant', 'Vertical gameplay', 'Multiple levels', 'CT-sided']
+    features: ['Nuclear plant', 'Vertical gameplay', 'Multiple levels', 'CT-sided'],
+    theme: 'Industrial'
   },
   {
     id: 'train',
@@ -80,7 +87,8 @@ const maps: GameMap[] = [
     type: 'defusal',
     active: true,
     releaseDate: '2000-05-01',
-    features: ['Industrial theme', 'Train cars', 'Long sightlines', 'Fast rotations']
+    features: ['Industrial theme', 'Train cars', 'Long sightlines', 'Fast rotations'],
+    theme: 'Industrial'
   }
 ];
 

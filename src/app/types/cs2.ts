@@ -26,6 +26,7 @@ export interface GameMap {
   active: boolean;
   releaseDate?: string;
   features: string[];
+  theme?: string;
 }
 
 export interface GameInfo {
