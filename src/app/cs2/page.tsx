@@ -286,62 +286,60 @@ export default function CS2Page() {
       )}
 
       {/* Maps Section */}
-      <section className="py-20 px-4 bg-gray-800/30">
-        <div className="max-w-6xl mx-auto">
-          <AnimatedSection animation="fadeInUp" className="text-center mb-12">
-            <h2 className={`text-4xl font-bold mb-8 ${styles.textGradient}`}>Mapy v Counter-Strike 2</h2>
-            <p className="text-lg text-gray-300 max-w-4xl mx-auto">
-              CS2 obsahuje řadu ikonických map, které byly vylepšeny pro Source 2 engine.
-              Každá mapa má své unikátní rozvržení a vyžaduje specifické strategie.
+      <section className="cs2-section">
+        <div className="cs2-shell">
+          <div className="cs2-section-header">
+            <div className="cs2-section-kicker">// SECTION 01 · BATTLEGROUNDS</div>
+            <h2 className="section-title"><span>MAPY V CS2</span></h2>
+            <p className="cs2-section-sub">
+              Aktivní competitive pool. Ikonické mapy přepracované pro Source 2.
             </p>
-          </AnimatedSection>
+          </div>
 
-          <StaggeredGrid
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
-            staggerDelay={0.1}
-            animation="scaleIn"
-          >
-            {maps.map((map) => {
-              console.log('Rendering map:', map.name, 'with image:', map.image);
+          <div className="cs2-grid-cards">
+            {maps.map((map, idx) => {
+              const indexLabel = String(idx + 1).padStart(2, '0');
+              const releasedYear = map.releaseDate
+                ? new Date(map.releaseDate).getFullYear()
+                : '—';
+              const modeLabel = map.type.charAt(0).toUpperCase() + map.type.slice(1);
               return (
-              <div
-                key={map.id}
-                className={`bg-gray-800/50 rounded-lg overflow-hidden border border-gray-700 hover:border-red-500/50 ${styles.cardHover} ${styles.imageReveal}`}
-              >
-                <div className="h-48 relative overflow-hidden">
-                  <Image
-                    src={map.image}
-                    alt={map.name}
-                    fill
-                    className="object-cover transition-transform duration-500 hover:scale-110"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                    unoptimized
-                    onError={(e) => {
-                      console.error('Map image failed to load:', map.image, e);
-                    }}
-                    onLoad={() => {
-                      console.log('Map image loaded successfully:', map.image);
-                    }}
-                  />
-                </div>
-                <div className="p-6">
-                  <h3 className="text-xl font-semibold mb-2">{map.name}</h3>
-                  <p className="text-gray-300 text-sm mb-4 line-clamp-3">{map.description}</p>
-                  <div className="flex flex-wrap gap-2">
-                    {map.features.slice(0, 2).map((feature, index) => (
-                      <span
-                        key={index}
-                        className="bg-red-500/20 text-red-300 px-2 py-1 rounded text-xs transition-all duration-300 hover:bg-red-500/30"
-                      >
-                        {feature}
-                      </span>
-                    ))}
+                <article key={map.id} className="cs2-card">
+                  <div className="ix-bar">
+                    <span className="index">// MAP · {indexLabel}</span>
+                    <span className="ix-tag">{modeLabel.toUpperCase()}</span>
                   </div>
-                </div>
-              </div>
+                  <div className="img-frame">
+                    <Image
+                      src={map.image}
+                      alt={map.name}
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                      unoptimized
+                    />
+                  </div>
+                  <div className="body">
+                    <h3>{map.name}</h3>
+                    <p className="desc">{map.description}</p>
+                    <div className="stats">
+                      <div className="s">
+                        <span className="lbl">Released</span>
+                        <span className="val">{releasedYear}</span>
+                      </div>
+                      <div className="s">
+                        <span className="lbl">Theme</span>
+                        <span className="val">{map.theme ?? '—'}</span>
+                      </div>
+                      <div className="s">
+                        <span className="lbl">Mode</span>
+                        <span className="val cyan">{modeLabel}</span>
+                      </div>
+                    </div>
+                  </div>
+                </article>
               );
             })}
-          </StaggeredGrid>
+          </div>
         </div>
       </section>
 
