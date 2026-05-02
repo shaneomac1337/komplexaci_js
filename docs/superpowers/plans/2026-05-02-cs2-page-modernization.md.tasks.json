@@ -4,64 +4,64 @@
     {
       "id": 1,
       "subject": "Task 1: Add theme field to map data",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Add a short editorial `theme` label on each map record so the maps stats strip can render it.\n\n**Files:**\n- Modify: `src/app/types/cs2.ts`\n- Modify: `src/app/api/cs2/maps/route.ts`\n\n**Verify:** `curl -s http://localhost:3000/api/cs2/maps?active=true | grep -o '\"theme\":\"[^\"]*\"' | head` → 7 lines of theme values\n\n```json:metadata\n{\"files\": [\"src/app/types/cs2.ts\", \"src/app/api/cs2/maps/route.ts\"], \"verifyCommand\": \"npx tsc --noEmit\", \"acceptanceCriteria\": [\"GameMap has theme?: string\", \"All 7 active maps have theme populated\", \"API response includes theme\", \"TS compiles\"]}\n```"
     },
     {
       "id": 2,
       "subject": "Task 2: Create cs2-redesign.css foundation",
-      "status": "pending",
+      "status": "completed",
       "description": "**Goal:** Author the full scoped stylesheet for the redesign.\n\n**Files:**\n- Create: `src/app/cs2/cs2-redesign.css`\n\n**Verify:** Page boots without CSS warnings after Task 3 imports it.\n\n```json:metadata\n{\"files\": [\"src/app/cs2/cs2-redesign.css\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"All styles scoped under .cs2-redesign\", \"Tokens match spec\", \"Classes for hero, section, card, weapon-tab, mech-block, cta-strip defined\", \"Responsive + reduced-motion rules present\"]}\n```"
     },
     {
       "id": 3,
       "subject": "Task 3: Hero rewrite",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [2],
       "description": "**Goal:** Replace the corner-bracket hero with the new chassis: gradient title, mono kicker, embedded data strip, live badge, tick indicator. Wrap the entire page tree in `cs2-redesign section-heading-redesign`.\n\n**Files:**\n- Modify: `src/app/cs2/page.tsx`\n\n**Verify:** Open /cs2, hero shows mono kicker, gradient title, data strip (Engine/Released/Mode/Esport), live badge, tick indicator. Screenshot rotates every 12s, tick advances.\n\n```json:metadata\n{\"files\": [\"src/app/cs2/page.tsx\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"Wrapper has cs2-redesign + section-heading-redesign classes\", \"cs2-redesign.css imported\", \"Hero matches spec (kicker, title, lede, data strip, badge, indicator)\", \"Screenshot rotation + tick advance work\"]}\n```"
     },
     {
       "id": 4,
       "subject": "Task 4: Maps section",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [1, 3],
       "description": "**Goal:** Replace the maps grid with chassis cards (`// MAP · ##`, DEFUSAL tag, mono stats strip).\n\n**Files:**\n- Modify: `src/app/cs2/page.tsx`\n\n**Verify:** /cs2 maps section shows new chassis cards with index, image, mono stats strip (Released/Theme/Mode). Hover lifts card + scales image.\n\n```json:metadata\n{\"files\": [\"src/app/cs2/page.tsx\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"Section uses cs2-section + cs2-shell\", \"Header: SECTION 01 BATTLEGROUNDS + gradient MAPY V CS2\", \"Cards use chassis with sequential index\", \"Stats strip shows Released/Theme/Mode\", \"No Tailwind in section\"]}\n```"
     },
     {
       "id": 5,
       "subject": "Task 5: Weapons section",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [3],
       "description": "**Goal:** Replace pill category buttons with rectangular chassis tabs, weapon cards with the chassis (contained image frame, `// WPN · ##` index, price/damage/team stats).\n\n**Files:**\n- Modify: `src/app/cs2/page.tsx`\n\n**Verify:** /cs2 weapons section shows rectangular tabs with /count, gradient active tab, chassis cards with centered weapon images and mono stats strip.\n\n```json:metadata\n{\"files\": [\"src/app/cs2/page.tsx\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"Section uses cs2-section + cs2-shell\", \"Header: SECTION 02 ARMORY + gradient ZBRANĚ\", \"Tabs are rectangular with /count\", \"Active tab has gradient bg\", \"Cards contained image frame\", \"Stats: price (cyan) / damage / team (pink)\", \"No Tailwind in section\"]}\n```"
     },
     {
       "id": 6,
       "subject": "Task 6: Mechanics section (replaces Game Info)",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [3],
       "description": "**Goal:** Drop the existing 2-column Game Info block. Add a new Mechanics section at the bottom with 6 numbered intel blocks.\n\n**Files:**\n- Modify: `src/app/cs2/page.tsx`\n\n**Verify:** /cs2 — Game Info gone, new Mechanics section at bottom with 6 numbered blocks (// 01 — // 06), 2-col grid.\n\n```json:metadata\n{\"files\": [\"src/app/cs2/page.tsx\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"Game Info block removed\", \"New section uses cs2-section cs2-mechanics\", \"Header: SECTION 03 MECHANICS\", \"6 mech blocks split on ' - '\", \"2-col grid → 1-col on mobile\"]}\n```"
     },
     {
       "id": 7,
       "subject": "Task 7: CTA strip",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [3],
       "description": "**Goal:** Replace the existing back button with the framed CTA strip.\n\n**Files:**\n- Modify: `src/app/cs2/page.tsx`\n\n**Verify:** /cs2 — bottom shows framed CTA with pink kicker and `Zpět na hlavní stránku →` link. Hover lifts. Click navigates to /.\n\n```json:metadata\n{\"files\": [\"src/app/cs2/page.tsx\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"Old red button removed\", \"New cs2-cta-strip with pink END · CHAPTER 03 kicker\", \"Framed link to / with cyan arrow\", \"Hover lift + cyan border\", \"Keyboard focus shows outline\"]}\n```"
     },
     {
       "id": 8,
       "subject": "Task 8: Skeleton components",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [2, 3],
       "description": "**Goal:** Update MapCardSkeleton + WeaponCardSkeleton to match chassis. Update loading-state JSX in page.tsx.\n\n**Files:**\n- Rewrite: `src/app/components/MapCardSkeleton.tsx`\n- Rewrite: `src/app/components/WeaponCardSkeleton.tsx`\n- Modify: `src/app/cs2/page.tsx` (loading branch)\n\n**Verify:** Throttle to Slow 3G, reload /cs2 — skeletons match new chassis layout (header bar, image area, body lines, stats strip).\n\n```json:metadata\n{\"files\": [\"src/app/components/MapCardSkeleton.tsx\", \"src/app/components/WeaponCardSkeleton.tsx\", \"src/app/cs2/page.tsx\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"Both components keep public API\", \"Use cs2-skel-* classes\", \"No Tailwind\", \"Loading branch wraps in cs2-redesign scope\", \"Skeletons match loaded card shape\"]}\n```"
     },
     {
       "id": 9,
       "subject": "Task 9: Cleanup, route loader, and verification pass",
-      "status": "pending",
+      "status": "completed",
       "blockedBy": [4, 5, 6, 7, 8],
-      "description": "**Goal:** Delete cs2.module.css, prune dead imports, align loading.tsx, run full verification matrix.\n\n**Files:**\n- Delete: `src/app/cs2/cs2.module.css`\n- Modify: `src/app/cs2/page.tsx`\n- Modify: `src/app/cs2/loading.tsx`\n\n**Verify:** npm run build succeeds. Walk full spec verification matrix (visual cohesion, hero, maps, weapons, mechanics, CTA, loading, responsive, a11y, console, CLS).\n\n```json:metadata\n{\"files\": [\"src/app/cs2/cs2.module.css\", \"src/app/cs2/page.tsx\", \"src/app/cs2/loading.tsx\"], \"verifyCommand\": \"npm run build\", \"acceptanceCriteria\": [\"cs2.module.css deleted\", \"No styles.* references in page.tsx\", \"komplexaci.css import removed from page.tsx\", \"AnimatedSection/StaggeredGrid imports removed from page.tsx\", \"loading.tsx uses Esports Pro language\", \"npm run build passes\", \"All spec verification checks pass\"]}\n```"
+      "description": "**Goal:** Delete cs2.module.css, prune dead imports, align loading.tsx, run full verification matrix.\n\n**Files:**\n- Delete: `src/app/cs2/cs2.module.css`\n- Modify: `src/app/cs2/page.tsx`\n- Modify: `src/app/cs2/loading.tsx`\n\n**Verify:** npm run build succeeds. Walk full spec verification matrix (visual cohesion, hero, maps, weapons, mechanics, CTA, loading, responsive, a11y, console, CLS).\n\n```json:metadata\n{\"files\": [\"src/app/cs2/cs2.module.css\", \"src/app/cs2/page.tsx\", \"src/app/cs2/loading.tsx\"], \"verifyCommand\": \"npm run build\", \"acceptanceCriteria\": [\"cs2.module.css deleted\", \"No styles.* references in page.tsx\", \"komplexaci.css import KEPT in page.tsx (provides Header pill-nav styles)\", \"AnimatedSection/StaggeredGrid/Icon imports removed from page.tsx\", \"loading.tsx uses Esports Pro language\", \"npm run build passes\", \"All spec verification checks pass\"]}\n```"
     }
   ],
-  "lastUpdated": "2026-05-02"
+  "lastUpdated": "2026-05-03"
 }
