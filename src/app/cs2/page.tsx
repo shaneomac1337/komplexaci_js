@@ -105,66 +105,44 @@ export default function CS2Page() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-900">
-        {/* Hero Section Skeleton */}
-        <section className="relative h-[60vh] bg-gray-800 flex items-center justify-center">
-          <div className="absolute inset-0 bg-gradient-to-r from-red-500/20 to-purple-600/20 animate-pulse"></div>
-          <div className="relative z-10 text-center max-w-4xl px-4">
-            <div className="h-16 bg-gray-700 rounded-lg mb-4 w-96 mx-auto animate-pulse"></div>
-            <div className="h-6 bg-gray-600 rounded w-64 mx-auto animate-pulse"></div>
+      <div className="cs2-redesign section-heading-redesign min-h-screen text-white">
+        <Header />
+        <section className="cs2-hero">
+          <div className="wash" />
+          <div className="grid-overlay" />
+          <div className="content">
+            <div className="kicker">// CHAPTER 03 · TACTICAL FPS</div>
+            <h1><span>COUNTER-STRIKE 2</span></h1>
+            <p className="lede">&nbsp;</p>
           </div>
         </section>
 
-        {/* Content Skeleton */}
-        <div className="py-20 px-4">
-          <div className="max-w-6xl mx-auto">
-            {/* Game Info Skeleton */}
-            <div className="h-12 bg-gray-700 rounded mb-8 w-80 mx-auto animate-pulse"></div>
-            <div className="grid md:grid-cols-2 gap-8 mb-20">
-              <div className="bg-gray-800/50 rounded-lg p-8 border border-gray-700 animate-pulse">
-                <div className="h-8 bg-gray-600 rounded mb-6 w-48"></div>
-                <div className="space-y-3">
-                  {Array.from({ length: 7 }).map((_, i) => (
-                    <div key={i} className="h-4 bg-gray-600 rounded w-full"></div>
-                  ))}
-                </div>
-              </div>
-              <div className="bg-gray-800/50 rounded-lg p-8 border border-gray-700 animate-pulse">
-                <div className="h-8 bg-gray-600 rounded mb-6 w-48"></div>
-                <div className="space-y-2">
-                  {Array.from({ length: 6 }).map((_, i) => (
-                    <div key={i} className="h-4 bg-gray-600 rounded w-full"></div>
-                  ))}
-                </div>
-              </div>
+        <section className="cs2-section">
+          <div className="cs2-shell">
+            <div className="cs2-section-header">
+              <div className="cs2-section-kicker">// SECTION 01 · BATTLEGROUNDS</div>
+              <h2 className="section-title"><span>MAPY V CS2</span></h2>
             </div>
-
-            {/* Maps Skeleton */}
-            <div className="bg-gray-800/30 py-20">
-              <div className="h-12 bg-gray-700 rounded mb-8 w-64 mx-auto animate-pulse"></div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <MapCardSkeleton count={7} />
-              </div>
-            </div>
-
-            {/* Weapons Skeleton */}
-            <div className="py-20">
-              <div className="h-12 bg-gray-700 rounded mb-8 w-64 mx-auto animate-pulse"></div>
-              <div className="flex flex-wrap justify-center gap-4 mb-12">
-                {Array.from({ length: 6 }).map((_, i) => (
-                  <div key={i} className="h-12 bg-gray-700 rounded-full w-32 animate-pulse"></div>
-                ))}
-              </div>
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <WeaponCardSkeleton count={6} />
-              </div>
+            <div className="cs2-grid-cards">
+              <MapCardSkeleton count={6} />
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Loading Indicator */}
-        <div className="fixed bottom-8 right-8 bg-gray-800 rounded-full p-4 border border-red-500/30 animate-pulse">
-          <div className={styles.loadingSpinner}></div>
+        <section className="cs2-section">
+          <div className="cs2-shell">
+            <div className="cs2-section-header">
+              <div className="cs2-section-kicker">// SECTION 02 · ARMORY</div>
+              <h2 className="section-title"><span>ZBRANĚ &amp; VYBAVENÍ</span></h2>
+            </div>
+            <div className="cs2-grid-cards">
+              <WeaponCardSkeleton count={6} />
+            </div>
+          </div>
+        </section>
+
+        <div style={{ position: 'fixed', bottom: 32, right: 32 }}>
+          <div className="cs2-spinner" />
         </div>
       </div>
     );
