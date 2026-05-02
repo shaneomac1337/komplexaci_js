@@ -4,16 +4,13 @@ import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { WeaponCategory, GameMap, GameInfo } from '../types/cs2';
-import styles from './cs2.module.css';
 import '../komplexaci.css';
 import './cs2-redesign.css';
 import '../section-headings-redesign.css';
 
-import AnimatedSection from '../components/AnimatedSection';
 import WeaponCardSkeleton from '../components/WeaponCardSkeleton';
 import MapCardSkeleton from '../components/MapCardSkeleton';
 import Header from '../components/Header';
-import { Icon } from '../components/Icon';
 
 // CS2 Screenshots from SteamDB for random display
 const cs2Screenshots = [
@@ -111,7 +108,7 @@ export default function CS2Page() {
           <div className="wash" />
           <div className="grid-overlay" />
           <div className="content">
-            <div className="kicker">// CHAPTER 03 · TACTICAL FPS</div>
+            <div className="kicker">{'// CHAPTER 03 · TACTICAL FPS'}</div>
             <h1><span>COUNTER-STRIKE 2</span></h1>
             <p className="lede">&nbsp;</p>
           </div>
@@ -120,7 +117,7 @@ export default function CS2Page() {
         <section className="cs2-section">
           <div className="cs2-shell">
             <div className="cs2-section-header">
-              <div className="cs2-section-kicker">// SECTION 01 · BATTLEGROUNDS</div>
+              <div className="cs2-section-kicker">{'// SECTION 01 · BATTLEGROUNDS'}</div>
               <h2 className="section-title"><span>MAPY V CS2</span></h2>
             </div>
             <div className="cs2-grid-cards">
@@ -132,7 +129,7 @@ export default function CS2Page() {
         <section className="cs2-section">
           <div className="cs2-shell">
             <div className="cs2-section-header">
-              <div className="cs2-section-kicker">// SECTION 02 · ARMORY</div>
+              <div className="cs2-section-kicker">{'// SECTION 02 · ARMORY'}</div>
               <h2 className="section-title"><span>ZBRANĚ &amp; VYBAVENÍ</span></h2>
             </div>
             <div className="cs2-grid-cards">
@@ -171,11 +168,11 @@ export default function CS2Page() {
         )}
         <div className="wash" />
         <div className="grid-overlay" />
-        <div className="live-badge">// LIVE FEED</div>
+        <div className="live-badge">{'// LIVE FEED'}</div>
 
         <div className="content">
           <div className="kicker">
-            // CHAPTER 03<span className="dot" />TACTICAL FPS
+            {'// CHAPTER 03'}<span className="dot" />TACTICAL FPS
           </div>
           <h1>
             <span>{gameInfo?.title ?? 'COUNTER-STRIKE 2'}</span>
@@ -214,7 +211,7 @@ export default function CS2Page() {
       <section className="cs2-section">
         <div className="cs2-shell">
           <div className="cs2-section-header">
-            <div className="cs2-section-kicker">// SECTION 01 · BATTLEGROUNDS</div>
+            <div className="cs2-section-kicker">{'// SECTION 01 · BATTLEGROUNDS'}</div>
             <h2 className="section-title"><span>MAPY V CS2</span></h2>
             <p className="cs2-section-sub">
               Aktivní competitive pool. Ikonické mapy přepracované pro Source 2.
@@ -231,7 +228,7 @@ export default function CS2Page() {
               return (
                 <article key={map.id} className="cs2-card">
                   <div className="ix-bar">
-                    <span className="index">// MAP · {indexLabel}</span>
+                    <span className="index">{'// MAP · '}{indexLabel}</span>
                     <span className="ix-tag">{modeLabel.toUpperCase()}</span>
                   </div>
                   <div className="img-frame">
@@ -272,7 +269,7 @@ export default function CS2Page() {
       <section className="cs2-section">
         <div className="cs2-shell">
           <div className="cs2-section-header">
-            <div className="cs2-section-kicker">// SECTION 02 · ARMORY</div>
+            <div className="cs2-section-kicker">{'// SECTION 02 · ARMORY'}</div>
             <h2 className="section-title"><span>ZBRANĚ &amp; VYBAVENÍ</span></h2>
             <p className="cs2-section-sub">
               Široká škála zbraní pro každou ekonomickou situaci a strategii.
@@ -302,7 +299,7 @@ export default function CS2Page() {
                 return (
                   <article key={weapon.id} className="cs2-card">
                     <div className="ix-bar">
-                      <span className="index">// WPN · {indexLabel}</span>
+                      <span className="index">{'// WPN · '}{indexLabel}</span>
                       <span className="ix-tag">{currentCategory.title.toUpperCase()}</span>
                     </div>
                     <div className="img-frame weapon">
@@ -344,7 +341,7 @@ export default function CS2Page() {
         <section className="cs2-section cs2-mechanics">
           <div className="cs2-shell">
             <div className="cs2-section-header">
-              <div className="cs2-section-kicker">// SECTION 03 · MECHANICS</div>
+              <div className="cs2-section-kicker">{'// SECTION 03 · MECHANICS'}</div>
               <h2 className="section-title"><span>HERNÍ MECHANIKY</span></h2>
               <p className="cs2-section-sub">{gameInfo.mechanics.description}</p>
             </div>
@@ -357,7 +354,7 @@ export default function CS2Page() {
                 const numLabel = String(idx + 1).padStart(2, '0');
                 return (
                   <div key={idx} className="cs2-mech-block">
-                    <div className="num">// {numLabel}</div>
+                    <div className="num">{'// '}{numLabel}</div>
                     <h3>{title}</h3>
                     {body && <p>{body}</p>}
                   </div>
@@ -369,7 +366,7 @@ export default function CS2Page() {
       )}
 
       <section className="cs2-cta-strip">
-        <div className="cta-kicker">// END · CHAPTER 03</div>
+        <div className="cta-kicker">{'// END · CHAPTER 03'}</div>
         <Link href="/" className="cta-link">
           Zpět na hlavní stránku <span className="arrow" aria-hidden="true">→</span>
         </Link>
