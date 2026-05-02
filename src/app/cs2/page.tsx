@@ -232,58 +232,6 @@ export default function CS2Page() {
         </div>
       </section>
 
-      {/* Game Info Section */}
-      {gameInfo && (
-        <section className="py-20 px-4">
-          <div className="max-w-6xl mx-auto">
-            <AnimatedSection animation="fadeInUp" className="text-center mb-12">
-              <h2 className={`text-4xl font-bold mb-8 ${styles.textGradient}`}>O hře Counter-Strike 2</h2>
-              <p className="text-lg text-gray-300 max-w-4xl mx-auto">
-                {gameInfo.description}
-              </p>
-            </AnimatedSection>
-
-            <div className="grid md:grid-cols-2 gap-8">
-              {/* Basic Info */}
-              <AnimatedSection
-                animation="fadeInLeft"
-                delay={0.2}
-                className={`bg-gray-800/50 rounded-lg p-8 border border-red-500/30 ${styles.glowEffect} ${styles.cardHover}`}
-              >
-                <h3 className="text-2xl font-semibold mb-6 text-red-400">Základní informace</h3>
-                <ul className="space-y-3">
-                  <li><strong>Vývojář:</strong> {gameInfo.basicInfo.developer}</li>
-                  <li><strong>Vydáno:</strong> {gameInfo.basicInfo.releaseDate}</li>
-                  <li><strong>Žánr:</strong> {gameInfo.basicInfo.genre}</li>
-                  <li><strong>Platforma:</strong> {gameInfo.basicInfo.platform}</li>
-                  <li><strong>Model:</strong> {gameInfo.basicInfo.model}</li>
-                  <li><strong>Engine:</strong> {gameInfo.basicInfo.engine}</li>
-                  <li><strong>Esport:</strong> {gameInfo.basicInfo.esport}</li>
-                </ul>
-              </AnimatedSection>
-
-              {/* Game Mechanics */}
-              <AnimatedSection
-                animation="fadeInRight"
-                delay={0.4}
-                className={`bg-gray-800/50 rounded-lg p-8 border border-red-500/30 ${styles.glowEffect} ${styles.cardHover}`}
-              >
-                <h3 className="text-2xl font-semibold mb-6 text-red-400">{gameInfo.mechanics.title}</h3>
-                <p className="mb-4 text-gray-300">{gameInfo.mechanics.description}</p>
-                <ul className="space-y-2 text-sm">
-                  {gameInfo.mechanics.features.map((feature, index) => (
-                    <li key={index} className="flex items-start">
-                      <span className="text-red-400 mr-2">•</span>
-                      {feature}
-                    </li>
-                  ))}
-                </ul>
-              </AnimatedSection>
-            </div>
-          </div>
-        </section>
-      )}
-
       {/* Maps Section */}
       <section className="cs2-section">
         <div className="cs2-shell">
@@ -413,6 +361,34 @@ export default function CS2Page() {
           )}
         </div>
       </section>
+
+      {gameInfo && (
+        <section className="cs2-section cs2-mechanics">
+          <div className="cs2-shell">
+            <div className="cs2-section-header">
+              <div className="cs2-section-kicker">// SECTION 03 · MECHANICS</div>
+              <h2 className="section-title"><span>HERNÍ MECHANIKY</span></h2>
+              <p className="cs2-section-sub">{gameInfo.mechanics.description}</p>
+            </div>
+
+            <div className="cs2-mech-grid">
+              {gameInfo.mechanics.features.map((feature, idx) => {
+                const dashIndex = feature.indexOf(' - ');
+                const title = dashIndex >= 0 ? feature.slice(0, dashIndex) : feature;
+                const body = dashIndex >= 0 ? feature.slice(dashIndex + 3) : '';
+                const numLabel = String(idx + 1).padStart(2, '0');
+                return (
+                  <div key={idx} className="cs2-mech-block">
+                    <div className="num">// {numLabel}</div>
+                    <h3>{title}</h3>
+                    {body && <p>{body}</p>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       <AnimatedSection animation="fadeInUp" delay={0.5} className="text-center mt-12">
         <Link
