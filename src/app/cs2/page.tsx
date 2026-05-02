@@ -5,7 +5,8 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { WeaponCategory, GameMap, GameInfo } from '../types/cs2';
 import styles from './cs2.module.css';
-import '../komplexaci.css';
+import './cs2-redesign.css';
+import '../section-headings-redesign.css';
 
 import AnimatedSection from '../components/AnimatedSection';
 import StaggeredGrid from '../components/StaggeredGrid';
@@ -45,23 +46,22 @@ export default function CS2Page() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [currentScreenshot, setCurrentScreenshot] = useState<string>('');
-
-  // Function to get a random CS2 screenshot
-  const getRandomCS2Screenshot = () => {
-    const randomIndex = Math.floor(Math.random() * cs2Screenshots.length);
-    return cs2Screenshots[randomIndex];
-  };
+  const [currentScreenshotIndex, setCurrentScreenshotIndex] = useState<number>(0);
 
   // Initialize random screenshot on component mount
   useEffect(() => {
-    setCurrentScreenshot(getRandomCS2Screenshot());
+    const idx = Math.floor(Math.random() * cs2Screenshots.length);
+    setCurrentScreenshotIndex(idx);
+    setCurrentScreenshot(cs2Screenshots[idx]);
   }, []);
 
   // Change screenshot every 12 seconds
   useEffect(() => {
     const interval = setInterval(() => {
-      setCurrentScreenshot(getRandomCS2Screenshot());
-    }, 12000); // Change every 12 seconds
+      const idx = Math.floor(Math.random() * cs2Screenshots.length);
+      setCurrentScreenshotIndex(idx);
+      setCurrentScreenshot(cs2Screenshots[idx]);
+    }, 12000);
 
     return () => clearInterval(interval);
   }, []);
@@ -179,75 +179,57 @@ export default function CS2Page() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
+    <div className="cs2-redesign section-heading-redesign min-h-screen text-white">
       {/* Header */}
       <Header />
       
       {/* Hero Section */}
-      <section className={`relative h-[80vh] min-h-[600px] flex items-center justify-center ${styles.heroSection} ${styles.parallaxBg} overflow-hidden`}>
-        {/* Background Image using img element for better control */}
+      <section className="cs2-hero">
         {currentScreenshot && (
-          <>
-            {/* Blurred background layer */}
-            <img
-              src={currentScreenshot}
-              alt="CS2 Screenshot Background"
-              className="absolute inset-0 w-full h-full object-cover filter blur-xl brightness-30 scale-110"
-              style={{ zIndex: 1 }}
-            />
-
-            {/* Main image layer - shows full image */}
-            <img
-              src={currentScreenshot}
-              alt="CS2 Screenshot"
-              className="absolute inset-0 w-full h-full object-contain filter brightness-75"
-              style={{ zIndex: 2 }}
-            />
-          </>
+          <div
+            className="bg"
+            style={{ backgroundImage: `url(${currentScreenshot})` }}
+          />
         )}
+        <div className="wash" />
+        <div className="grid-overlay" />
+        <div className="live-badge">// LIVE FEED</div>
 
-        <AnimatedSection
-          className="relative z-10 text-center max-w-4xl px-4"
-          animation="fadeInUp"
-          duration={1.2}
-        >
-          <div className="relative">
-            {/* Clean CS2-style overlay */}
-            <div className="bg-black/30 border-2 border-red-500/50 rounded-2xl p-8 mx-8 relative overflow-hidden">
-              {/* Static corner accents */}
-              <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-red-400"></div>
-              <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-red-400"></div>
-              <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-red-400"></div>
-              <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-red-400"></div>
-
-              {/* Static subtle glow */}
-              <div className="absolute inset-0 bg-gradient-to-r from-red-500/10 via-transparent to-orange-500/10 rounded-2xl"></div>
-
-              {/* Content */}
-              <div className="relative z-10">
-                <h1 className={`text-6xl font-bold mb-4 ${styles.textShadow} ${styles.textGradient}`}>
-                  {gameInfo?.title}
-                </h1>
-                <AnimatedSection
-                  animation="fadeInUp"
-                  delay={0.3}
-                  className="text-xl font-light text-gray-200"
-                >
-                  <span className={styles.textGlow}>
-                    Legendární taktická FPS střílečka od Valve
-                  </span>
-                </AnimatedSection>
-                {currentScreenshot && (
-                  <div className="mt-4 text-sm text-red-300 opacity-75"
-                       style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.6)' }}>
-                    <Icon name="camera" className="mr-2" />
-                    Oficiální screenshoty ze hry
-                  </div>
-                )}
-              </div>
+        <div className="content">
+          <div className="kicker">
+            // CHAPTER 03<span className="dot" />TACTICAL FPS
+          </div>
+          <h1>
+            <span>{gameInfo?.title ?? 'COUNTER-STRIKE 2'}</span>
+          </h1>
+          <p className="lede">
+            Legendární taktická FPS od Valve. Pokračování CS:GO na enginu Source 2 přináší nové kouřové granáty, sub-tick a vylepšenou fyziku.
+          </p>
+          <div className="data-strip">
+            <div className="cell">
+              <span className="label">Engine</span>
+              <span className="val cyan">{gameInfo?.basicInfo.engine ?? 'Source 2'}</span>
+            </div>
+            <div className="cell">
+              <span className="label">Released</span>
+              <span className="val">{gameInfo?.basicInfo.releaseDate ?? '—'}</span>
+            </div>
+            <div className="cell">
+              <span className="label">Mode</span>
+              <span className="val">{gameInfo?.basicInfo.model ?? '—'}</span>
+            </div>
+            <div className="cell">
+              <span className="label">Esport</span>
+              <span className="val cyan">Tier · S</span>
             </div>
           </div>
-        </AnimatedSection>
+        </div>
+
+        <div className="indicator">
+          {cs2Screenshots.map((_, i) => (
+            <span key={i} className={i === currentScreenshotIndex ? 'active' : ''} />
+          ))}
+        </div>
       </section>
 
       {/* Game Info Section */}
