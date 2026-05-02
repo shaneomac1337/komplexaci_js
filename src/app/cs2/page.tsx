@@ -5,6 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { WeaponCategory, GameMap, GameInfo } from '../types/cs2';
 import styles from './cs2.module.css';
+import '../komplexaci.css';
 import './cs2-redesign.css';
 import '../section-headings-redesign.css';
 
