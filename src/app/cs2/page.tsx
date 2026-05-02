@@ -10,7 +10,6 @@ import './cs2-redesign.css';
 import '../section-headings-redesign.css';
 
 import AnimatedSection from '../components/AnimatedSection';
-import StaggeredGrid from '../components/StaggeredGrid';
 import WeaponCardSkeleton from '../components/WeaponCardSkeleton';
 import MapCardSkeleton from '../components/MapCardSkeleton';
 import Header from '../components/Header';
@@ -344,92 +343,85 @@ export default function CS2Page() {
       </section>
 
       {/* Weapons Section */}
-      <section className="py-20 px-4">
-        <div className="max-w-6xl mx-auto">
-          <AnimatedSection animation="fadeInUp" className="text-center mb-12">
-            <h2 className={`text-4xl font-bold mb-8 ${styles.textGradient}`}>Zbraně a vybavení</h2>
-            <p className="text-lg text-gray-300 max-w-4xl mx-auto">
-              CS2 nabízí širokou škálu zbraní a vybavení, které si hráči mohou zakoupit
-              na začátku každého kola podle své ekonomické situace a strategie.
+      <section className="cs2-section">
+        <div className="cs2-shell">
+          <div className="cs2-section-header">
+            <div className="cs2-section-kicker">// SECTION 02 · ARMORY</div>
+            <h2 className="section-title"><span>ZBRANĚ &amp; VYBAVENÍ</span></h2>
+            <p className="cs2-section-sub">
+              Široká škála zbraní pro každou ekonomickou situaci a strategii.
             </p>
-          </AnimatedSection>
+          </div>
 
-          {/* Weapon Categories */}
-          <AnimatedSection animation="fadeInUp" delay={0.2} className="mb-12">
-            <div className="flex flex-wrap justify-center gap-4">
-              {weaponCategories.map((category, index) => (
-                <button
-                  key={category.id}
-                  onClick={() => setActiveCategory(category.id)}
-                  className={`px-6 py-3 rounded-full font-semibold transition-all duration-300 ${styles.categoryButton} ${
-                    activeCategory === category.id
-                      ? `${styles.categoryButtonActive} ${styles.pulseGlow} text-white shadow-lg transform scale-105`
-                      : 'bg-gray-700 text-gray-300 hover:bg-gray-600 hover:scale-105'
-                  }`}
-                  style={{ animationDelay: `${index * 0.1}s` }}
-                >
-                  {category.title}
-                </button>
-              ))}
-            </div>
-          </AnimatedSection>
-
-          {/* Current Category */}
-          {currentCategory && (
-            <AnimatedSection
-              animation="fadeInUp"
-              delay={0.3}
-              className={`bg-gray-800/50 rounded-lg p-8 border border-red-500/30 ${styles.glowEffect}`}
-            >
-              <div className="text-center mb-8">
-                <h3 className={`text-2xl font-semibold mb-4 ${styles.textGradient}`}>{currentCategory.title}</h3>
-                <p className="text-gray-300">{currentCategory.description}</p>
-              </div>
-
-              <StaggeredGrid
-                className="grid md:grid-cols-2 lg:grid-cols-3 gap-6"
-                staggerDelay={0.1}
-                animation="scaleIn"
+          <div className="cs2-weapon-tabs" role="tablist">
+            {weaponCategories.map((category) => (
+              <button
+                key={category.id}
+                role="tab"
+                aria-pressed={activeCategory === category.id}
+                onClick={() => setActiveCategory(category.id)}
+                className={`cs2-weapon-tab ${activeCategory === category.id ? 'active' : ''}`}
               >
-                {currentCategory.weapons.map((weapon) => (
-                  <div
-                    key={weapon.id}
-                    className={`bg-gray-700/50 rounded-lg p-6 border border-gray-600 hover:border-red-500/50 ${styles.cardHover} ${styles.imageReveal}`}
-                  >
-                    <div className="h-24 mb-4 flex items-center justify-center bg-gray-600/20 rounded-lg overflow-hidden">
+                {category.title}
+                <span className="count">/ {String(category.weapons.length).padStart(2, '0')}</span>
+              </button>
+            ))}
+          </div>
+
+          {currentCategory && (
+            <div className="cs2-grid-cards">
+              {currentCategory.weapons.map((weapon, idx) => {
+                const indexLabel = String(idx + 1).padStart(2, '0');
+                const teamLabel = weapon.team.toUpperCase();
+                return (
+                  <article key={weapon.id} className="cs2-card">
+                    <div className="ix-bar">
+                      <span className="index">// WPN · {indexLabel}</span>
+                      <span className="ix-tag">{currentCategory.title.toUpperCase()}</span>
+                    </div>
+                    <div className="img-frame weapon">
                       <Image
                         src={weapon.image}
                         alt={weapon.name}
-                        width={120}
-                        height={80}
-                        className="object-contain transition-transform duration-300 hover:scale-110"
+                        width={160}
+                        height={100}
                         unoptimized
                       />
                     </div>
-                    <h4 className="text-lg font-semibold mb-2">{weapon.name}</h4>
-                    <p className={`font-semibold mb-2 ${styles.textGradient}`}>{weapon.price}</p>
-                    <p className="text-sm text-gray-300 mb-4 line-clamp-2">{weapon.stats}</p>
-                    <div className="space-y-1 text-xs text-gray-400">
-                      <p><strong>Poškození:</strong> {weapon.damage}</p>
-                      <p><strong>Přesnost:</strong> {weapon.accuracy}</p>
-                      <p><strong>Tým:</strong> {weapon.team}</p>
+                    <div className="body">
+                      <h3>{weapon.name}</h3>
+                      <p className="desc">{weapon.stats}</p>
+                      <div className="stats">
+                        <div className="s">
+                          <span className="lbl">Price</span>
+                          <span className="val cyan">{weapon.price}</span>
+                        </div>
+                        <div className="s">
+                          <span className="lbl">Damage</span>
+                          <span className="val">{weapon.damage}</span>
+                        </div>
+                        <div className="s">
+                          <span className="lbl">Team</span>
+                          <span className="val pink">{teamLabel}</span>
+                        </div>
+                      </div>
                     </div>
-                  </div>
-                ))}
-              </StaggeredGrid>
-            </AnimatedSection>
+                  </article>
+                );
+              })}
+            </div>
           )}
-
-          <AnimatedSection animation="fadeInUp" delay={0.5} className="text-center mt-12">
-            <Link
-              href="/"
-              className={`inline-block bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg ${styles.pulseGlow}`}
-            >
-              Zpět na hlavní stránku
-            </Link>
-          </AnimatedSection>
         </div>
       </section>
+
+      <AnimatedSection animation="fadeInUp" delay={0.5} className="text-center mt-12">
+        <Link
+          href="/"
+          className={`inline-block bg-red-500 hover:bg-red-600 text-white font-semibold py-3 px-8 rounded-full transition-all duration-300 hover:scale-105 hover:shadow-lg ${styles.pulseGlow}`}
+        >
+          Zpět na hlavní stránku
+        </Link>
+      </AnimatedSection>
     </div>
   );
 }
