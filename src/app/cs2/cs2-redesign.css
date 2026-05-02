@@ -1,0 +1,396 @@
+/* ================================================================
+   CS2 page redesign — Esports Pro language, scoped under .cs2-redesign
+   ================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&display=swap');
+
+/* ---------- Scoped tokens ---------- */
+.cs2-redesign {
+  --bg-0: #07070d;
+  --bg-1: #0a0a14;
+  --bg-2: #11111e;
+  --brand-cyan: #00FFFF;
+  --brand-magenta: #ff6ec7;
+  --brand-orange: #FF8C00;
+  --line: rgba(255, 255, 255, 0.08);
+  --line-strong: rgba(255, 255, 255, 0.16);
+  --text-0: #ffffff;
+  --text-1: #d8d8e8;
+  --text-2: #9b9bb0;
+  --text-3: #6b6b80;
+  --font-display: 'Exo 2', system-ui, sans-serif;
+  --font-body: 'Roboto', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+  background: var(--bg-0);
+  color: var(--text-0);
+  font-family: var(--font-body);
+  min-height: 100vh;
+}
+
+/* ---------- Hero ---------- */
+.cs2-redesign .cs2-hero {
+  position: relative;
+  min-height: 100vh;
+  margin-top: -64px;          /* bleed under reserved Header band */
+  padding: 140px 48px 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  overflow: hidden;
+}
+.cs2-redesign .cs2-hero .bg {
+  position: absolute; inset: 0;
+  background-size: cover; background-position: center;
+  opacity: 0.55;
+  transition: opacity 600ms ease;
+}
+.cs2-redesign .cs2-hero .wash {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse at 28% 22%, rgba(0,255,255,0.10), transparent 50%),
+    radial-gradient(ellipse at 78% 80%, rgba(255,110,199,0.10), transparent 50%),
+    linear-gradient(180deg, rgba(7,7,13,0.4) 0%, rgba(7,7,13,0.85) 70%, var(--bg-0) 100%);
+}
+.cs2-redesign .cs2-hero .grid-overlay {
+  position: absolute; inset: 0; opacity: 0.34;
+  background:
+    linear-gradient(rgba(0,255,255,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0,255,255,0.035) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(180deg, transparent 0%, #000 22%, #000 72%, transparent 100%);
+  pointer-events: none;
+}
+
+/* live badge (top-right) */
+.cs2-redesign .cs2-hero .live-badge {
+  position: absolute; top: 84px; right: 32px; z-index: 3;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.2em;
+  text-transform: uppercase; color: var(--brand-cyan);
+  padding: 8px 12px;
+  border: 1px solid rgba(0,255,255,0.4); border-radius: 4px;
+  background: rgba(0,255,255,0.06);
+}
+.cs2-redesign .cs2-hero .live-badge::before {
+  content: ''; display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--brand-cyan); margin-right: 8px; vertical-align: middle;
+  animation: cs2-pulse 1.4s ease-in-out infinite;
+}
+@keyframes cs2-pulse { 0%,100% { opacity: 1 } 50% { opacity: 0.3 } }
+
+/* hero content */
+.cs2-redesign .cs2-hero .content {
+  position: relative; z-index: 2; max-width: 1100px; width: 100%;
+}
+.cs2-redesign .cs2-hero .kicker {
+  font-family: var(--font-mono); font-size: 13px; letter-spacing: 0.22em;
+  color: var(--brand-cyan); text-transform: uppercase; margin-bottom: 18px;
+}
+.cs2-redesign .cs2-hero .kicker .dot {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--brand-magenta); margin: 0 12px; vertical-align: middle;
+}
+.cs2-redesign .cs2-hero h1 {
+  font-family: var(--font-display); font-weight: 900;
+  font-size: clamp(54px, 8vw, 130px); line-height: 0.92;
+  letter-spacing: -0.04em; margin: 0;
+}
+.cs2-redesign .cs2-hero h1 span {
+  background: linear-gradient(135deg, var(--brand-cyan), var(--brand-magenta) 58%, var(--brand-orange));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+.cs2-redesign .cs2-hero .lede {
+  font-family: var(--font-body); font-weight: 300; font-size: 19px;
+  color: var(--text-1); max-width: 680px; margin: 24px auto 40px;
+  line-height: 1.55;
+}
+
+/* hero data strip */
+.cs2-redesign .cs2-hero .data-strip {
+  display: inline-flex; align-items: stretch;
+  border: 1px solid var(--line-strong); border-radius: 12px; overflow: hidden;
+  background: rgba(7,7,13,0.55); backdrop-filter: blur(10px);
+}
+.cs2-redesign .cs2-hero .data-strip .cell {
+  padding: 14px 22px; border-right: 1px solid var(--line);
+  font-family: var(--font-mono); text-align: left;
+}
+.cs2-redesign .cs2-hero .data-strip .cell:last-child { border-right: 0; }
+.cs2-redesign .cs2-hero .data-strip .label {
+  color: var(--text-3); font-size: 10px; letter-spacing: 0.16em;
+  text-transform: uppercase; display: block; margin-bottom: 4px;
+}
+.cs2-redesign .cs2-hero .data-strip .val { color: var(--text-0); font-size: 14px; font-weight: 500; }
+.cs2-redesign .cs2-hero .data-strip .val.cyan { color: var(--brand-cyan); }
+
+/* hero rotation indicator */
+.cs2-redesign .cs2-hero .indicator {
+  position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 8px; z-index: 3;
+}
+.cs2-redesign .cs2-hero .indicator span {
+  width: 22px; height: 2px; background: rgba(255,255,255,0.2); border-radius: 1px;
+  transition: background 300ms ease;
+}
+.cs2-redesign .cs2-hero .indicator span.active {
+  background: linear-gradient(90deg, var(--brand-cyan), var(--brand-magenta));
+}
+
+/* ---------- Section base ---------- */
+.cs2-redesign .cs2-section { padding: 96px 0; position: relative; }
+.cs2-redesign .cs2-shell {
+  width: min(1180px, calc(100% - 48px));
+  margin: 0 auto; position: relative;
+}
+.cs2-redesign .cs2-section-header { text-align: center; margin-bottom: 56px; }
+.cs2-redesign .cs2-section-kicker {
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.22em;
+  color: var(--brand-cyan); text-transform: uppercase; margin-bottom: 14px;
+}
+.cs2-redesign .cs2-section-sub {
+  font-family: var(--font-body); color: var(--text-1); font-size: 16px;
+  max-width: 720px; margin: 18px auto 0; line-height: 1.55;
+}
+
+/* ---------- Card chassis (Maps + Weapons share) ---------- */
+.cs2-redesign .cs2-grid-cards {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px;
+}
+.cs2-redesign .cs2-card {
+  position: relative; border-radius: 12px; overflow: hidden;
+  background: rgba(12,14,24,0.9); border: 1px solid var(--line);
+  transition: border-color 220ms ease, transform 220ms ease;
+}
+.cs2-redesign .cs2-card:hover {
+  transform: translateY(-3px);
+  border-color: rgba(0,255,255,0.32);
+}
+.cs2-redesign .cs2-card .ix-bar {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 11px 16px; border-bottom: 1px solid var(--line);
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.cs2-redesign .cs2-card .ix-bar .index { color: var(--brand-cyan); }
+.cs2-redesign .cs2-card .ix-bar .ix-tag { color: var(--brand-magenta); }
+.cs2-redesign .cs2-card .img-frame {
+  aspect-ratio: 16/9; background-size: cover; background-position: center;
+  position: relative; overflow: hidden;
+}
+.cs2-redesign .cs2-card .img-frame::after {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(180deg, transparent 50%, rgba(7,7,13,0.92) 100%);
+  pointer-events: none;
+}
+.cs2-redesign .cs2-card .img-frame > img {
+  width: 100%; height: 100%; object-fit: cover;
+  transition: transform 400ms ease;
+}
+.cs2-redesign .cs2-card:hover .img-frame > img { transform: scale(1.04); }
+
+/* weapon variant: contained image, no edge-bleed, no bottom gradient */
+.cs2-redesign .cs2-card .img-frame.weapon {
+  background: rgba(7,7,13,0.6);
+  display: flex; align-items: center; justify-content: center;
+}
+.cs2-redesign .cs2-card .img-frame.weapon::after { display: none; }
+.cs2-redesign .cs2-card .img-frame.weapon > img {
+  width: auto; height: auto;
+  max-height: 70%; max-width: 70%; object-fit: contain;
+}
+
+.cs2-redesign .cs2-card .body { padding: 14px 16px 16px; }
+.cs2-redesign .cs2-card h3,
+.cs2-redesign .cs2-card h4 {
+  font-family: var(--font-display); font-weight: 800; font-size: 19px;
+  margin: 0 0 6px; color: var(--text-0); letter-spacing: -0.01em;
+}
+.cs2-redesign .cs2-card .desc {
+  color: var(--text-1); font-size: 13px; margin: 0 0 14px; line-height: 1.5;
+}
+.cs2-redesign .cs2-card .stats {
+  display: flex; gap: 16px;
+  border-top: 1px solid var(--line); padding-top: 12px;
+  font-family: var(--font-mono);
+}
+.cs2-redesign .cs2-card .stats .s { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.cs2-redesign .cs2-card .stats .s .lbl {
+  color: var(--text-3); font-size: 9px; letter-spacing: 0.16em; text-transform: uppercase;
+}
+.cs2-redesign .cs2-card .stats .s .val { color: var(--text-0); font-size: 12px; }
+.cs2-redesign .cs2-card .stats .s .val.cyan { color: var(--brand-cyan); }
+.cs2-redesign .cs2-card .stats .s .val.pink { color: var(--brand-magenta); }
+
+/* ---------- Weapon tabs ---------- */
+.cs2-redesign .cs2-weapon-tabs {
+  display: flex; flex-wrap: wrap; justify-content: center; gap: 8px;
+  margin-bottom: 36px;
+}
+.cs2-redesign .cs2-weapon-tab {
+  padding: 10px 18px;
+  background: rgba(12,14,24,0.6); border: 1px solid var(--line);
+  color: var(--text-1); border-radius: 8px;
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.18em;
+  text-transform: uppercase; cursor: pointer;
+  transition: background 200ms ease, border-color 200ms ease, color 200ms ease;
+}
+.cs2-redesign .cs2-weapon-tab:hover {
+  border-color: rgba(0,255,255,0.3);
+  color: var(--text-0);
+}
+.cs2-redesign .cs2-weapon-tab:focus-visible {
+  outline: 2px solid var(--brand-cyan);
+  outline-offset: 2px;
+}
+.cs2-redesign .cs2-weapon-tab.active {
+  background: linear-gradient(135deg, rgba(0,255,255,0.15), rgba(255,110,199,0.15));
+  border-color: rgba(0,255,255,0.5);
+  color: var(--text-0);
+}
+.cs2-redesign .cs2-weapon-tab .count {
+  color: var(--text-3); margin-left: 6px; font-size: 10px;
+}
+.cs2-redesign .cs2-weapon-tab.active .count { color: var(--brand-cyan); }
+
+/* ---------- Mechanics ---------- */
+.cs2-redesign .cs2-mechanics {
+  background:
+    radial-gradient(circle at 8% 10%, rgba(0,255,255,0.06), transparent 32%),
+    radial-gradient(circle at 88% 90%, rgba(255,140,0,0.06), transparent 30%),
+    linear-gradient(180deg, var(--bg-0), #0c0c18 50%, var(--bg-0) 100%);
+}
+.cs2-redesign .cs2-mech-grid {
+  display: grid; grid-template-columns: 1fr 1fr; gap: 14px;
+}
+.cs2-redesign .cs2-mech-block {
+  border: 1px solid var(--line); border-radius: 12px;
+  padding: 22px 24px; background: rgba(12,14,24,0.5);
+}
+.cs2-redesign .cs2-mech-block .num {
+  font-family: var(--font-mono); font-size: 11px; letter-spacing: 0.18em;
+  color: var(--brand-cyan); text-transform: uppercase; margin-bottom: 8px;
+}
+.cs2-redesign .cs2-mech-block h3 {
+  font-family: var(--font-display); font-weight: 800; font-size: 18px;
+  margin: 0 0 8px; color: var(--text-0); letter-spacing: -0.005em;
+}
+.cs2-redesign .cs2-mech-block p {
+  color: var(--text-1); font-size: 13px; margin: 0; line-height: 1.55;
+}
+
+/* ---------- CTA strip ---------- */
+.cs2-redesign .cs2-cta-strip {
+  padding: 80px 24px;
+  text-align: center;
+  border-top: 1px solid var(--line);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(0,255,255,0.08), transparent 60%),
+    var(--bg-0);
+}
+.cs2-redesign .cs2-cta-strip .cta-kicker {
+  font-family: var(--font-mono); font-size: 12px; letter-spacing: 0.22em;
+  color: var(--brand-magenta); text-transform: uppercase; margin-bottom: 14px;
+}
+.cs2-redesign .cs2-cta-strip .cta-link {
+  display: inline-flex; align-items: center; gap: 10px;
+  font-family: var(--font-display); font-weight: 800; font-size: 24px;
+  color: var(--text-0); text-decoration: none;
+  padding: 16px 32px;
+  border: 1px solid var(--line-strong); border-radius: 12px;
+  background: rgba(12,14,24,0.7);
+  transition: border-color 200ms ease, transform 200ms ease;
+}
+.cs2-redesign .cs2-cta-strip .cta-link:hover {
+  border-color: rgba(0,255,255,0.4);
+  transform: translateY(-2px);
+}
+.cs2-redesign .cs2-cta-strip .cta-link:focus-visible {
+  outline: 2px solid var(--brand-cyan);
+  outline-offset: 4px;
+}
+.cs2-redesign .cs2-cta-strip .cta-link .arrow { color: var(--brand-cyan); }
+
+/* ---------- Loading spinner (replaces .loadingSpinner from cs2.module.css) ---------- */
+.cs2-redesign .cs2-spinner {
+  width: 24px; height: 24px;
+  border: 2px solid rgba(0,255,255,0.2);
+  border-top-color: var(--brand-cyan);
+  border-radius: 50%;
+  animation: cs2-spin 0.9s linear infinite;
+}
+@keyframes cs2-spin { to { transform: rotate(360deg) } }
+
+/* ---------- Skeletons (chassis-shaped) ---------- */
+.cs2-redesign .cs2-skel-card {
+  border-radius: 12px; overflow: hidden;
+  background: rgba(12,14,24,0.9); border: 1px solid var(--line);
+}
+.cs2-redesign .cs2-skel-bar {
+  height: 36px; border-bottom: 1px solid var(--line);
+  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+  background-size: 200% 100%;
+  animation: cs2-shimmer 1.4s ease-in-out infinite;
+}
+.cs2-redesign .cs2-skel-img {
+  aspect-ratio: 16/9;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+  background-size: 200% 100%;
+  animation: cs2-shimmer 1.4s ease-in-out infinite;
+}
+.cs2-redesign .cs2-skel-line {
+  height: 12px; border-radius: 4px; margin: 8px 0;
+  background: linear-gradient(90deg, rgba(255,255,255,0.04), rgba(255,255,255,0.08), rgba(255,255,255,0.04));
+  background-size: 200% 100%;
+  animation: cs2-shimmer 1.4s ease-in-out infinite;
+}
+.cs2-redesign .cs2-skel-line.short { width: 60%; }
+.cs2-redesign .cs2-skel-line.medium { width: 80%; }
+.cs2-redesign .cs2-skel-strip {
+  height: 28px; margin-top: 10px;
+  border-top: 1px solid var(--line);
+}
+@keyframes cs2-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1023px) {
+  .cs2-redesign .cs2-grid-cards { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 767px) {
+  .cs2-redesign .cs2-grid-cards { grid-template-columns: 1fr; }
+  .cs2-redesign .cs2-mech-grid { grid-template-columns: 1fr; }
+  .cs2-redesign .cs2-section { padding: 64px 0; }
+  .cs2-redesign .cs2-section-header { margin-bottom: 36px; }
+}
+@media (max-width: 640px) {
+  .cs2-redesign .cs2-hero { padding: 100px 24px 60px; }
+  .cs2-redesign .cs2-hero .live-badge { top: 76px; right: 16px; }
+  .cs2-redesign .cs2-hero .data-strip {
+    flex-direction: column; display: flex;
+  }
+  .cs2-redesign .cs2-hero .data-strip .cell {
+    border-right: 0; border-bottom: 1px solid var(--line);
+  }
+  .cs2-redesign .cs2-hero .data-strip .cell:last-child { border-bottom: 0; }
+}
+
+/* ---------- Reduced motion ---------- */
+@media (prefers-reduced-motion: reduce) {
+  .cs2-redesign .cs2-card,
+  .cs2-redesign .cs2-card .img-frame > img,
+  .cs2-redesign .cs2-cta-strip .cta-link {
+    transition: none !important;
+    transform: none !important;
+  }
+  .cs2-redesign .cs2-card:hover { transform: none; }
+  .cs2-redesign .cs2-card:hover .img-frame > img { transform: none; }
+  .cs2-redesign .cs2-hero .live-badge::before,
+  .cs2-redesign .cs2-skel-bar,
+  .cs2-redesign .cs2-skel-img,
+  .cs2-redesign .cs2-skel-line {
+    animation: none;
+  }
+}
