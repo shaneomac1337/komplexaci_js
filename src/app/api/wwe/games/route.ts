@@ -565,6 +565,17 @@ const wweErasData: WWEEra[] = [
         cover: 'https://cdn.komplexaci.cz/komplexaci/img/wwe-covers/wwe-2k25-2025.jpg',
         era: 'renaissance',
         series: '2k'
+      },
+      {
+        id: 'wwe-2k26-2026',
+        title: 'WWE 2K26',
+        year: 2026,
+        platform: 'Multi-Platform + Switch 2',
+        description: 'CM Punk na obalu s heslem "The Show Never Stops"! Druhý cover star debut po WWE \'13 oslavuje jeho návrat do WWE. Největší roster v historii série s více než 400 wrestlery včetně Lucha Libre AAA legend. Debut Dumpster Match a návrat I Quit, Inferno a Three Stages of Hell zápasů. Přepracovaný reversal a stamina systém, rozšířené intergender zápasy, CM Punk Showcase mód a Booker T s Wadem Barrettem v komentáři. První WWE 2K hra na Nintendo Switch 2.',
+        features: ['CM Punk cover star', '"The Show Never Stops"', '400+ wrestlerů — největší roster', 'Lucha Libre AAA roster', 'Dumpster Match debut', 'Nintendo Switch 2 debut'],
+        cover: 'https://upload.wikimedia.org/wikipedia/en/4/4f/WWE_2K26_standard_cover.jpeg',
+        era: 'renaissance',
+        series: '2k'
       }
     ]
   }

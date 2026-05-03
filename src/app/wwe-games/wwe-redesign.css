@@ -1,0 +1,1093 @@
+/* ================================================================
+   WWE Games page redesign — Cinematic PPV broadcast aesthetic
+   Scoped under .wwe-redesign
+   ================================================================ */
+
+@import url('https://fonts.googleapis.com/css2?family=Anton&family=Oswald:wght@400;500;600;700&family=Barlow+Condensed:ital,wght@0,400;0,500;0,600;0,700;1,500&display=swap');
+
+/* ---------- Scoped base ---------- */
+.wwe-redesign {
+  background: #000;
+  color: #fff;
+  font-family: 'Barlow Condensed', 'Oswald', sans-serif;
+  font-weight: 500;
+  -webkit-font-smoothing: antialiased;
+}
+.wwe-redesign * { box-sizing: border-box; }
+.wwe-redesign img { display: block; max-width: 100%; }
+.wwe-redesign button { background: none; border: none; color: inherit; font: inherit; cursor: pointer; }
+.wwe-redesign ::selection { background: #fbbf24; color: #000; }
+
+/* ---------- Hero ---------- */
+.wwe-redesign .wwe-hero {
+  position: relative;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at center top, #1a0608 0%, #000 60%);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  padding: 120px 48px 60px;
+}
+
+.wwe-redesign .wwe-hero-noise {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.6'/%3E%3C/svg%3E");
+  opacity: 0.08;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+}
+
+.wwe-redesign .wwe-hero-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(220, 38, 38, 0.07) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(220, 38, 38, 0.07) 1px, transparent 1px);
+  background-size: 80px 80px;
+  mask-image: radial-gradient(ellipse at center, black 0%, transparent 75%);
+  pointer-events: none;
+}
+
+.wwe-redesign .wwe-hero-spotlights {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.wwe-redesign .wwe-spotlight {
+  position: absolute;
+  width: 600px;
+  height: 1200px;
+  transform-origin: top center;
+  mix-blend-mode: screen;
+  filter: blur(40px);
+}
+.wwe-redesign .wwe-spotlight-1 {
+  background: linear-gradient(180deg, rgba(255, 200, 100, 0.4), transparent 70%);
+  left: 15%;
+  top: -200px;
+  transform: rotate(15deg);
+  animation: wwe-spot-sway 8s ease-in-out infinite;
+}
+.wwe-redesign .wwe-spotlight-2 {
+  background: linear-gradient(180deg, rgba(220, 38, 38, 0.35), transparent 70%);
+  left: 50%;
+  top: -200px;
+  transform: rotate(-5deg) translateX(-50%);
+  animation: wwe-spot-sway 10s ease-in-out infinite reverse;
+}
+.wwe-redesign .wwe-spotlight-3 {
+  background: linear-gradient(180deg, rgba(100, 150, 255, 0.3), transparent 70%);
+  right: 15%;
+  top: -200px;
+  transform: rotate(-15deg);
+  animation: wwe-spot-sway 12s ease-in-out infinite;
+}
+@keyframes wwe-spot-sway {
+  0%, 100% { transform: rotate(var(--r, 15deg)) translateX(0); }
+  50% { transform: rotate(calc(var(--r, 15deg) * -0.5)) translateX(40px); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .wwe-redesign .wwe-spotlight { animation: none; }
+}
+
+.wwe-redesign .wwe-hero-top,
+.wwe-redesign .wwe-hero-bottom {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  position: relative;
+  z-index: 5;
+}
+
+.wwe-redesign .wwe-hero-eyebrow {
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.wwe-redesign .wwe-live-dot {
+  width: 8px;
+  height: 8px;
+  background: #dc2626;
+  border-radius: 50%;
+  box-shadow: 0 0 12px #dc2626;
+  animation: wwe-pulse-dot 1.5s ease-in-out infinite;
+}
+@keyframes wwe-pulse-dot {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(0.8); }
+}
+
+.wwe-redesign .wwe-hero-meta-line {
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  color: #6b7280;
+}
+
+.wwe-redesign .wwe-hero-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  z-index: 5;
+  padding: 40px 0;
+}
+
+.wwe-redesign .wwe-hero-presents {
+  font-family: 'Oswald', sans-serif;
+  font-size: 13px;
+  font-weight: 500;
+  letter-spacing: 0.5em;
+  color: #6b7280;
+  text-transform: uppercase;
+  margin-bottom: 18px;
+}
+
+.wwe-redesign .wwe-hero-title {
+  font-family: 'Anton', 'Oswald', sans-serif;
+  font-weight: 900;
+  line-height: 0.82;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+  font-size: clamp(96px, 15vw, 220px);
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  margin: 0;
+}
+.wwe-redesign .wwe-hero-title-line {
+  display: block;
+  background: linear-gradient(180deg, #fff 0%, #fff 45%, #d1d5db 50%, #6b7280 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow:
+    0 0 60px rgba(220, 38, 38, 0.5),
+    0 0 120px rgba(220, 38, 38, 0.2);
+  position: relative;
+}
+.wwe-redesign .wwe-hero-title-line.line-2 {
+  background: linear-gradient(180deg, #ef4444 0%, #dc2626 50%, #7f1d1d 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  text-shadow:
+    0 0 80px rgba(220, 38, 38, 0.7),
+    0 6px 0 rgba(0,0,0,0.6);
+  letter-spacing: -0.03em;
+}
+
+.wwe-redesign .wwe-hero-tagline {
+  margin-top: 32px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  color: #fbbf24;
+  text-transform: uppercase;
+}
+
+.wwe-redesign .wwe-hero-stats {
+  display: flex;
+  align-items: center;
+  gap: 32px;
+}
+.wwe-redesign .wwe-hero-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.wwe-redesign .wwe-stat-num {
+  font-family: 'Anton', sans-serif;
+  font-size: 56px;
+  line-height: 1;
+  color: #fff;
+  letter-spacing: -0.02em;
+}
+.wwe-redesign .wwe-stat-lbl {
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  color: #6b7280;
+  margin-top: 4px;
+}
+.wwe-redesign .wwe-hero-divider-v {
+  width: 1px;
+  height: 50px;
+  background: linear-gradient(180deg, transparent, #4b5563, transparent);
+}
+
+.wwe-redesign .wwe-hero-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding: 22px 42px;
+  background: #dc2626;
+  color: #fff;
+  font-family: 'Anton', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  position: relative;
+  transition: all 0.2s;
+  clip-path: polygon(0 0, calc(100% - 18px) 0, 100% 50%, calc(100% - 18px) 100%, 0 100%);
+}
+.wwe-redesign .wwe-hero-cta:hover {
+  background: #fbbf24;
+  color: #000;
+  transform: translateX(4px);
+}
+.wwe-redesign .wwe-hero-cta-arrow {
+  font-size: 26px;
+  animation: wwe-arrow-bounce 1.5s ease-in-out infinite;
+}
+@keyframes wwe-arrow-bounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(4px); }
+}
+
+.wwe-redesign .wwe-hero-corner {
+  position: absolute;
+  font-size: 24px;
+  color: #dc2626;
+  z-index: 5;
+}
+.wwe-redesign .wwe-hero-corner-tl { top: 90px; left: 16px; }
+.wwe-redesign .wwe-hero-corner-tr { top: 90px; right: 16px; }
+.wwe-redesign .wwe-hero-corner-bl { bottom: 50px; left: 16px; }
+.wwe-redesign .wwe-hero-corner-br { bottom: 50px; right: 16px; }
+
+/* ---------- Sticky era nav ---------- */
+.wwe-redesign .wwe-era-nav {
+  position: sticky;
+  top: 64px; /* offset for global Header */
+  z-index: 80;
+  background: rgba(0, 0, 0, 0.92);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(255,255,255,0.08);
+}
+.wwe-redesign .wwe-era-nav-rail {
+  display: flex;
+  max-width: 1600px;
+  margin: 0 auto;
+  padding: 0 24px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.wwe-redesign .wwe-era-nav-rail::-webkit-scrollbar { display: none; }
+
+.wwe-redesign .wwe-era-nav-tick {
+  flex: 1;
+  min-width: 120px;
+  padding: 14px 12px 12px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  position: relative;
+  border-bottom: 2px solid transparent;
+  transition: all 0.2s;
+  text-align: left;
+}
+.wwe-redesign .wwe-era-nav-tick::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 0;
+  width: 1px; height: 100%;
+  background: rgba(255,255,255,0.06);
+}
+.wwe-redesign .wwe-era-nav-tick:first-child::before { display: none; }
+.wwe-redesign .wwe-era-nav-tick:hover {
+  background: rgba(255,255,255,0.03);
+}
+.wwe-redesign .wwe-era-nav-num {
+  font-family: 'Oswald', sans-serif;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  color: #4b5563;
+}
+.wwe-redesign .wwe-era-nav-dot {
+  width: 6px;
+  height: 6px;
+  background: #4b5563;
+  border-radius: 50%;
+  transition: all 0.2s;
+}
+.wwe-redesign .wwe-era-nav-label {
+  font-family: 'Oswald', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: #9ca3af;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+.wwe-redesign .wwe-era-nav-tick.active {
+  border-bottom-color: var(--accent);
+  background: linear-gradient(180deg, transparent, rgba(255,255,255,0.04));
+}
+.wwe-redesign .wwe-era-nav-tick.active .wwe-era-nav-num { color: var(--accent); }
+.wwe-redesign .wwe-era-nav-tick.active .wwe-era-nav-dot {
+  background: var(--accent);
+  box-shadow: 0 0 12px var(--accent);
+}
+.wwe-redesign .wwe-era-nav-tick.active .wwe-era-nav-label { color: #fff; }
+
+/* ---------- Era section ---------- */
+.wwe-redesign .wwe-era {
+  position: relative;
+  min-height: 100vh;
+  padding: 80px 6vw 100px;
+  overflow: hidden;
+}
+
+.wwe-redesign .wwe-era-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse 120% 80% at 50% 30%, var(--accent) 0%, transparent 40%),
+    radial-gradient(ellipse 60% 60% at 20% 80%, var(--accent2) 0%, transparent 50%),
+    var(--deep);
+  opacity: 0.5;
+  z-index: 0;
+}
+.wwe-redesign .wwe-era-bg-vignette {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at center, transparent 30%, rgba(0,0,0,0.7) 100%),
+    linear-gradient(180deg, rgba(0,0,0,0.4) 0%, transparent 20%, transparent 80%, rgba(0,0,0,0.6) 100%);
+  z-index: 0;
+}
+.wwe-redesign .wwe-era-bg-grain {
+  position: absolute;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.7'/%3E%3C/svg%3E");
+  opacity: 0.07;
+  mix-blend-mode: overlay;
+  z-index: 0;
+  pointer-events: none;
+}
+.wwe-redesign .wwe-era-bg-spots {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(var(--accent) 1px, transparent 1px),
+    linear-gradient(90deg, var(--accent) 1px, transparent 1px);
+  background-size: 100px 100px;
+  opacity: 0.04;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.wwe-redesign .wwe-era > *:not([class*="wwe-era-bg"]) {
+  position: relative;
+  z-index: 1;
+}
+
+/* Era stripe (chapter marker) */
+.wwe-redesign .wwe-era-stripe {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px 20px;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.08);
+  border-left: 4px solid var(--accent);
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: #9ca3af;
+  width: fit-content;
+  margin-bottom: 48px;
+}
+.wwe-redesign .wwe-era-stripe-num { color: var(--accent); }
+.wwe-redesign .wwe-era-stripe-dot { color: #4b5563; font-size: 6px; }
+
+/* Era header */
+.wwe-redesign .wwe-era-header {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 40px;
+  align-items: start;
+  margin-bottom: 40px;
+}
+.wwe-redesign .wwe-era-num-display {
+  font-family: 'Anton', sans-serif;
+  font-size: clamp(140px, 22vw, 280px);
+  line-height: 0.8;
+  letter-spacing: -0.04em;
+  color: transparent;
+  -webkit-text-stroke: 2px var(--accent);
+  opacity: 0.7;
+  user-select: none;
+  margin-top: -20px;
+}
+.wwe-redesign .wwe-era-header-text {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-top: 30px;
+}
+.wwe-redesign .wwe-era-tagline {
+  font-family: 'Oswald', sans-serif;
+  font-style: italic;
+  font-size: clamp(16px, 1.5vw, 22px);
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  color: var(--accent);
+  text-transform: uppercase;
+  margin: 0;
+}
+.wwe-redesign .wwe-era-title {
+  font-family: 'Anton', sans-serif;
+  font-size: clamp(72px, 9vw, 144px);
+  line-height: 0.9;
+  letter-spacing: -0.03em;
+  color: #fff;
+  text-transform: uppercase;
+  text-shadow: 0 4px 0 rgba(0,0,0,0.4);
+  margin: 0;
+}
+.wwe-redesign .wwe-era-subtitle {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+.wwe-redesign .wwe-era-badge {
+  padding: 6px 14px;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  font-size: 12px;
+}
+.wwe-redesign .wwe-era-headliners {
+  color: #d1d5db;
+}
+
+.wwe-redesign .wwe-era-description {
+  font-size: 18px;
+  line-height: 1.6;
+  color: #e5e7eb;
+  max-width: 720px;
+  margin: 0 0 60px;
+  padding-left: 16px;
+  border-left: 2px solid var(--accent);
+  font-weight: 400;
+}
+
+/* Fight card */
+.wwe-redesign .wwe-fight-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+.wwe-redesign .wwe-fc-label {
+  font-family: 'Anton', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.3em;
+  color: #fff;
+  text-transform: uppercase;
+}
+.wwe-redesign .wwe-fc-bracket {
+  color: var(--accent);
+  margin: 0 8px;
+}
+.wwe-redesign .wwe-fc-count {
+  font-family: 'Oswald', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.3em;
+  color: #6b7280;
+}
+
+/* Games grid */
+.wwe-redesign .wwe-games-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 36px 28px;
+}
+
+.wwe-redesign .wwe-poster {
+  position: relative;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  transition: transform 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  background: none;
+  padding: 0;
+  text-align: left;
+  width: 100%;
+}
+.wwe-redesign .wwe-poster:hover { transform: translateY(-8px); }
+.wwe-redesign .wwe-poster:focus-visible {
+  outline: 2px solid var(--era-accent, #fff);
+  outline-offset: 6px;
+}
+
+.wwe-redesign .wwe-poster-cover-wrap {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow:
+    0 20px 50px rgba(0,0,0,0.7),
+    0 0 0 1px rgba(0,0,0,0.4);
+  transition: all 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.wwe-redesign .wwe-poster:hover .wwe-poster-cover-wrap {
+  border-color: var(--era-accent);
+  box-shadow:
+    0 30px 70px rgba(0,0,0,0.8),
+    0 0 0 1px var(--era-accent),
+    0 0 60px var(--era-accent);
+}
+.wwe-redesign .wwe-poster-cover-wrap .wwe-cover {
+  width: 100%;
+  aspect-ratio: 3/4;
+  border: none;
+  box-shadow: none;
+}
+.wwe-redesign .wwe-poster:hover .wwe-cover img { transform: scale(1.05); }
+
+.wwe-redesign .wwe-poster-corner {
+  position: absolute;
+  font-size: 16px;
+  color: var(--era-accent);
+  opacity: 0;
+  transition: opacity 0.3s, transform 0.3s;
+  z-index: 4;
+  pointer-events: none;
+  text-shadow: 0 0 10px rgba(0,0,0,0.8);
+}
+.wwe-redesign .wwe-poster-corner-tl { top: 8px; left: 8px; }
+.wwe-redesign .wwe-poster-corner-tr { top: 8px; right: 8px; }
+.wwe-redesign .wwe-poster-corner-bl { bottom: 8px; left: 8px; }
+.wwe-redesign .wwe-poster-corner-br { bottom: 8px; right: 8px; }
+.wwe-redesign .wwe-poster:hover .wwe-poster-corner { opacity: 1; }
+.wwe-redesign .wwe-poster:hover .wwe-poster-corner-tl { transform: translate(-2px, -2px); }
+.wwe-redesign .wwe-poster:hover .wwe-poster-corner-tr { transform: translate(2px, -2px); }
+.wwe-redesign .wwe-poster:hover .wwe-poster-corner-bl { transform: translate(-2px, 2px); }
+.wwe-redesign .wwe-poster:hover .wwe-poster-corner-br { transform: translate(2px, 2px); }
+
+.wwe-redesign .wwe-poster-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: flex-end;
+  padding: 24px;
+  background: linear-gradient(180deg, transparent 30%, rgba(0,0,0,0.92) 100%);
+  opacity: 0;
+  transition: opacity 0.3s;
+  z-index: 3;
+}
+.wwe-redesign .wwe-poster:hover .wwe-poster-overlay,
+.wwe-redesign .wwe-poster:focus-visible .wwe-poster-overlay { opacity: 1; }
+.wwe-redesign .wwe-poster-overlay-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  transform: translateY(8px);
+  transition: transform 0.3s 0.05s;
+}
+.wwe-redesign .wwe-poster:hover .wwe-poster-overlay-inner { transform: translateY(0); }
+.wwe-redesign .wwe-poster-overlay-desc {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #e5e7eb;
+  display: -webkit-box;
+  -webkit-line-clamp: 4;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.wwe-redesign .wwe-poster-cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 16px;
+  background: var(--era-accent);
+  color: #000;
+  font-family: 'Anton', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  width: 100%;
+}
+.wwe-redesign .wwe-up-arrow { font-size: 16px; transition: transform 0.2s; }
+.wwe-redesign .wwe-poster:hover .wwe-up-arrow { transform: translateX(4px); }
+
+.wwe-redesign .wwe-poster-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 4px;
+}
+.wwe-redesign .wwe-poster-meta-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+}
+.wwe-redesign .wwe-poster-year {
+  color: var(--era-accent);
+  font-weight: 600;
+}
+.wwe-redesign .wwe-poster-dot {
+  font-size: 5px;
+  color: rgba(255,255,255,0.3);
+}
+.wwe-redesign .wwe-poster-platform {
+  color: #9ca3af;
+}
+.wwe-redesign .wwe-poster-title {
+  font-family: 'Anton', sans-serif;
+  font-size: 26px;
+  line-height: 0.95;
+  color: #fff;
+  text-transform: uppercase;
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+  margin: 0;
+}
+
+/* Era footer */
+.wwe-redesign .wwe-era-footer {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-top: 80px;
+  padding-top: 32px;
+}
+.wwe-redesign .wwe-era-footer-line {
+  flex: 1;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+}
+.wwe-redesign .wwe-era-footer-text {
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+
+/* Cover */
+.wwe-redesign .wwe-cover {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 3/4;
+  overflow: hidden;
+  background: #000;
+  border: 1px solid rgba(255,255,255,0.1);
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+.wwe-redesign .wwe-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: fill;
+  transition: opacity 0.3s, transform 0.4s;
+}
+.wwe-redesign .wwe-cover-shine {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15) 0%, transparent 30%, transparent 70%, rgba(0,0,0,0.3) 100%);
+  pointer-events: none;
+  z-index: 2;
+}
+
+.wwe-redesign .wwe-cover-placeholder {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+  border: 1px solid;
+  font-family: 'Anton', sans-serif;
+}
+.wwe-redesign .wwe-cover-placeholder-grid {
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(currentColor 1px, transparent 1px),
+    linear-gradient(90deg, currentColor 1px, transparent 1px);
+  background-size: 20px 20px;
+  opacity: 0.07;
+}
+.wwe-redesign .wwe-cover-placeholder-stamp {
+  font-family: 'Oswald', sans-serif;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 0.25em;
+  align-self: flex-start;
+  padding: 2px 6px;
+  border: 1px solid currentColor;
+  position: relative;
+  z-index: 2;
+}
+.wwe-redesign .wwe-cover-placeholder-title {
+  font-size: 18px;
+  line-height: 0.95;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+  position: relative;
+  z-index: 2;
+}
+.wwe-redesign .wwe-cover-placeholder-year {
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2em;
+  color: #fff;
+  align-self: flex-end;
+  position: relative;
+  z-index: 2;
+}
+.wwe-redesign .wwe-cover-large .wwe-cover-placeholder-title { font-size: 24px; }
+.wwe-redesign .wwe-cover-huge .wwe-cover-placeholder-title { font-size: 36px; }
+.wwe-redesign .wwe-cover-huge .wwe-cover-placeholder-stamp { font-size: 11px; }
+
+/* Modal */
+.wwe-redesign .wwe-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: rgba(0,0,0,0.85);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 40px 24px;
+  overflow-y: auto;
+  animation: wwe-modal-fade 0.25s ease-out;
+}
+@keyframes wwe-modal-fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.wwe-redesign .wwe-modal {
+  position: relative;
+  width: 100%;
+  max-width: 1100px;
+  background: #000;
+  border: 1px solid rgba(255,255,255,0.08);
+  box-shadow: 0 40px 100px rgba(0,0,0,0.8), 0 0 80px rgba(255,255,255,0.04);
+  animation: wwe-modal-slide 0.3s cubic-bezier(0.2, 0.9, 0.2, 1);
+  overflow: hidden;
+}
+@keyframes wwe-modal-slide {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.wwe-redesign .wwe-modal-bg {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(ellipse at top right, var(--accent) 0%, transparent 50%),
+    radial-gradient(ellipse at bottom left, var(--accent2) 0%, transparent 50%),
+    var(--deep);
+  opacity: 0.5;
+  z-index: 0;
+}
+
+.wwe-redesign .wwe-modal-close {
+  position: absolute;
+  top: 16px; right: 16px;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.15);
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.25em;
+  color: #d1d5db;
+  text-transform: uppercase;
+  transition: all 0.2s;
+}
+.wwe-redesign .wwe-modal-close:hover {
+  background: var(--accent);
+  color: #000;
+  border-color: var(--accent);
+}
+.wwe-redesign .wwe-modal-close-x { font-size: 14px; }
+
+.wwe-redesign .wwe-modal-inner {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  grid-template-columns: minmax(280px, 380px) 1fr;
+}
+.wwe-redesign .wwe-modal-cover-wrap {
+  position: relative;
+  background: #000;
+  padding: 40px;
+  border-right: 1px solid rgba(255,255,255,0.08);
+}
+.wwe-redesign .wwe-modal-cover-wrap .wwe-cover {
+  width: 100%;
+  aspect-ratio: 3/4;
+  box-shadow: 0 20px 50px rgba(0,0,0,0.8);
+}
+.wwe-redesign .wwe-modal-cover-stripe {
+  margin-top: 16px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.wwe-redesign .wwe-modal-content {
+  padding: 50px 50px 50px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.wwe-redesign .wwe-modal-tagline {
+  font-family: 'Oswald', sans-serif;
+  font-style: italic;
+  font-size: 14px;
+  letter-spacing: 0.15em;
+  color: var(--accent);
+  text-transform: uppercase;
+}
+.wwe-redesign .wwe-modal-era-label {
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+}
+.wwe-redesign .wwe-modal-title {
+  font-family: 'Anton', sans-serif;
+  font-size: clamp(36px, 5vw, 64px);
+  line-height: 0.9;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-transform: uppercase;
+  margin: 0;
+}
+.wwe-redesign .wwe-modal-meta {
+  display: flex;
+  gap: 16px;
+  padding: 12px 0;
+  border-top: 1px solid rgba(255,255,255,0.1);
+  border-bottom: 1px solid rgba(255,255,255,0.1);
+  font-family: 'Oswald', sans-serif;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  color: #d1d5db;
+  text-transform: uppercase;
+}
+.wwe-redesign .wwe-modal-desc {
+  font-size: 16px;
+  line-height: 1.65;
+  color: #e5e7eb;
+}
+.wwe-redesign .wwe-modal-features-label {
+  margin-top: 12px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  color: #9ca3af;
+}
+.wwe-redesign .wwe-modal-features {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.wwe-redesign .wwe-modal-feature {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 14px;
+  background: rgba(0,0,0,0.4);
+  border: 1px solid rgba(255,255,255,0.06);
+  border-left: 2px solid var(--accent);
+}
+.wwe-redesign .wwe-modal-feature-num {
+  font-family: 'Anton', sans-serif;
+  font-size: 16px;
+  color: var(--accent);
+}
+.wwe-redesign .wwe-modal-feature-text {
+  font-size: 13px;
+  color: #d1d5db;
+  line-height: 1.3;
+}
+
+@media (max-width: 800px) {
+  .wwe-redesign .wwe-modal-inner { grid-template-columns: 1fr; }
+  .wwe-redesign .wwe-modal-cover-wrap { border-right: none; border-bottom: 1px solid rgba(255,255,255,0.08); }
+  .wwe-redesign .wwe-modal-content { padding: 32px 24px; }
+  .wwe-redesign .wwe-modal-features { grid-template-columns: 1fr; }
+}
+
+/* Footer */
+.wwe-redesign .wwe-page-footer {
+  padding: 60px 24px 80px;
+  background: #000;
+  border-top: 1px solid rgba(255,255,255,0.06);
+  text-align: center;
+}
+.wwe-redesign .wwe-footer-stripe {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  font-family: 'Oswald', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.3em;
+  color: #6b7280;
+  text-transform: uppercase;
+  margin-bottom: 24px;
+  flex-wrap: wrap;
+}
+.wwe-redesign .wwe-footer-stripe .wwe-footer-star {
+  color: #fbbf24;
+}
+.wwe-redesign .wwe-footer-back {
+  display: inline-block;
+  font-family: 'Oswald', sans-serif;
+  font-size: 11px;
+  letter-spacing: 0.3em;
+  color: #9ca3af;
+  text-decoration: none;
+  padding: 10px 24px;
+  border: 1px solid rgba(255,255,255,0.1);
+  transition: all 0.2s;
+}
+.wwe-redesign .wwe-footer-back:hover {
+  border-color: #dc2626;
+  color: #fff;
+}
+
+/* Loading + error states */
+.wwe-redesign .wwe-loading-hero,
+.wwe-redesign .wwe-error-hero {
+  position: relative;
+  min-height: 100vh;
+  background: radial-gradient(ellipse at center top, #1a0608 0%, #000 60%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 120px 32px 60px;
+  text-align: center;
+  gap: 20px;
+}
+.wwe-redesign .wwe-loading-kicker,
+.wwe-redesign .wwe-error-kicker {
+  font-family: 'Oswald', sans-serif;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.4em;
+  color: #dc2626;
+  text-transform: uppercase;
+}
+.wwe-redesign .wwe-loading-title,
+.wwe-redesign .wwe-error-title {
+  font-family: 'Anton', sans-serif;
+  font-size: clamp(48px, 8vw, 96px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: #fff;
+  text-transform: uppercase;
+  margin: 0;
+}
+.wwe-redesign .wwe-loading-lede,
+.wwe-redesign .wwe-error-lede {
+  font-family: 'Oswald', sans-serif;
+  font-size: 14px;
+  letter-spacing: 0.3em;
+  color: #9ca3af;
+  text-transform: uppercase;
+}
+.wwe-redesign .wwe-spinner {
+  width: 32px;
+  height: 32px;
+  border: 2px solid rgba(220, 38, 38, 0.2);
+  border-top-color: #dc2626;
+  border-radius: 50%;
+  animation: wwe-spin 0.9s linear infinite;
+  margin-top: 12px;
+}
+@keyframes wwe-spin {
+  to { transform: rotate(360deg); }
+}
+.wwe-redesign .wwe-error-retry {
+  margin-top: 20px;
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 32px;
+  background: #dc2626;
+  color: #fff;
+  font-family: 'Anton', sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  transition: all 0.2s;
+  clip-path: polygon(0 0, calc(100% - 14px) 0, 100% 50%, calc(100% - 14px) 100%, 0 100%);
+}
+.wwe-redesign .wwe-error-retry:hover {
+  background: #fbbf24;
+  color: #000;
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+  .wwe-redesign .wwe-games-grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 28px 20px; }
+  .wwe-redesign .wwe-poster-title { font-size: 20px; }
+  .wwe-redesign .wwe-poster-overlay-desc { -webkit-line-clamp: 3; font-size: 12px; }
+}
+@media (max-width: 768px) {
+  .wwe-redesign .wwe-hero { padding: 100px 24px 60px; }
+  .wwe-redesign .wwe-hero-top, .wwe-redesign .wwe-hero-bottom { flex-direction: column; gap: 24px; align-items: flex-start; }
+  .wwe-redesign .wwe-hero-stats { gap: 20px; }
+  .wwe-redesign .wwe-era { padding: 60px 5vw 80px; }
+  .wwe-redesign .wwe-era-header { grid-template-columns: 1fr; gap: 0; }
+  .wwe-redesign .wwe-era-num-display { font-size: 100px; margin-top: 0; }
+  .wwe-redesign .wwe-era-header-text { padding-top: 8px; }
+}
