@@ -1,10 +1,15 @@
+/* FilterChips — light Hextech reskin (mirrors champion-grid filter bar). */
+
 .filterChipsContainer {
-  background: rgba(14, 14, 35, 0.8);
-  border: 1px solid rgba(110, 79, 246, 0.3);
+  background:
+    radial-gradient(ellipse at 12% 6%, rgba(200,170,110,0.04), transparent 35%),
+    rgba(10, 14, 22, 0.85);
+  border: 1px solid var(--gold-faint);
   border-radius: 12px;
   padding: 1rem;
   margin-bottom: 1.5rem;
   backdrop-filter: blur(10px);
+  box-shadow: 0 0 0 1px rgba(200,170,110,0.04) inset;
 }
 
 .filterChipsHeader {
@@ -19,38 +24,48 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: linear-gradient(135deg, #6e4ff6, #8b5cf6);
-  border: none;
-  color: white;
-  padding: 0.5rem 1rem;
+  background: rgba(200, 170, 110, 0.10);
+  border: 1px solid var(--gold-dim);
+  color: var(--parchment);
+  padding: 0.5rem 1.1rem;
   border-radius: 8px;
-  font-size: 0.9rem;
-  font-weight: 500;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
 }
 
 .filterToggle:hover {
-  background: linear-gradient(135deg, #5b3fd6, #7c3aed);
+  background: rgba(200, 170, 110, 0.18);
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(110, 79, 246, 0.3);
+  box-shadow: 0 4px 12px rgba(200, 170, 110, 0.22);
 }
 
 .activeFiltersText {
-  color: #c9aa71;
-  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  color: var(--parchment-dim);
+  font-size: 0.78rem;
+  letter-spacing: 0.14em;
   font-weight: 500;
 }
 
 .clearAllButton {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  border: none;
-  color: white;
-  padding: 0.4rem 0.8rem;
+  background: rgba(209, 54, 57, 0.10);
+  border: 1px solid var(--blood-red);
+  color: var(--blood-red);
+  padding: 0.4rem 0.9rem;
   border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 500;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
@@ -58,9 +73,9 @@
 }
 
 .clearAllButton:hover {
-  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  background: rgba(209, 54, 57, 0.20);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 4px 12px rgba(209, 54, 57, 0.32);
 }
 
 .chipsContainer {
@@ -74,19 +89,22 @@
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: rgba(110, 79, 246, 0.15);
-  border: 1px solid rgba(110, 79, 246, 0.4);
-  border-radius: 20px;
-  padding: 0.4rem 0.8rem;
-  font-size: 0.8rem;
-  color: #f0e6d2;
+  background: rgba(200, 170, 110, 0.10);
+  border: 1px solid var(--gold-dim);
+  border-radius: 999px;
+  padding: 0.4rem 0.85rem;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.10em;
+  color: var(--parchment);
   transition: all 0.3s ease;
   animation: chipSlideIn 0.3s ease;
 }
 
 .chip:hover {
-  background: rgba(110, 79, 246, 0.25);
-  border-color: rgba(110, 79, 246, 0.6);
+  background: rgba(200, 170, 110, 0.18);
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
   transform: translateY(-1px);
 }
 
@@ -107,8 +125,8 @@
 .chipRemove {
   background: none;
   border: none;
-  color: #f0e6d2;
-  font-size: 0.8rem;
+  color: var(--parchment);
+  font-size: 0.78rem;
   cursor: pointer;
   padding: 0.1rem 0.3rem;
   border-radius: 50%;
@@ -122,12 +140,11 @@
 }
 
 .chipRemove:hover {
-  background: rgba(239, 68, 68, 0.8);
+  background: rgba(209, 54, 57, 0.55);
   color: white;
   transform: scale(1.1);
 }
 
-/* Animations */
 @keyframes chipSlideIn {
   from {
     opacity: 0;
@@ -139,83 +156,86 @@
   }
 }
 
-/* Mobile Responsiveness */
 @media (max-width: 768px) {
   .filterChipsContainer {
     padding: 0.8rem;
     margin-bottom: 1rem;
   }
-  
+
   .filterChipsHeader {
     flex-direction: column;
     align-items: stretch;
     gap: 0.5rem;
     margin-bottom: 0.8rem;
   }
-  
+
   .filterToggle {
     justify-content: center;
   }
-  
+
   .clearAllButton {
     margin-left: 0;
     align-self: stretch;
   }
-  
+
   .chipsContainer {
     gap: 0.4rem;
   }
-  
+
   .chip {
-    font-size: 0.75rem;
-    padding: 0.3rem 0.6rem;
+    font-size: 0.68rem;
+    padding: 0.3rem 0.65rem;
   }
-  
+
   .chipText {
     max-width: 120px;
   }
 }
 
-/* Special styling for different chip types - using data attributes instead of :contains */
+/* Chip type variants — keep type signaling, retinted to Hextech */
 .chip[data-chip-type="champion"] {
-  border-color: rgba(201, 170, 113, 0.4);
-  background: rgba(201, 170, 113, 0.15);
+  border-color: var(--gold-bright);
+  background: rgba(200, 170, 110, 0.18);
+  color: var(--gold-bright);
 }
 
 .chip[data-chip-type="gamemode"] {
-  border-color: rgba(34, 197, 94, 0.4);
-  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(10, 200, 185, 0.45);
+  background: rgba(10, 200, 185, 0.10);
+  color: var(--hex-cyan);
 }
 
 .chip[data-chip-type="result-win"] {
-  border-color: rgba(34, 197, 94, 0.4);
-  background: rgba(34, 197, 94, 0.15);
+  border-color: rgba(10, 200, 185, 0.45);
+  background: rgba(10, 200, 185, 0.10);
+  color: var(--hex-cyan);
 }
 
 .chip[data-chip-type="result-loss"] {
-  border-color: rgba(239, 68, 68, 0.4);
-  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(209, 54, 57, 0.45);
+  background: rgba(209, 54, 57, 0.10);
+  color: var(--blood-red);
 }
 
 .chip[data-chip-type="date"] {
-  border-color: rgba(59, 130, 246, 0.4);
-  background: rgba(59, 130, 246, 0.15);
+  border-color: rgba(200, 170, 110, 0.45);
+  background: rgba(200, 170, 110, 0.10);
+  color: var(--gold-bright);
 }
 
 .chip[data-chip-type="duration"] {
-  border-color: rgba(168, 85, 247, 0.4);
-  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(120, 90, 40, 0.55);
+  background: rgba(120, 90, 40, 0.18);
+  color: #d6b87a;
 }
 
-/* Empty state when no filters */
 .filterChipsContainer:has(.chipsContainer:empty) .filterChipsHeader {
   margin-bottom: 0;
 }
 
-/* Hover effects for better UX */
 .chip:hover .chipRemove {
   opacity: 1;
-  background: rgba(239, 68, 68, 0.2);
+  background: rgba(209, 54, 57, 0.22);
 }
 
 .chipRemove {
@@ -223,24 +243,18 @@
   transition: all 0.2s ease;
 }
 
-/* Focus states for accessibility */
 .filterToggle:focus,
 .clearAllButton:focus,
 .chipRemove:focus {
-  outline: 2px solid rgba(110, 79, 246, 0.5);
+  outline: 2px solid var(--gold-bright);
   outline-offset: 2px;
 }
 
-/* Loading state animation */
 .chip.loading {
   animation: chipPulse 1.5s ease-in-out infinite;
 }
 
 @keyframes chipPulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.7;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
 }

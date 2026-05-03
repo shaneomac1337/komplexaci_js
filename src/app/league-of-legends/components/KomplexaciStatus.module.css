@@ -1,10 +1,16 @@
+/* KomplexaciStatus — full Hextech treatment.
+   Hextech tokens come from `.lol-redesign` (lol-redesign.css) and cascade. */
+
 .komplexaciSection {
   margin-top: 2rem;
   padding: 1.5rem;
-  background: linear-gradient(135deg, rgba(14, 14, 35, 0.95), rgba(20, 20, 45, 0.95));
-  border: 1px solid rgba(110, 79, 246, 0.3);
+  background:
+    radial-gradient(ellipse at 12% 6%, rgba(200,170,110,0.05), transparent 35%),
+    radial-gradient(ellipse at 88% 92%, rgba(120,90,40,0.06), transparent 35%),
+    linear-gradient(135deg, rgba(10, 14, 22, 0.95), rgba(14, 16, 28, 0.95));
+  border: 1px solid var(--gold-dim);
   border-radius: 12px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(200,170,110,0.06) inset;
 }
 
 .header {
@@ -13,7 +19,7 @@
   align-items: center;
   margin-bottom: 1.5rem;
   padding-bottom: 1rem;
-  border-bottom: 1px solid rgba(110, 79, 246, 0.2);
+  border-bottom: 1px solid var(--gold-faint);
 }
 
 .title {
@@ -21,9 +27,12 @@
   align-items: center;
   gap: 0.5rem;
   margin: 0;
-  color: #f0e6d2;
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-family: var(--font-hex-display);
+  color: var(--gold-bright);
+  font-size: 1.4rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
 .icon {
@@ -32,22 +41,26 @@
 
 .refreshButton {
   padding: 0.5rem 1rem;
-  background: rgba(110, 79, 246, 0.2);
-  border: 1px solid rgba(110, 79, 246, 0.5);
+  background: rgba(200, 170, 110, 0.10);
+  border: 1px solid var(--gold-dim);
   border-radius: 6px;
-  color: #f0e6d2;
+  color: var(--parchment);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   cursor: pointer;
   transition: all 0.2s ease;
-  font-size: 0.9rem;
 }
 
 .refreshButton:hover:not(:disabled) {
-  background: rgba(110, 79, 246, 0.3);
-  border-color: rgba(110, 79, 246, 0.7);
+  background: rgba(200, 170, 110, 0.18);
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
 }
 
 .refreshButton:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
 }
 
@@ -63,21 +76,40 @@
 
 .memberCard {
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(110, 79, 246, 0.2);
+  background: rgba(12, 14, 24, 0.55);
+  border: 1px solid var(--gold-faint);
   border-radius: 8px;
   transition: all 0.3s ease;
+  position: relative;
 }
 
 .memberCard:hover {
-  border-color: rgba(110, 79, 246, 0.4);
-  box-shadow: 0 4px 16px rgba(110, 79, 246, 0.1);
+  border-color: var(--gold-bright);
+  box-shadow: 0 4px 16px rgba(200, 170, 110, 0.18);
 }
 
 .memberCard.inGame {
-  border-color: rgba(16, 185, 129, 0.5);
-  background: rgba(16, 185, 129, 0.05);
+  border-color: rgba(10, 200, 185, 0.55);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(10,200,185,0.08), transparent 60%),
+    rgba(12, 14, 24, 0.55);
   animation: cardPulse 3s ease-in-out infinite;
+}
+
+.memberCard.inGame::before {
+  content: '// IN GAME';
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.22em;
+  color: var(--gold-bright);
+  background: rgba(200, 170, 110, 0.10);
+  border: 1px solid var(--gold-dim);
+  border-radius: 3px;
+  padding: 2px 6px;
+  pointer-events: none;
 }
 
 .memberCard.clickable {
@@ -86,16 +118,18 @@
 
 .memberCard.clickable:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 20px rgba(110, 79, 246, 0.3);
-  border-color: rgba(110, 79, 246, 0.5);
+  box-shadow: 0 4px 20px rgba(200, 170, 110, 0.25);
+  border-color: var(--gold-bright);
 }
 
-/* Encouragement Banner */
+/* Encouragement Banner — Hextech with cyan accent for "in game" energy */
 .encouragementBanner {
   position: relative;
   margin: 1.5rem 0;
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.15), rgba(34, 197, 94, 0.15));
-  border: 2px solid rgba(16, 185, 129, 0.4);
+  background:
+    radial-gradient(ellipse at 25% 50%, rgba(10,200,185,0.18), transparent 60%),
+    linear-gradient(135deg, rgba(10, 200, 185, 0.10), rgba(7, 140, 130, 0.10));
+  border: 1px solid rgba(10, 200, 185, 0.45);
   border-radius: 12px;
   overflow: hidden;
   animation: bannerGlow 3s ease-in-out infinite alternate;
@@ -120,16 +154,20 @@
 }
 
 .bannerTitle {
-  color: #10b981;
-  font-size: 1.1rem;
-  font-weight: 700;
+  font-family: var(--font-hex-display);
+  color: var(--hex-cyan);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   margin-bottom: 0.25rem;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  text-shadow: 0 0 14px rgba(10, 200, 185, 0.45);
 }
 
 .bannerMessage {
-  color: #f0e6d2;
-  font-size: 0.9rem;
+  font-family: var(--font-hex-editorial);
+  color: var(--parchment);
+  font-size: 1rem;
   font-weight: 500;
   font-style: italic;
 }
@@ -158,12 +196,12 @@
   top: 0;
   left: 0;
   right: 0;
-  height: 4px;
+  height: 2px;
   background: linear-gradient(90deg,
     transparent 0%,
-    rgba(16, 185, 129, 0.8) 25%,
-    rgba(34, 197, 94, 1) 50%,
-    rgba(16, 185, 129, 0.8) 75%,
+    rgba(10, 200, 185, 0.6) 25%,
+    rgba(200, 170, 110, 0.9) 50%,
+    rgba(10, 200, 185, 0.6) 75%,
     transparent 100%
   );
   animation: ribbonFlow 3s linear infinite;
@@ -171,10 +209,10 @@
 
 @keyframes bannerGlow {
   0% {
-    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 0 12px rgba(10, 200, 185, 0.30);
   }
   100% {
-    box-shadow: 0 0 25px rgba(16, 185, 129, 0.6), 0 0 35px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 0 28px rgba(10, 200, 185, 0.55), 0 0 38px rgba(200, 170, 110, 0.20);
   }
 }
 
@@ -212,12 +250,12 @@
 
 @keyframes cardPulse {
   0%, 100% {
-    border-color: rgba(16, 185, 129, 0.5);
-    box-shadow: 0 0 5px rgba(16, 185, 129, 0.2);
+    border-color: rgba(10, 200, 185, 0.55);
+    box-shadow: 0 0 6px rgba(10, 200, 185, 0.25);
   }
   50% {
-    border-color: rgba(16, 185, 129, 0.8);
-    box-shadow: 0 0 15px rgba(16, 185, 129, 0.4);
+    border-color: rgba(10, 200, 185, 0.85);
+    box-shadow: 0 0 18px rgba(10, 200, 185, 0.45);
   }
 }
 
@@ -233,16 +271,21 @@
 }
 
 .memberName {
+  font-family: var(--font-hex-display);
   margin: 0 0 0.25rem 0;
-  color: #f0e6d2;
-  font-size: 1.1rem;
-  font-weight: 600;
+  color: var(--gold-bright);
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
 }
 
 .memberTag {
-  color: #c9aa71;
-  font-size: 0.85rem;
-  opacity: 0.8;
+  font-family: var(--font-mono);
+  color: var(--parchment-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  opacity: 0.85;
 }
 
 .memberNameButton {
@@ -259,16 +302,17 @@
 }
 
 .memberNameButton:hover {
-  background: rgba(110, 79, 246, 0.1);
+  background: rgba(200, 170, 110, 0.08);
   transform: translateY(-1px);
 }
 
 .memberNameButton:hover .memberName {
-  color: #6e4ff6;
+  color: #f6e0b0;
+  text-shadow: 0 0 12px rgba(200, 170, 110, 0.45);
 }
 
 .memberNameButton:hover .memberTag {
-  color: #8b7cf6;
+  color: var(--gold-bright);
   opacity: 1;
 }
 
@@ -286,29 +330,28 @@
   align-items: center;
   justify-content: center;
   font-size: 1rem;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
 }
 
 .refreshMemberButton {
   width: 1.5rem;
   height: 1.5rem;
-  border: none;
-  background: rgba(110, 79, 246, 0.1);
-  color: #6e4ff6;
+  border: 1px solid var(--gold-faint);
+  background: rgba(200, 170, 110, 0.08);
+  color: var(--gold-bright);
   border-radius: 50%;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 0.8rem;
+  font-size: 0.78rem;
   transition: all 0.2s ease;
-  border: 1px solid rgba(110, 79, 246, 0.3);
 }
 
 .refreshMemberButton:hover:not(:disabled) {
-  background: rgba(110, 79, 246, 0.2);
+  background: rgba(200, 170, 110, 0.16);
   transform: scale(1.1);
-  border-color: rgba(110, 79, 246, 0.5);
+  border-color: var(--gold-bright);
 }
 
 .refreshMemberButton:disabled {
@@ -323,44 +366,54 @@
 }
 
 .statusIndicator.loading {
-  background: rgba(255, 193, 7, 0.2);
-  border-color: rgba(255, 193, 7, 0.5);
+  background: rgba(200, 170, 110, 0.14);
+  border-color: rgba(200, 170, 110, 0.45);
   animation: pulse 2s infinite;
 }
 
 .statusIndicator.inGame {
-  background: rgba(16, 185, 129, 0.2);
-  border-color: rgba(16, 185, 129, 0.5);
+  background: rgba(10, 200, 185, 0.18);
+  border-color: rgba(10, 200, 185, 0.55);
   animation: glow 2s ease-in-out infinite alternate;
 }
 
-
-
 .statusIndicator.offline {
-  background: rgba(107, 114, 128, 0.2);
-  border-color: rgba(107, 114, 128, 0.5);
+  background: rgba(107, 114, 128, 0.20);
+  border-color: rgba(107, 114, 128, 0.45);
 }
 
 .statusText {
-  color: #f0e6d2;
-  font-size: 0.9rem;
+  color: var(--parchment);
+  font-family: var(--font-hex-editorial);
+  font-size: 0.95rem;
   line-height: 1.4;
+  font-style: italic;
 }
 
 .loadingText {
-  color: #fbbf24;
-  font-style: italic;
+  color: var(--gold-bright);
+  font-family: var(--font-mono);
+  font-style: normal;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .errorText {
-  color: #ef4444;
-  font-style: italic;
+  color: var(--blood-red);
+  font-family: var(--font-mono);
+  font-style: normal;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
-
-
 .offlineText {
-  color: #9ca3af;
+  color: var(--parchment-dim);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .gameInfo {
@@ -376,33 +429,43 @@
 }
 
 .gameMode {
-  color: #10b981;
-  font-weight: 500;
-  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  color: var(--hex-cyan);
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .gameDuration {
-  color: #c9aa71;
-  font-size: 0.85rem;
+  font-family: var(--font-mono);
+  color: var(--parchment-dim);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
 }
 
 .gameDetails {
   padding-top: 0.25rem;
-  border-top: 1px solid rgba(110, 79, 246, 0.1);
+  border-top: 1px solid var(--gold-faint);
 }
 
 .champion {
-  color: #6e4ff6;
-  font-weight: 500;
+  font-family: var(--font-hex-display);
+  color: var(--gold-bright);
+  font-weight: 600;
   font-size: 0.85rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
 .lastSeen {
   margin-top: 0.75rem;
   padding-top: 0.5rem;
-  border-top: 1px solid rgba(110, 79, 246, 0.1);
-  color: #9ca3af;
-  font-size: 0.75rem;
+  border-top: 1px solid var(--gold-faint);
+  color: var(--parchment-dim);
+  font-family: var(--font-hex-editorial);
+  font-style: italic;
+  font-size: 0.78rem;
 }
 
 .lastGameInfo {
@@ -412,70 +475,70 @@
 }
 
 .lastGameText {
-  color: #c9aa71;
-  font-size: 0.75rem;
+  color: var(--parchment-dim);
+  font-family: var(--font-hex-editorial);
+  font-style: italic;
+  font-size: 0.78rem;
 }
 
 .lastGameResult {
-  font-size: 0.7rem;
-  font-weight: 600;
-  padding: 0.125rem 0.375rem;
-  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  padding: 0.18rem 0.5rem;
+  border-radius: 3px;
   align-self: flex-start;
 }
 
 .lastGameResult.win {
-  color: #10b981;
-  background: rgba(16, 185, 129, 0.1);
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  color: var(--hex-cyan);
+  background: rgba(10, 200, 185, 0.10);
+  border: 1px solid rgba(10, 200, 185, 0.32);
 }
 
 .lastGameResult.loss {
-  color: #ef4444;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: var(--blood-red);
+  background: rgba(209, 54, 57, 0.10);
+  border: 1px solid rgba(209, 54, 57, 0.32);
 }
 
 .footer {
   text-align: center;
   padding-top: 1rem;
-  border-top: 1px solid rgba(110, 79, 246, 0.1);
+  border-top: 1px solid var(--gold-faint);
 }
 
 .footerText {
   margin: 0 0 0.25rem 0;
-  color: #9ca3af;
-  font-size: 0.8rem;
+  color: var(--parchment-dim);
+  font-family: var(--font-hex-editorial);
   font-style: italic;
+  font-size: 0.85rem;
 }
 
 .footerSubtext {
   margin: 0;
-  color: #6b7280;
+  color: var(--parchment-dim);
+  font-family: var(--font-mono);
   font-size: 0.7rem;
-  font-style: italic;
+  letter-spacing: 0.08em;
+  opacity: 0.7;
   text-align: center;
 }
 
 @keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
 }
 
 @keyframes glow {
-  from {
-    box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
-  }
-  to {
-    box-shadow: 0 0 20px rgba(16, 185, 129, 0.8);
-  }
+  from { box-shadow: 0 0 6px rgba(10, 200, 185, 0.55); }
+  to { box-shadow: 0 0 22px rgba(10, 200, 185, 0.85); }
 }
 
-/* Responsive design */
+/* Responsive */
 @media (max-width: 1200px) and (min-width: 901px) {
   .membersGrid {
     grid-template-columns: repeat(3, 1fr);
@@ -493,35 +556,34 @@
     margin-top: 1.5rem;
     padding: 1rem;
   }
-  
+
   .header {
     flex-direction: column;
     gap: 1rem;
     align-items: stretch;
   }
-  
+
   .title {
     justify-content: center;
   }
-  
+
   .membersGrid {
     grid-template-columns: 1fr;
   }
-  
+
   .memberCard {
     padding: 0.75rem;
   }
-  
+
   .memberHeader {
     flex-direction: column;
     gap: 0.5rem;
   }
-  
+
   .statusIndicator {
     align-self: flex-start;
   }
 
-  /* Responsive Banner */
   .encouragementBanner {
     margin: 1rem 0;
   }
@@ -536,11 +598,11 @@
   }
 
   .bannerTitle {
-    font-size: 1rem;
+    font-size: 0.95rem;
   }
 
   .bannerMessage {
-    font-size: 0.8rem;
+    font-size: 0.85rem;
   }
 
   .bannerDecoration {
@@ -552,14 +614,18 @@
   }
 }
 
-/* Modal Styles */
+/* ==============================================================
+   GameDetailsModal — full Hextech (mirrors champion modal)
+   ============================================================== */
+
 .modalOverlay {
   position: fixed;
   top: 0;
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.8);
+  background: rgba(10, 14, 19, 0.85);
+  backdrop-filter: blur(8px);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -568,13 +634,17 @@
 }
 
 .modalContent {
-  background: linear-gradient(135deg, rgba(14, 14, 35, 0.95), rgba(20, 20, 45, 0.95));
-  border: 1px solid rgba(110, 79, 246, 0.3);
-  border-radius: 12px;
+  background:
+    radial-gradient(ellipse at 12% 6%, rgba(200,170,110,0.06), transparent 50%),
+    linear-gradient(135deg, rgba(10, 14, 22, 0.97), rgba(14, 16, 28, 0.97));
+  border: 1px solid var(--gold-dim);
+  border-radius: 16px;
   max-width: 90vw;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+  box-shadow:
+    0 24px 60px rgba(0, 0, 0, 0.7),
+    0 0 0 1px rgba(200, 170, 110, 0.10) inset;
 }
 
 .modalHeader {
@@ -582,55 +652,73 @@
   justify-content: space-between;
   align-items: center;
   padding: 1.5rem;
-  border-bottom: 1px solid rgba(110, 79, 246, 0.2);
+  border-bottom: 1px solid var(--gold-faint);
 }
 
 .modalHeader h3 {
   margin: 0;
-  color: #f0e6d2;
-  font-size: 1.5rem;
-  font-weight: 600;
+  font-family: var(--font-hex-display);
+  font-size: 1.6rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--gold-bright), #f6e0b0, var(--gold-bright));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
 }
 
 .modalCloseButton {
-  background: none;
-  border: none;
-  color: #f0e6d2;
-  font-size: 1.5rem;
+  background: rgba(7, 7, 13, 0.7);
+  border: 1px solid var(--gold-dim);
+  color: var(--parchment);
+  font-size: 1.4rem;
   cursor: pointer;
-  padding: 0.5rem;
-  border-radius: 4px;
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.3s ease;
 }
 
 .modalCloseButton:hover {
-  background: rgba(110, 79, 246, 0.2);
-  color: #6e4ff6;
+  background: rgba(209, 54, 57, 0.10);
+  border-color: var(--blood-red);
+  color: var(--blood-red);
 }
 
 .gameInfoHeader {
   padding: 1rem 1.5rem;
   text-align: center;
-  border-bottom: 1px solid rgba(110, 79, 246, 0.1);
+  border-bottom: 1px solid var(--gold-faint);
 }
 
 .gameInfoHeader .gameMode {
-  color: #10b981;
+  font-family: var(--font-hex-display);
+  color: var(--hex-cyan);
   font-size: 1.2rem;
-  font-weight: 600;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   margin-bottom: 0.5rem;
 }
 
 .gameInfoHeader .mapName {
-  color: #c9aa71;
+  font-family: var(--font-hex-editorial);
+  color: var(--parchment);
+  font-style: italic;
   font-size: 1rem;
   margin-bottom: 0.5rem;
 }
 
 .gameInfoHeader .gameTimer {
-  color: #6e4ff6;
+  font-family: var(--font-mono);
+  color: var(--gold-bright);
   font-size: 0.9rem;
-  font-weight: 500;
+  letter-spacing: 0.18em;
+  font-weight: 600;
 }
 
 .teamsContainer {
@@ -644,36 +732,43 @@
   background: rgba(0, 0, 0, 0.2);
   border-radius: 8px;
   padding: 1rem;
-  border: 2px solid transparent;
+  border: 1px solid transparent;
   transition: all 0.3s ease;
 }
 
 .blueTeam {
-  background: rgba(59, 130, 246, 0.1);
-  border-color: rgba(59, 130, 246, 0.3);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(10,200,185,0.06), transparent 60%),
+    rgba(10, 200, 185, 0.05);
+  border-color: rgba(10, 200, 185, 0.40);
 }
 
 .redTeam {
-  background: rgba(239, 68, 68, 0.1);
-  border-color: rgba(239, 68, 68, 0.3);
+  background:
+    radial-gradient(ellipse at 50% 0%, rgba(209,54,57,0.06), transparent 60%),
+    rgba(209, 54, 57, 0.05);
+  border-color: rgba(209, 54, 57, 0.40);
 }
 
 .teamTitle {
-  color: #f0e6d2;
-  font-size: 1.1rem;
-  font-weight: 600;
+  font-family: var(--font-hex-display);
+  color: var(--parchment);
+  font-size: 1.05rem;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   margin: 0 0 1rem 0;
   text-align: center;
 }
 
 .blueTeamTitle {
-  color: #60a5fa;
-  text-shadow: 0 0 10px rgba(59, 130, 246, 0.5);
+  color: var(--hex-cyan);
+  text-shadow: 0 0 12px rgba(10, 200, 185, 0.55);
 }
 
 .redTeamTitle {
-  color: #f87171;
-  text-shadow: 0 0 10px rgba(239, 68, 68, 0.5);
+  color: var(--blood-red);
+  text-shadow: 0 0 12px rgba(209, 54, 57, 0.55);
 }
 
 .bansSection {
@@ -681,8 +776,11 @@
 }
 
 .bansTitle {
-  color: #c9aa71;
-  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  color: var(--gold-bright);
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
   margin-bottom: 0.5rem;
 }
 
@@ -694,6 +792,7 @@
 
 .banItem {
   position: relative;
+  border: 1px solid var(--gold-faint);
   border-radius: 4px;
   overflow: hidden;
 }
@@ -712,9 +811,11 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ef4444;
-  font-weight: bold;
-  font-size: 0.8rem;
+  background: rgba(209, 54, 57, 0.32);
+  color: var(--blood-red);
+  font-weight: 700;
+  font-size: 0.78rem;
+  text-shadow: 0 0 4px rgba(0,0,0,0.85);
 }
 
 .participantsList {
@@ -728,19 +829,21 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.3);
   border-radius: 6px;
-  border: 1px solid transparent;
+  border: 1px solid var(--gold-faint);
   transition: all 0.3s ease;
 }
 
 .participantCard.highlighted {
-  border-color: rgba(110, 79, 246, 0.5);
-  background: rgba(110, 79, 246, 0.1);
+  border-color: var(--gold-bright);
+  background: rgba(200, 170, 110, 0.10);
+  box-shadow: 0 0 14px rgba(200, 170, 110, 0.20);
 }
 
 .championImage {
   border-radius: 4px;
+  border: 1px solid var(--gold-faint);
 }
 
 .spells {
@@ -751,6 +854,7 @@
 
 .profileIcon {
   border-radius: 50%;
+  border: 1px solid var(--gold-faint);
 }
 
 .participantInfo {
@@ -759,26 +863,31 @@
 }
 
 .summonerName {
-  color: #f0e6d2;
-  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  color: var(--parchment);
+  font-size: 0.85rem;
   font-weight: 500;
+  letter-spacing: 0.04em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
 .summonerName.highlighted {
-  color: #6e4ff6;
-  font-weight: 600;
+  color: var(--gold-bright);
+  font-weight: 700;
 }
 
 .memberIndicator {
-  color: #10b981;
+  color: var(--hex-cyan);
 }
 
 .championName {
-  color: #c9aa71;
-  font-size: 0.75rem;
+  font-family: var(--font-hex-display);
+  color: var(--gold-bright);
+  font-size: 0.7rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -791,7 +900,10 @@
   cursor: pointer;
   font-size: inherit;
   font-weight: inherit;
+  font-family: inherit;
   text-decoration: underline;
+  text-decoration-color: var(--gold-faint);
+  text-underline-offset: 2px;
   padding: 0;
   margin: 0;
   transition: all 0.3s ease;
@@ -802,8 +914,9 @@
 }
 
 .summonerButton:hover {
-  color: #10b981;
-  text-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+  color: var(--hex-cyan);
+  text-decoration-color: var(--hex-cyan);
+  text-shadow: 0 0 6px rgba(10, 200, 185, 0.55);
 }
 
 /* Responsive Modal */
@@ -827,7 +940,7 @@
   }
 }
 
-/* Game Tracking Information Styles */
+/* Game Tracking Information */
 .trackingInfo {
   margin-top: 1rem;
   max-width: 600px;
@@ -836,18 +949,22 @@
 }
 
 .trackingDetails {
-  background: rgba(110, 79, 246, 0.05);
-  border: 1px solid rgba(110, 79, 246, 0.2);
+  background: rgba(200, 170, 110, 0.05);
+  border: 1px solid var(--gold-faint);
   border-radius: 8px;
   overflow: hidden;
 }
 
 .trackingSummary {
   padding: 0.75rem 1rem;
-  background: rgba(110, 79, 246, 0.1);
+  background: rgba(200, 170, 110, 0.08);
   cursor: pointer;
-  font-weight: 500;
-  color: #e5e7eb;
+  font-family: var(--font-mono);
+  font-weight: 600;
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--parchment);
   border: none;
   outline: none;
   user-select: none;
@@ -855,12 +972,13 @@
 }
 
 .trackingSummary:hover {
-  background: rgba(110, 79, 246, 0.15);
+  background: rgba(200, 170, 110, 0.14);
+  color: var(--gold-bright);
 }
 
 .trackingContent {
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .trackingSection {
@@ -872,17 +990,22 @@
 }
 
 .trackingTitle {
+  font-family: var(--font-mono);
   margin: 0 0 0.5rem 0;
-  color: #e5e7eb;
-  font-size: 0.9rem;
-  font-weight: 600;
+  color: var(--gold-bright);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
 .trackingList {
   margin: 0;
   padding-left: 1.25rem;
-  color: #d1d5db;
-  font-size: 0.85rem;
+  color: var(--parchment-dim);
+  font-family: var(--font-hex-editorial);
+  font-style: italic;
+  font-size: 0.9rem;
   line-height: 1.5;
 }
 
@@ -897,14 +1020,16 @@
 .trackingNote {
   margin-top: 1rem;
   padding: 0.75rem;
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(10, 200, 185, 0.08);
+  border: 1px solid rgba(10, 200, 185, 0.32);
   border-radius: 6px;
 }
 
 .trackingNote p {
   margin: 0;
-  color: #bfdbfe;
-  font-size: 0.8rem;
+  color: var(--hex-cyan);
+  font-family: var(--font-hex-editorial);
+  font-style: italic;
+  font-size: 0.85rem;
   line-height: 1.4;
 }

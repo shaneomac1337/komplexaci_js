@@ -1,10 +1,16 @@
-/* Summoner Search Components Styles */
+/* Summoner Search Components — Hextech reskin (selective).
+   Hextech tokens (`--gold-bright`, `--hex-cyan`, `--parchment`, etc.) are
+   defined on `.lol-redesign` (lol-redesign.css) and cascade through to
+   these module-scoped rules. */
 
-/* Search Section */
+/* ==============================================================
+   Search Section — light reskin (gold borders, parchment text)
+   ============================================================== */
+
 .summonerSearchSection {
   padding: 4rem 1rem;
   background: rgba(0, 0, 0, 0.3);
-  border-top: 1px solid rgba(110, 79, 246, 0.3);
+  border-top: 1px solid var(--gold-faint);
 }
 
 .searchContainer {
@@ -16,15 +22,17 @@
 .searchTitle {
   font-size: 2.5rem;
   font-weight: bold;
-  color: #f0e6d2;
+  color: var(--parchment);
   margin-bottom: 1rem;
   text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 .searchSubtitle {
   font-size: 1.2rem;
-  color: #c9aa71;
+  color: var(--parchment-dim);
   margin-bottom: 2rem;
+  font-family: var(--font-hex-editorial);
+  font-style: italic;
   text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.6);
 }
 
@@ -41,78 +49,87 @@
   flex: 1;
   min-width: 250px;
   padding: 0.75rem 1rem;
-  border: 2px solid rgba(110, 79, 246, 0.5);
+  border: 1px solid var(--gold-dim);
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.6);
-  color: #f0e6d2;
+  color: var(--parchment);
   font-size: 1rem;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .searchInput:focus {
   outline: none;
-  border-color: #6e4ff6;
-  box-shadow: 0 0 10px rgba(110, 79, 246, 0.3);
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 12px rgba(200, 170, 110, 0.25);
 }
 
 .searchInput::placeholder {
-  color: #c9aa71;
-  opacity: 0.7;
+  color: var(--parchment-dim);
+  font-family: var(--font-hex-editorial);
+  font-style: italic;
 }
 
 .regionSelect {
   padding: 0.75rem;
-  border: 2px solid rgba(110, 79, 246, 0.5);
+  border: 1px solid var(--gold-dim);
   border-radius: 8px;
   background: rgba(0, 0, 0, 0.6);
-  color: #f0e6d2;
+  color: var(--parchment);
   font-size: 1rem;
   cursor: pointer;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, box-shadow 0.3s ease;
 }
 
 .regionSelect:focus {
   outline: none;
-  border-color: #6e4ff6;
-  box-shadow: 0 0 10px rgba(110, 79, 246, 0.3);
+  border-color: var(--gold-bright);
+  box-shadow: 0 0 12px rgba(200, 170, 110, 0.25);
 }
 
 .searchButton {
   padding: 0.75rem 2rem;
-  background: linear-gradient(135deg, #6e4ff6, #8b5cf6);
-  border: none;
+  background: linear-gradient(135deg, var(--gold-deep), var(--gold-bright));
+  border: 1px solid var(--gold-bright);
   border-radius: 8px;
-  color: white;
-  font-size: 1rem;
-  font-weight: 600;
+  color: #1a1410;
+  font-family: var(--font-hex-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
   cursor: pointer;
   transition: all 0.3s ease;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .searchButton:hover {
-  background: linear-gradient(135deg, #5b3fd6, #7c3aed);
+  background: linear-gradient(135deg, var(--gold-bright), #f6e0b0);
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(110, 79, 246, 0.4);
+  box-shadow: 0 6px 18px rgba(200, 170, 110, 0.35);
 }
 
 .searchButton:disabled {
-  opacity: 0.6;
+  opacity: 0.5;
   cursor: not-allowed;
   transform: none;
 }
 
-/* Summoner Profile Card */
+/* ==============================================================
+   Showcase 1 — SummonerCard (profile header)
+   Cinzel name, Cormorant italic level, gold-ruled chassis
+   ============================================================== */
+
 .summonerCard {
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.8), rgba(110, 79, 246, 0.1));
-  border: 2px solid rgba(110, 79, 246, 0.3);
+  background:
+    radial-gradient(ellipse at 18% 12%, rgba(200,170,110,0.06), transparent 50%),
+    linear-gradient(135deg, rgba(0, 0, 0, 0.85), rgba(12, 14, 24, 0.9));
+  border: 1px solid var(--gold-dim);
   border-radius: 16px;
   padding: 2rem;
   margin: 2rem auto;
   max-width: 1200px;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(200,170,110,0.06) inset;
 }
 
 .summonerCard::before {
@@ -122,7 +139,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(45deg, rgba(110, 79, 246, 0.1), rgba(200, 155, 60, 0.1));
+  background: linear-gradient(45deg, rgba(200, 170, 110, 0.05), rgba(10, 200, 185, 0.04));
   z-index: 1;
   pointer-events: none;
 }
@@ -144,34 +161,48 @@
   width: 100px;
   height: 100px;
   border-radius: 50%;
-  border: 3px solid #c9aa71;
-  box-shadow: 0 0 20px rgba(201, 170, 113, 0.3);
+  border: 2px solid var(--gold-bright);
+  box-shadow: 0 0 24px rgba(200, 170, 110, 0.32), 0 0 0 4px rgba(200,170,110,0.08);
 }
 
 .summonerInfo h2 {
-  font-size: 2rem;
-  color: #f0e6d2;
+  font-family: var(--font-hex-display);
+  font-size: 2.4rem;
+  font-weight: 900;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--gold-bright) 0%, #f6e0b0 50%, var(--gold-bright) 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   margin: 0 0 0.5rem 0;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  text-shadow: none;
 }
 
 .summonerLevel {
+  font-family: var(--font-hex-editorial);
+  font-style: italic;
   font-size: 1.2rem;
-  color: #c9aa71;
+  color: var(--parchment-dim);
   margin: 0;
 }
 
 .liveGameBadge {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white;
-  padding: 0.5rem 1rem;
-  border-radius: 20px;
-  font-size: 0.9rem;
+  background: rgba(10, 200, 185, 0.10);
+  color: var(--hex-cyan);
+  border: 1px solid var(--hex-cyan);
+  padding: 0.45rem 1rem;
+  border-radius: 4px;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
   font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
   display: inline-flex;
   align-items: center;
   gap: 0.5rem;
   animation: pulse 2s infinite;
+  box-shadow: 0 0 14px rgba(10, 200, 185, 0.25);
 }
 
 @keyframes pulse {
@@ -179,7 +210,11 @@
   50% { opacity: 0.7; }
 }
 
-/* Rank Display */
+/* ==============================================================
+   Showcase 2 — RankDisplay
+   Chassis cards per queue, Cinzel tier, gold gradient LP bar
+   ============================================================== */
+
 .rankSection {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -188,64 +223,86 @@
 }
 
 .rankCard {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(110, 79, 246, 0.3);
+  background: rgba(12, 14, 24, 0.55);
+  border: 1px solid var(--gold-faint);
   border-radius: 12px;
   padding: 1.5rem;
   text-align: center;
+  transition: border-color 0.3s ease, transform 0.3s ease;
+  box-shadow: 0 0 0 1px rgba(200,170,110,0.04) inset;
+}
+
+.rankCard:hover {
+  border-color: var(--gold-bright);
+  transform: translateY(-2px);
 }
 
 .rankTitle {
-  font-size: 1.1rem;
-  color: #c9aa71;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.22em;
+  color: var(--hex-cyan);
   margin-bottom: 1rem;
   text-transform: uppercase;
-  letter-spacing: 0.5px;
 }
 
 .rankTier {
-  font-size: 1.8rem;
-  font-weight: bold;
-  color: #f0e6d2;
+  font-family: var(--font-hex-display);
+  font-size: 1.7rem;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
   margin-bottom: 0.5rem;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.7);
 }
 
 .rankLP {
-  font-size: 1.2rem;
-  color: #6e4ff6;
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  letter-spacing: 0.12em;
+  color: var(--parchment);
   margin-bottom: 1rem;
 }
 
 .rankStats {
   display: flex;
   justify-content: space-between;
-  font-size: 0.9rem;
-  color: #c9aa71;
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  color: var(--parchment-dim);
+  letter-spacing: 0.04em;
 }
 
 .winRate {
   font-weight: 600;
+  color: var(--gold-bright);
 }
 
 .winRate.positive {
-  color: #10b981;
+  color: var(--hex-cyan);
 }
 
 .winRate.negative {
-  color: #ef4444;
+  color: var(--blood-red);
 }
 
-/* Champion Mastery */
+/* ==============================================================
+   Showcase 3 — ChampionMastery
+   Chassis cards, Cinzel champion name, mono points
+   ============================================================== */
+
 .masterySection {
   margin: 2rem 0;
 }
 
 .masteryTitle {
-  font-size: 1.5rem;
-  color: #f0e6d2;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
   margin-bottom: 1rem;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 .masteryGrid {
@@ -255,8 +312,8 @@
 }
 
 .masteryCard {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(110, 79, 246, 0.3);
+  background: rgba(12, 14, 24, 0.55);
+  border: 1px solid var(--gold-faint);
   border-radius: 8px;
   padding: 1rem;
   text-align: center;
@@ -264,43 +321,54 @@
 }
 
 .masteryCard:hover {
-  border-color: #6e4ff6;
+  border-color: var(--gold-bright);
   transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(110, 79, 246, 0.2);
+  box-shadow: 0 4px 16px rgba(200, 170, 110, 0.20);
 }
 
 .championImage {
   width: 60px;
   height: 60px;
   border-radius: 50%;
+  border: 1px solid var(--gold-dim);
   margin: 0 auto 0.5rem;
   display: block;
 }
 
 .championName {
-  font-size: 1rem;
-  color: #f0e6d2;
+  font-family: var(--font-hex-display);
+  font-size: 0.95rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
   margin-bottom: 0.5rem;
-  font-weight: 600;
 }
 
 .masteryLevel {
-  font-size: 0.9rem;
-  color: #c9aa71;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.12em;
+  color: var(--parchment-dim);
   margin-bottom: 0.25rem;
 }
 
 .masteryPoints {
-  font-size: 0.8rem;
-  color: #6e4ff6;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--hex-cyan);
 }
 
-/* Loading and Error States */
+/* ==============================================================
+   Loading + Error States — light reskin
+   ============================================================== */
+
 .loadingSpinner {
   width: 40px;
   height: 40px;
-  border: 3px solid rgba(110, 79, 246, 0.3);
-  border-top: 3px solid #6e4ff6;
+  border: 2px solid rgba(200, 170, 110, 0.2);
+  border-top: 2px solid var(--gold-bright);
   border-radius: 50%;
   animation: spin 1s linear infinite;
   margin: 2rem auto;
@@ -312,65 +380,75 @@
 }
 
 .errorMessage {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(209, 54, 57, 0.08);
+  border: 1px solid rgba(209, 54, 57, 0.32);
   border-radius: 8px;
   padding: 1rem;
-  color: #fca5a5;
+  color: #f5b3b5;
   text-align: center;
   margin: 2rem auto;
   max-width: 600px;
+  font-family: var(--font-hex-editorial);
+  font-style: italic;
 }
 
-/* Match History */
+/* ==============================================================
+   MatchHistory — light reskin (compact, scannable)
+   System sans font preserved for KDA legibility
+   ============================================================== */
+
 .matchHistorySection {
   margin: 2rem 0;
 }
 
 .matchHistoryTitle {
-  font-size: 1.5rem;
-  color: #f0e6d2;
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--gold-bright);
   margin-bottom: 1rem;
-  text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
 }
 
 .matchCard {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(110, 79, 246, 0.3);
+  background: rgba(12, 14, 24, 0.5);
+  border: 1px solid var(--gold-faint);
   border-radius: 8px;
   padding: 1rem;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
   display: flex;
   align-items: center;
   gap: 1rem;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, transform 0.3s ease;
 }
 
 .matchCard:hover {
-  border-color: #6e4ff6;
+  border-color: var(--gold-dim);
   transform: translateY(-1px);
 }
 
 .matchCard.win {
-  border-left: 4px solid #10b981;
+  border-left: 3px solid var(--hex-cyan);
 }
 
 .matchCard.loss {
-  border-left: 4px solid #ef4444;
+  border-left: 3px solid var(--blood-red);
 }
 
 .matchResult {
-  font-weight: 600;
-  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
 .matchResult.win {
-  color: #10b981;
+  color: var(--hex-cyan);
 }
 
 .matchResult.loss {
-  color: #ef4444;
+  color: var(--blood-red);
 }
 
 .matchChampion {
@@ -383,22 +461,30 @@
   width: 40px;
   height: 40px;
   border-radius: 50%;
+  border: 1px solid var(--gold-faint);
 }
 
 .matchKDA {
+  font-family: var(--font-mono);
   font-size: 0.9rem;
-  color: #f0e6d2;
+  letter-spacing: 0.06em;
+  color: var(--parchment);
 }
 
 .matchDuration {
-  font-size: 0.8rem;
-  color: #c9aa71;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.08em;
+  color: var(--parchment-dim);
 }
 
-/* Statistics Cards */
+/* ==============================================================
+   MatchStatistics — light reskin (mono labels, gold values)
+   ============================================================== */
+
 .statsCard {
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(110, 79, 246, 0.3);
+  background: rgba(12, 14, 24, 0.5);
+  border: 1px solid var(--gold-faint);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 2rem;
@@ -415,23 +501,32 @@
 }
 
 .statValue {
+  font-family: var(--font-hex-display);
   font-size: 1.5rem;
-  font-weight: bold;
+  font-weight: 800;
+  color: var(--gold-bright);
+  letter-spacing: 0.02em;
   margin-bottom: 0.25rem;
 }
 
 .statLabel {
-  color: #c9aa71;
-  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  color: var(--parchment-dim);
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   margin-bottom: 0.25rem;
 }
 
 .statSubtext {
-  color: #888;
-  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  color: var(--parchment-dim);
+  font-size: 0.72rem;
+  letter-spacing: 0.04em;
+  opacity: 0.7;
 }
 
-/* Champion Performance Cards */
+/* Champion Performance + Game Mode Cards — light reskin */
 .championPerformanceGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
@@ -439,18 +534,18 @@
 }
 
 .championPerformanceCard {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(110, 79, 246, 0.2);
+  background: rgba(12, 14, 24, 0.45);
+  border: 1px solid var(--gold-faint);
   border-radius: 8px;
   padding: 1rem;
   display: flex;
   align-items: center;
   gap: 1rem;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, transform 0.3s ease;
 }
 
 .championPerformanceCard:hover {
-  border-color: #6e4ff6;
+  border-color: var(--gold-dim);
   transform: translateY(-1px);
 }
 
@@ -462,7 +557,6 @@
   text-align: right;
 }
 
-/* Game Mode Cards */
 .gameModeGrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -470,43 +564,32 @@
 }
 
 .gameModeCard {
-  background: rgba(0, 0, 0, 0.3);
-  border: 1px solid rgba(110, 79, 246, 0.2);
+  background: rgba(12, 14, 24, 0.45);
+  border: 1px solid var(--gold-faint);
   border-radius: 8px;
   padding: 1rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  transition: all 0.3s ease;
+  transition: border-color 0.3s ease, transform 0.3s ease;
 }
 
 .gameModeCard:hover {
-  border-color: #6e4ff6;
+  border-color: var(--gold-dim);
   transform: translateY(-1px);
 }
 
-/* Win Rate Colors */
-.winRateExcellent {
-  color: #10b981;
-}
+/* Win Rate Colors — Hextech palette */
+.winRateExcellent { color: var(--hex-cyan); }
+.winRateGood { color: var(--hex-cyan); opacity: 0.8; }
+.winRateAverage { color: var(--gold-bright); }
+.winRatePoor { color: #d18c4d; }
+.winRateBad { color: var(--blood-red); }
 
-.winRateGood {
-  color: #22c55e;
-}
+/* ==============================================================
+   Item + Spell Grids
+   ============================================================== */
 
-.winRateAverage {
-  color: #eab308;
-}
-
-.winRatePoor {
-  color: #f97316;
-}
-
-.winRateBad {
-  color: #ef4444;
-}
-
-/* Item Grid */
 .itemGrid {
   display: flex;
   gap: 2px;
@@ -518,15 +601,14 @@
   width: 24px;
   height: 24px;
   border-radius: 2px;
-  border: 1px solid rgba(110, 79, 246, 0.3);
+  border: 1px solid var(--gold-faint);
   overflow: hidden;
 }
 
 .itemSlot.empty {
-  background-color: rgba(0, 0, 0, 0.3);
+  background-color: rgba(0, 0, 0, 0.4);
 }
 
-/* Spell Icons */
 .spellGrid {
   display: flex;
   flex-direction: column;
@@ -537,17 +619,26 @@
   width: 20px;
   height: 20px;
   border-radius: 2px;
+  border: 1px solid var(--gold-faint);
 }
 
-/* Live Game Styles */
+/* ==============================================================
+   Showcase 4 — LiveGame team panels
+   Gold-ruled frames; ally team cyan, enemy team blood-red
+   ============================================================== */
+
 .liveGameContainer {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.2), rgba(110, 79, 246, 0.2));
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background:
+    radial-gradient(ellipse at 18% 12%, rgba(10,200,185,0.08), transparent 50%),
+    radial-gradient(ellipse at 82% 88%, rgba(200,170,110,0.06), transparent 50%),
+    linear-gradient(135deg, rgba(0,0,0,0.6), rgba(12,14,24,0.85));
+  border: 1px solid var(--gold-dim);
   border-radius: 12px;
   padding: 1.5rem;
   margin-bottom: 1.5rem;
   position: relative;
   overflow: hidden;
+  box-shadow: 0 0 0 1px rgba(200,170,110,0.06) inset;
 }
 
 .liveGameContainer::before {
@@ -557,7 +648,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: linear-gradient(45deg, rgba(16, 185, 129, 0.1), rgba(110, 79, 246, 0.1));
+  background: linear-gradient(45deg, rgba(10,200,185,0.06), rgba(200,170,110,0.06));
   z-index: 1;
   pointer-events: none;
 }
@@ -569,20 +660,31 @@
 }
 
 .liveGameTitle {
-  font-size: 1.3rem;
-  font-weight: bold;
-  color: #f0e6d2;
+  font-family: var(--font-hex-display);
+  font-size: 1.4rem;
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: linear-gradient(135deg, var(--gold-bright), #f6e0b0, var(--gold-bright));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
   margin-bottom: 0.5rem;
 }
 
 .liveGameSubtitle {
-  color: #c9aa71;
-  font-size: 1rem;
+  font-family: var(--font-hex-editorial);
+  font-style: italic;
+  color: var(--parchment);
+  font-size: 1.05rem;
+  opacity: 0.85;
 }
 
 .liveGameTimer {
-  color: #10b981;
+  font-family: var(--font-mono);
+  color: var(--hex-cyan);
   font-size: 0.9rem;
+  letter-spacing: 0.16em;
   margin-top: 0.5rem;
   font-weight: 600;
 }
@@ -601,28 +703,33 @@
 }
 
 .teamBlue {
-  background: rgba(59, 130, 246, 0.1);
-  border: 1px solid rgba(59, 130, 246, 0.3);
+  background: rgba(10, 200, 185, 0.06);
+  border: 1px solid rgba(10, 200, 185, 0.32);
 }
 
 .teamRed {
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: rgba(209, 54, 57, 0.06);
+  border: 1px solid rgba(209, 54, 57, 0.32);
 }
 
 .teamTitle {
+  font-family: var(--font-hex-display);
   text-align: center;
   margin-bottom: 1rem;
-  font-size: 1.1rem;
-  font-weight: bold;
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .teamTitleBlue {
-  color: #3b82f6;
+  color: var(--hex-cyan);
+  text-shadow: 0 0 10px rgba(10, 200, 185, 0.45);
 }
 
 .teamTitleRed {
-  color: #ef4444;
+  color: var(--blood-red);
+  text-shadow: 0 0 10px rgba(209, 54, 57, 0.45);
 }
 
 .bansContainer {
@@ -630,8 +737,11 @@
 }
 
 .bansTitle {
-  color: #c9aa71;
-  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  color: var(--gold-bright);
+  font-size: 0.7rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
   margin-bottom: 0.5rem;
 }
 
@@ -643,6 +753,9 @@
 
 .banItem {
   position: relative;
+  border: 1px solid var(--gold-faint);
+  border-radius: 4px;
+  overflow: hidden;
 }
 
 .banOverlay {
@@ -650,9 +763,10 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  color: #ef4444;
+  color: var(--blood-red);
   font-size: 16px;
   font-weight: bold;
+  text-shadow: 0 0 4px rgba(0,0,0,0.85);
 }
 
 .participantsList {
@@ -666,25 +780,26 @@
   align-items: center;
   gap: 0.5rem;
   padding: 0.5rem;
-  background: rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 6px;
   border: 1px solid transparent;
   transition: all 0.3s ease;
 }
 
 .participantCard.highlighted {
-  background: rgba(110, 79, 246, 0.2);
-  border: 1px solid #6e4ff6;
+  background: rgba(200, 170, 110, 0.10);
+  border: 1px solid var(--gold-bright);
 }
 
 .participantCard:hover {
-  background: rgba(110, 79, 246, 0.1);
+  background: rgba(200, 170, 110, 0.05);
 }
 
 .participantChampion {
   width: 32px;
   height: 32px;
   border-radius: 4px;
+  border: 1px solid var(--gold-faint);
 }
 
 .participantSpells {
@@ -703,21 +818,24 @@
   width: 20px;
   height: 20px;
   border-radius: 50%;
+  border: 1px solid var(--gold-faint);
 }
 
 .participantName {
   flex: 1;
-  font-size: 0.8rem;
-  color: #f0e6d2;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.04em;
+  color: var(--parchment);
 }
 
 .participantName.highlighted {
-  color: #6e4ff6;
-  font-weight: bold;
+  color: var(--gold-bright);
+  font-weight: 700;
 }
 
 .participantIndicator {
-  color: #10b981;
+  color: var(--hex-cyan);
   margin-left: 0.25rem;
 }
 
@@ -729,23 +847,31 @@
 }
 
 .refreshButton {
-  background: linear-gradient(135deg, #10b981, #059669);
-  border: none;
+  background: rgba(200, 170, 110, 0.10);
+  border: 1px solid var(--gold-dim);
   border-radius: 8px;
-  color: white;
-  padding: 0.5rem 1rem;
-  font-size: 0.9rem;
+  color: var(--parchment);
+  padding: 0.5rem 1.2rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
 }
 
 .refreshButton:hover {
+  border-color: var(--gold-bright);
+  background: rgba(200, 170, 110, 0.18);
   transform: translateY(-1px);
-  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.3);
+  box-shadow: 0 4px 14px rgba(200, 170, 110, 0.22);
 }
 
-/* Tooltip Styles */
+/* ==============================================================
+   Tooltip — light reskin
+   ============================================================== */
+
 .tooltipContainer {
   position: relative;
   display: inline-block;
@@ -754,13 +880,14 @@
 .tooltip {
   position: absolute;
   z-index: 1000;
-  background: linear-gradient(135deg, rgba(0, 0, 0, 0.95), rgba(110, 79, 246, 0.1));
-  border: 1px solid rgba(110, 79, 246, 0.5);
+  background:
+    linear-gradient(135deg, rgba(7, 7, 13, 0.97), rgba(12, 14, 24, 0.95));
+  border: 1px solid var(--gold-dim);
   border-radius: 8px;
   padding: 0.75rem;
-  color: #f0e6d2;
+  color: var(--parchment);
   font-size: 0.8rem;
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.8);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(200,170,110,0.06) inset;
   backdrop-filter: blur(10px);
   max-width: 300px;
   word-wrap: break-word;
@@ -768,14 +895,8 @@
 }
 
 @keyframes tooltipFadeIn {
-  from {
-    opacity: 0;
-    transform: translateY(5px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
 }
 
 .tooltipTop {
@@ -792,7 +913,7 @@
   left: 50%;
   transform: translateX(-50%);
   border: 6px solid transparent;
-  border-top-color: rgba(110, 79, 246, 0.5);
+  border-top-color: var(--gold-dim);
 }
 
 .tooltipBottom {
@@ -809,7 +930,7 @@
   left: 50%;
   transform: translateX(-50%);
   border: 6px solid transparent;
-  border-bottom-color: rgba(110, 79, 246, 0.5);
+  border-bottom-color: var(--gold-dim);
 }
 
 .tooltipLeft {
@@ -826,7 +947,7 @@
   top: 50%;
   transform: translateY(-50%);
   border: 6px solid transparent;
-  border-left-color: rgba(110, 79, 246, 0.5);
+  border-left-color: var(--gold-dim);
 }
 
 .tooltipRight {
@@ -843,42 +964,48 @@
   top: 50%;
   transform: translateY(-50%);
   border: 6px solid transparent;
-  border-right-color: rgba(110, 79, 246, 0.5);
+  border-right-color: var(--gold-dim);
 }
 
-/* Tooltip content styling */
 .tooltipTitle {
-  color: #f0e6d2;
-  font-weight: bold;
+  color: var(--gold-bright);
+  font-weight: 700;
   margin-bottom: 0.25rem;
 }
 
 .tooltipSubtitle {
-  color: #c9aa71;
+  color: var(--parchment-dim);
+  font-family: var(--font-hex-editorial);
+  font-style: italic;
   font-size: 0.8rem;
   margin-bottom: 0.5rem;
 }
 
 .tooltipStats {
-  color: #10b981;
-  font-size: 0.8rem;
+  color: var(--hex-cyan);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
   margin-bottom: 0.5rem;
   white-space: pre-line;
 }
 
 .tooltipCost {
-  color: #f59e0b;
-  font-size: 0.8rem;
+  color: var(--gold-bright);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
 }
 
 .tooltipDescription {
-  color: #888;
-  font-size: 0.7rem;
+  color: var(--parchment-dim);
+  font-size: 0.72rem;
   margin-top: 0.5rem;
-  line-height: 1.3;
+  line-height: 1.4;
 }
 
-/* Responsive Design */
+/* ==============================================================
+   Responsive
+   ============================================================== */
+
 @media (max-width: 768px) {
   .searchForm {
     flex-direction: column;
@@ -953,15 +1080,18 @@
   }
 }
 
-/* Enhanced Loading Styles */
+/* ==============================================================
+   EnhancedLoading — light reskin (gold spinner, italic tips)
+   ============================================================== */
+
 .enhancedLoading {
   display: flex;
   flex-direction: column;
   align-items: center;
   padding: 3rem 2rem;
   text-align: center;
-  background: rgba(0, 0, 0, 0.4);
-  border: 1px solid rgba(110, 79, 246, 0.3);
+  background: rgba(12, 14, 24, 0.5);
+  border: 1px solid var(--gold-faint);
   border-radius: 12px;
   margin: 2rem 0;
 }
@@ -982,7 +1112,7 @@
 
 .loadingRipple div {
   position: absolute;
-  border: 2px solid #6e4ff6;
+  border: 2px solid var(--gold-bright);
   opacity: 1;
   border-radius: 50%;
   animation: ripple 1.5s cubic-bezier(0, 0.2, 0.8, 1) infinite;
@@ -1011,6 +1141,7 @@
 
 .loadingText {
   margin-bottom: 1.5rem;
+  color: var(--parchment);
 }
 
 .progressContainer {
@@ -1022,7 +1153,7 @@
 .progressBar {
   width: 100%;
   height: 8px;
-  background: rgba(110, 79, 246, 0.2);
+  background: rgba(200, 170, 110, 0.12);
   border-radius: 4px;
   overflow: hidden;
   margin-bottom: 0.5rem;
@@ -1030,7 +1161,7 @@
 
 .progressFill {
   height: 100%;
-  background: linear-gradient(90deg, #6e4ff6, #8b5cf6);
+  background: linear-gradient(90deg, var(--gold-deep), var(--gold-bright));
   border-radius: 4px;
   transition: width 0.3s ease;
   animation: progressShimmer 2s infinite;
@@ -1042,8 +1173,10 @@
 }
 
 .progressText {
-  color: #c9aa71;
-  font-size: 0.8rem;
+  font-family: var(--font-mono);
+  color: var(--gold-bright);
+  font-size: 0.78rem;
+  letter-spacing: 0.18em;
   font-weight: 600;
 }
 
@@ -1056,8 +1189,10 @@
 }
 
 .loadingTip {
-  color: #c9aa71;
-  font-size: 0.9rem;
+  font-family: var(--font-hex-editorial);
+  font-style: italic;
+  color: var(--parchment-dim);
+  font-size: 0.95rem;
   animation: fadeInOut 3s ease-in-out;
 }
 
@@ -1078,16 +1213,18 @@
   flex-direction: column;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.8rem;
-  color: #888;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.12em;
+  color: var(--parchment-dim);
 }
 
 .stepIndicator {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(110, 79, 246, 0.2);
-  border: 2px solid rgba(110, 79, 246, 0.3);
+  background: rgba(200, 170, 110, 0.12);
+  border: 1px solid var(--gold-faint);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1096,18 +1233,21 @@
 }
 
 .stepIndicator.active {
-  background: linear-gradient(135deg, #6e4ff6, #8b5cf6);
-  border-color: #6e4ff6;
-  color: white;
-  animation: pulse 2s infinite;
+  background: linear-gradient(135deg, var(--gold-deep), var(--gold-bright));
+  border-color: var(--gold-bright);
+  color: #1a1410;
+  animation: stepPulse 2s infinite;
 }
 
-@keyframes pulse {
+@keyframes stepPulse {
   0%, 100% { transform: scale(1); }
   50% { transform: scale(1.1); }
 }
 
-/* Search History Enhancements */
+/* ==============================================================
+   Search History — light reskin
+   ============================================================== */
+
 .searchHistoryButton {
   transition: all 0.3s ease;
   position: relative;
@@ -1121,7 +1261,7 @@
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, transparent, rgba(110, 79, 246, 0.2), transparent);
+  background: linear-gradient(90deg, transparent, rgba(200, 170, 110, 0.18), transparent);
   transition: left 0.5s ease;
 }
 
@@ -1129,14 +1269,19 @@
   left: 100%;
 }
 
-/* Improved Error Messages */
+/* ==============================================================
+   Error / Success messages — light reskin
+   ============================================================== */
+
 .errorMessage {
-  background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(220, 38, 38, 0.1));
-  border: 1px solid rgba(239, 68, 68, 0.3);
+  background: linear-gradient(135deg, rgba(209, 54, 57, 0.10), rgba(140, 30, 30, 0.10));
+  border: 1px solid rgba(209, 54, 57, 0.32);
   border-radius: 8px;
   padding: 1rem;
   margin: 1rem 0;
-  color: #fca5a5;
+  color: #f5b3b5;
+  font-family: var(--font-hex-editorial);
+  font-style: italic;
   animation: errorShake 0.5s ease-in-out;
 }
 
@@ -1147,17 +1292,21 @@
 }
 
 .errorMessage strong {
-  color: #ef4444;
+  color: var(--blood-red);
+  font-style: normal;
+  font-family: var(--font-mono);
+  letter-spacing: 0.08em;
 }
 
-/* Success Messages */
 .successMessage {
-  background: linear-gradient(135deg, rgba(16, 185, 129, 0.1), rgba(5, 150, 105, 0.1));
-  border: 1px solid rgba(16, 185, 129, 0.3);
+  background: linear-gradient(135deg, rgba(10, 200, 185, 0.10), rgba(7, 140, 130, 0.10));
+  border: 1px solid rgba(10, 200, 185, 0.32);
   border-radius: 8px;
   padding: 1rem;
   margin: 1rem 0;
-  color: #6ee7b7;
+  color: var(--hex-cyan);
+  font-family: var(--font-hex-editorial);
+  font-style: italic;
   animation: successSlide 0.5s ease-out;
 }
 
@@ -1166,20 +1315,27 @@
   100% { transform: translateY(0); opacity: 1; }
 }
 
-/* Keyboard Shortcuts Hint */
+/* ==============================================================
+   Keyboard Shortcuts — light reskin
+   ============================================================== */
+
 .keyboardHints {
   position: fixed;
   bottom: 1rem;
   right: 1rem;
-  background: rgba(0, 0, 0, 0.9);
-  border: 1px solid rgba(110, 79, 246, 0.3);
+  background:
+    linear-gradient(135deg, rgba(7, 7, 13, 0.95), rgba(12, 14, 24, 0.95));
+  border: 1px solid var(--gold-dim);
   border-radius: 8px;
   padding: 0.75rem;
-  font-size: 0.8rem;
-  color: #c9aa71;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  color: var(--parchment);
   z-index: 1000;
   opacity: 0;
   transition: opacity 0.3s ease;
+  box-shadow: 0 0 0 1px rgba(200,170,110,0.06) inset;
 }
 
 .keyboardHints.visible {
@@ -1187,11 +1343,12 @@
 }
 
 .keyboardHints kbd {
-  background: rgba(110, 79, 246, 0.2);
-  border: 1px solid rgba(110, 79, 246, 0.3);
+  background: rgba(200, 170, 110, 0.12);
+  border: 1px solid var(--gold-dim);
   border-radius: 4px;
   padding: 0.2rem 0.4rem;
-  font-family: monospace;
-  color: #6e4ff6;
+  font-family: var(--font-mono);
+  color: var(--gold-bright);
   margin: 0 0.2rem;
+  font-weight: 600;
 }

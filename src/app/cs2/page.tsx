@@ -54,6 +54,8 @@ export default function CS2Page() {
 
   // Change screenshot every 12 seconds
   useEffect(() => {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
     const interval = setInterval(() => {
       const idx = Math.floor(Math.random() * cs2Screenshots.length);
       setCurrentScreenshotIndex(idx);
@@ -147,8 +149,20 @@ export default function CS2Page() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-900 flex items-center justify-center">
-        <div className="text-red-500 text-xl">Chyba: {error}</div>
+      <div className="cs2-redesign section-heading-redesign min-h-screen text-white">
+        <Header />
+        <section className="cs2-hero cs2-error-hero">
+          <div className="wash" />
+          <div className="grid-overlay" />
+          <div className="content">
+            <div className="kicker">{'// CHAPTER 03 · TACTICAL FPS'}</div>
+            <h1><span>COUNTER-STRIKE 2</span></h1>
+            <p className="lede">Chyba: {error}</p>
+            <button type="button" className="cs2-retry" onClick={() => window.location.reload()}>
+              {'// '}Zkusit znovu
+            </button>
+          </div>
+        </section>
       </div>
     );
   }
@@ -276,11 +290,11 @@ export default function CS2Page() {
             </p>
           </div>
 
-          <div className="cs2-weapon-tabs" role="tablist">
+          <div className="cs2-weapon-tabs" role="group" aria-label="Kategorie zbraní">
             {weaponCategories.map((category) => (
               <button
                 key={category.id}
-                role="tab"
+                type="button"
                 aria-pressed={activeCategory === category.id}
                 onClick={() => setActiveCategory(category.id)}
                 className={`cs2-weapon-tab ${activeCategory === category.id ? 'active' : ''}`}
