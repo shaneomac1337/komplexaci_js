@@ -1,0 +1,31 @@
+{
+  "planPath": "C:/Users/Martin/.claude/plans/okay-last-time-we-dreamy-moore.md",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Task 1: summoner.module.css — selective Hextech reskin",
+      "status": "completed",
+      "description": "**Goal:** Apply Hextech treatment to summoner-search subcomponents. SHOWCASE blocks (SummonerCard, RankDisplay, ChampionMastery, LiveGame) get Cinzel display + Cormorant editorial + gold-ruled chassis frames. LIGHT blocks (MatchHistory, MatchStatistics, PlayedWithAnalysis, search form, errors, loading, search history, keyboard shortcuts, tooltips) get color/token swap only — layout, font-family, padding stay identical. Win=hex-cyan, Loss=blood-red.\n\n**Files:**\n- Modify: `src/app/league-of-legends/summoner.module.css`\n\n**Verify:** Search a summoner; SummonerCard shows Cinzel name + Cormorant italic level; RankDisplay cards show Cinzel tier + gold gradient LP bar; ChampionMastery cards show Cinzel champion name + mono points; MatchHistory rows tinted cyan/red but otherwise compact and readable.\n\n```json:metadata\n{\"files\": [\"src/app/league-of-legends/summoner.module.css\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"All `#6e4ff6`/`rgba(110,79,246,*)` references replaced with Hextech tokens\", \"Showcase blocks use Cinzel + Cormorant per spec\", \"Light blocks keep system fonts but color-swapped\", \"Win/loss accents use --hex-cyan / --blood-red\", \"Tooltip retinted to gold/parchment\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 2: KomplexaciStatus.module.css — full Hextech treatment",
+      "status": "completed",
+      "description": "**Goal:** Full Hextech treatment for member cards (Cinzel summoner names, gold-ruled chassis frames, cyan in-game pulse + `// IN GAME` mono badge) and GameDetailsModal (mirrors champion-modal aesthetic: gold-ruled shell, gold gradient header, cyan blue-team / blood-red red-team panels, gold-bordered bans grid with blood-red overlay).\n\n**Files:**\n- Modify: `src/app/league-of-legends/components/KomplexaciStatus.module.css`\n\n**Verify:** Member cards display in Hextech style; in-game members glow cyan + show `// IN GAME` mono badge top-right; clicking an in-game member opens fully Hextech-styled GameDetailsModal with cyan/red team panels.\n\n```json:metadata\n{\"files\": [\"src/app/league-of-legends/components/KomplexaciStatus.module.css\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"All purple/green tokens replaced with gold/cyan/blood-red\", \"Member cards use Cinzel summoner name + chassis frame\", \"In-game cards show cyan glow + `// IN GAME` badge\", \"GameDetailsModal mirrors champion-modal Hextech treatment\", \"Encouragement banner uses cyan + Cinzel + Cormorant\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 3: FilterPanel.module.css + FilterChips.module.css — light reskin",
+      "status": "completed",
+      "description": "**Goal:** Light reskin of filter UI to match the champion-grid filter bar already styled in `lol-redesign.css`: gold-faint borders, gold gradient active state, parchment-dim inactive text, blood-red clear/reset action, mono labels.\n\n**Files:**\n- Modify: `src/app/league-of-legends/components/FilterPanel.module.css`\n- Modify: `src/app/league-of-legends/components/FilterChips.module.css`\n\n**Verify:** Open the filter panel and chips bar; everything reads as Hextech-toned (no purple), active states show gold gradient, clear actions show blood-red.\n\n```json:metadata\n{\"files\": [\"src/app/league-of-legends/components/FilterPanel.module.css\", \"src/app/league-of-legends/components/FilterChips.module.css\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"All `#6e4ff6`/purple replaced\", \"Active filter buttons use gold gradient\", \"Clear/reset actions use blood-red\", \"Section headers use mono + uppercase + gold\", \"Chip data-type variants retinted (champion=gold, win=cyan, loss=red, etc.)\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 4: Verification pass",
+      "status": "completed",
+      "blockedBy": [1, 2, 3],
+      "description": "**Goal:** Walk the spec verification matrix end-to-end.\n\n**Verify:** Visit /league-of-legends, scroll to SECTION 04 + SECTION 05, do a real summoner search, verify all surfaces. Verify /cs2 still synthwave. Verify console clean. Responsive at 1440 / 1024 / 768 / 375.\n\n```json:metadata\n{\"files\": [], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"No purple/blue (`#6e4ff6`/`rgba(110,79,246,*)`) anywhere in SECTION 04 or 05\", \"All 4 modules use Hextech tokens via inheritance from .lol-redesign\", \"Functionality unchanged (search submits, modal opens/closes, filters apply, keyboard shortcuts work)\", \"/cs2 still synthwave\", \"Responsive holds at 1440 / 1024 / 768 / 375\", \"Console clean\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-05-03"
+}

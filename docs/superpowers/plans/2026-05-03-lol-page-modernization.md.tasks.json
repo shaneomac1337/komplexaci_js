@@ -1,0 +1,75 @@
+{
+  "planPath": "C:/Users/Martin/.claude/plans/okay-last-time-we-dreamy-moore.md",
+  "tasks": [
+    {
+      "id": 1,
+      "subject": "Task 1: Author lol-redesign.css foundation",
+      "status": "completed",
+      "description": "**Goal:** Author the full scoped stylesheet for the LoL redesign — chassis (hero, sections, status bar, sticky filter bar, advanced disclosure, mosaic, map cards, lanes blocks, CTA strip) plus the modal restyle (parallax splash hero, mono ability tabs, skin carousel, tips grid).\n\n**Files:**\n- Create: `src/app/league-of-legends/lol-redesign.css`\n\n**Verify:** Page boots, all classes scoped under `.lol-redesign` and `.lol-redesign-modal` resolve.\n\n```json:metadata\n{\"files\": [\"src/app/league-of-legends/lol-redesign.css\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"All chassis styles scoped under .lol-redesign\", \"Modal styles under .lol-redesign-modal with self-contained tokens\", \"Mosaic uses 3:4 portrait + dual-layer hover\", \"Sticky filter bar with role pills + Advanced disclosure\", \"Responsive + reduced-motion rules present\"]}\n```"
+    },
+    {
+      "id": 2,
+      "subject": "Task 2: Hero rewrite",
+      "status": "completed",
+      "blockedBy": [1],
+      "description": "**Goal:** Replace the corner-bracket overlay hero with the synthwave chassis: mono kicker, gradient title, embedded data strip (Released/Genre/Players/Esport), live badge, splash-tag corner badge, rotating champion splash background. Wrap the entire page tree in `lol-redesign section-heading-redesign`.\n\n**Files:**\n- Modify: `src/app/league-of-legends/page.tsx`\n\n**Verify:** /league-of-legends — hero shows mono kicker `// CHAPTER 04 · STRATEGIC MOBA`, gradient title `LEAGUE OF LEGENDS`, data strip, live badge, splash rotates every 8s, splash-tag updates with champion name.\n\n```json:metadata\n{\"files\": [\"src/app/league-of-legends/page.tsx\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"Wrapper has lol-redesign + section-heading-redesign classes\", \"lol-redesign.css imported\", \"Hero has mono kicker, gradient title, data strip, live badge, splash-tag\", \"Champion splash rotates every 8s and updates splash-tag name\"]}\n```"
+    },
+    {
+      "id": 3,
+      "subject": "Task 3: Champions section + sticky filter bar + advanced disclosure",
+      "status": "completed",
+      "blockedBy": [1, 2],
+      "description": "**Goal:** Replace the champions UI with the new chassis: SECTION 01 header, status bar (DDragon version + locale + version + total + showing), sticky filter bar (search + role pills + clear + adv toggle), Advanced disclosure (chip-styled checkboxes for difficulty/damage/survivability/range/class/region), 3:4 mosaic with dual-layer hover and `// CHAMP · ###` mono index.\n\n**Files:**\n- Modify: `src/app/league-of-legends/page.tsx`\n\n**Verify:** /league-of-legends — section 01 visible. Search filters live, role pills toggle and combine, Advanced disclosure expands and chip-toggling affects the grid, Clear button resets all. Mosaic cards show dual-layer hover (loading→splash crossfade with parallax zoom).\n\n```json:metadata\n{\"files\": [\"src/app/league-of-legends/page.tsx\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"Section uses lol-section + lol-shell\", \"Header: SECTION 01 CHAMPIONS + gradient ŠAMPIONI\", \"Sticky filter bar with search + 6 role pills + clear + adv\", \"Advanced disclosure includes 6 axes\", \"Mosaic uses 3:4 cards with dual-layer hover and mono index\", \"Click opens modal\"]}\n```"
+    },
+    {
+      "id": 4,
+      "subject": "Task 4: Battlegrounds (Maps) section",
+      "status": "completed",
+      "blockedBy": [1, 2],
+      "description": "**Goal:** Replace the maps grid with chassis cards (`// MAP · ##`, mode tag, mono stats strip Released/Players/Mode).\n\n**Files:**\n- Modify: `src/app/league-of-legends/page.tsx`\n\n**Verify:** /league-of-legends — SECTION 02 BATTLEGROUNDS shows 3 chassis cards (Summoner's Rift, Bridge of Progress, TFT) with mono index, image, stats strip. Hover lifts card + scales image.\n\n```json:metadata\n{\"files\": [\"src/app/league-of-legends/page.tsx\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"Section uses lol-section + lol-shell\", \"Header: SECTION 02 BATTLEGROUNDS + gradient MAPY V LOL\", \"3 chassis cards with sequential index + mode tag\", \"Stats strip shows Released/Players/Mode\"]}\n```"
+    },
+    {
+      "id": 5,
+      "subject": "Task 5: Lanes & Objectives section",
+      "status": "completed",
+      "blockedBy": [1, 2],
+      "description": "**Goal:** Add SECTION 03 LANES & OBJECTIVES with 6 numbered blocks (Top, Jungle, Mid, Bot, Support, Objectives) — same shape as CS2's Mechanics.\n\n**Files:**\n- Modify: `src/app/league-of-legends/page.tsx`\n\n**Verify:** /league-of-legends — SECTION 03 shows 6 numbered blocks (// 01 — // 06), 2-col grid → 1-col on mobile.\n\n```json:metadata\n{\"files\": [\"src/app/league-of-legends/page.tsx\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"Section uses lol-section lol-mech\", \"Header: SECTION 03 LANES & OBJECTIVES\", \"6 mech blocks with mono index\", \"2-col grid → 1-col on mobile\"]}\n```"
+    },
+    {
+      "id": 6,
+      "subject": "Task 6: SummonerSearch + KomplexaciStatus chassis wrappers",
+      "status": "completed",
+      "blockedBy": [1, 2],
+      "description": "**Goal:** Wrap SummonerSearch in SECTION 04 chassis (mono kicker + gradient section title + framed wrapper) and KomplexaciStatus in SECTION 05. Internal styling of those components stays on `lol.module.css`.\n\n**Files:**\n- Modify: `src/app/league-of-legends/page.tsx`\n\n**Verify:** Both sections present with chassis headers; the components inside still work end-to-end (search summoner → see card/match history; KomplexaciStatus polls and renders).\n\n```json:metadata\n{\"files\": [\"src/app/league-of-legends/page.tsx\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"SECTION 04 wraps SummonerSearch with chassis header\", \"SECTION 05 wraps KomplexaciStatus with chassis header\", \"Internals of those components remain functional\", \"lol-wrap-section + lol-wrap-frame classes applied\"]}\n```"
+    },
+    {
+      "id": 7,
+      "subject": "Task 7: Champion modal restyle",
+      "status": "completed",
+      "blockedBy": [1, 3],
+      "description": "**Goal:** Restyle the champion modal: parallax splash hero, mono-keyed ability tabs (P · Q · W · E · R), proper skin carousel with prev/next + caption + thumbs, tips grid two-column. Keep existing modal state and `fetchChampionDetails` data flow.\n\n**Files:**\n- Modify: `src/app/league-of-legends/page.tsx`\n\n**Verify:** Click champion → modal opens, splash parallax visible, tab switching (Overview/Abilities/Skins/Tips) works, ability slot keys highlight cyan when active, skin carousel arrows + thumbs cycle skins. ESC closes.\n\n```json:metadata\n{\"files\": [\"src/app/league-of-legends/page.tsx\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"Modal uses lol-redesign-modal class with self-contained tokens\", \"Splash hero with parallax scale on hover\", \"Ability tabs as 5 mono-keyed slots; click cycles ability\", \"Skin carousel with prev/next, thumbs and progress\", \"Tips grid 2-col Allies / Enemies\", \"ESC closes\"]}\n```"
+    },
+    {
+      "id": 8,
+      "subject": "Task 8: CTA strip + back-button removal",
+      "status": "completed",
+      "blockedBy": [2],
+      "description": "**Goal:** Remove the existing back-button section. Add the framed CTA strip with pink kicker `// END · CHAPTER 04` and cyan arrow link to `/`.\n\n**Files:**\n- Modify: `src/app/league-of-legends/page.tsx`\n\n**Verify:** /league-of-legends — bottom shows framed CTA. Hover lifts. Click navigates to /.\n\n```json:metadata\n{\"files\": [\"src/app/league-of-legends/page.tsx\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"Old back-button removed\", \"New lol-cta-strip with pink END · CHAPTER 04 kicker\", \"Framed link to / with cyan arrow\", \"Hover lift + cyan border\"]}\n```"
+    },
+    {
+      "id": 9,
+      "subject": "Task 9: Loading + error branches in chassis",
+      "status": "completed",
+      "blockedBy": [1, 2, 3],
+      "description": "**Goal:** Replace loading and error JSX with the new chassis: hero shell + skeleton mosaic with 12 cards. Error state uses the same hero shell with a synthwave retry button.\n\n**Files:**\n- Modify: `src/app/league-of-legends/page.tsx`\n\n**Verify:** Throttle to Slow 3G, reload — skeletons match new chassis layout (3:4 shimmer cards in mosaic grid). Force an API failure — error branch shows hero with retry.\n\n```json:metadata\n{\"files\": [\"src/app/league-of-legends/page.tsx\"], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"Loading branch wraps in lol-redesign + section-heading-redesign\", \"12 lol-mosaic-skel cards in mosaic grid\", \"Error branch reuses chassis with synthwave retry button\", \"No Tailwind in branches\"]}\n```"
+    },
+    {
+      "id": 10,
+      "subject": "Task 10: Verification pass",
+      "status": "completed",
+      "blockedBy": [3, 4, 5, 6, 7, 8, 9],
+      "description": "**Goal:** Walk the spec verification matrix end-to-end: visual parity with /cs2, functionality regressions (search/filters/modal/summoner/status), responsive checks, console clean.\n\n**Files:**\n- (none — verification only)\n\n**Verify:** All checklist items in the plan's Verification section pass.\n\n```json:metadata\n{\"files\": [], \"verifyCommand\": \"npm run dev\", \"acceptanceCriteria\": [\"Visual parity with /cs2 (hero, section headings, chassis cards, CTA)\", \"All filters work\", \"Modal opens/closes/tabs/skins\", \"SummonerSearch works\", \"KomplexaciStatus works\", \"Responsive at 1440/1024/768/375\", \"No new console errors\"]}\n```"
+    }
+  ],
+  "lastUpdated": "2026-05-03"
+}

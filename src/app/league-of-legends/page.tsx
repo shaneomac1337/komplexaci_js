@@ -1,12 +1,13 @@
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo, memo, useCallback, useDeferredValue, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import styles from './lol.module.css';
 import '../komplexaci.css';
+import './lol-redesign.css';
+import '../section-headings-redesign.css';
 import Header from '../components/Header';
-import { Icon } from '../components/Icon';
 import SummonerSearch from './components/SummonerSearch';
 import KomplexaciStatus from './components/KomplexaciStatus';
 
@@ -84,39 +85,73 @@ interface ChampionDetails {
   enemytips: string[];
 }
 
-// Map data
+// Map data — Battlegrounds in SECTION 02
 const maps = [
   {
     id: 'summoners-rift',
     name: "Summoner's Rift",
     description: 'Klasická 5v5 mapa s třemi linkami a džunglí. Hlavní kompetitivní mapa League of Legends.',
     image: 'https://cdn.komplexaci.cz/komplexaci/img/lol-summoners-rift-artwork.jpg',
-    gameMode: '5v5 Ranked'
+    mode: 'Ranked 5v5',
+    players: '5v5',
+    released: 2009
   },
   {
     id: 'bridge-of-progress',
     name: 'Bridge of Progress',
     description: 'Nová mapa s unikátním designem a strategickými možnostmi. Moderní prostředí pro kompetitivní hru.',
     image: 'https://cdn.komplexaci.cz/komplexaci/img/lol-bridge-of-progress.jpg',
-    gameMode: 'ARAM'
+    mode: 'ARAM',
+    players: '5v5',
+    released: 2024
   },
   {
     id: 'teamfight-tactics',
     name: 'Teamfight Tactics: Convergence',
     description: 'Auto-battler herní mód s strategickým umisťováním jednotek. Sbírejte šampiony a vytvářejte mocné týmy.',
     image: 'https://cdn.komplexaci.cz/komplexaci/img/lol-tft-artwork.jpg',
-    gameMode: 'TFT'
+    mode: 'Auto Battler',
+    players: '8 hráčů',
+    released: 2019
   }
 ];
 
-// Position data
+// Lanes & Objectives content — SECTION 03
+const lanesAndObjectives = [
+  {
+    title: 'Top Lane',
+    body: 'Izolovaný 1v1 souboj na horní lince. Tankové a fightery se škálují přes lategame, často klíčový teamfight initiator se split-push potenciálem.'
+  },
+  {
+    title: 'Jungle',
+    body: 'Kontrola objectives, ganky pro lanery, vize a lov dračích cílů. Pathing rozhoduje o tempu hry, prio kolem mapy.'
+  },
+  {
+    title: 'Mid Lane',
+    body: 'Mágové a assassini ve středu mapy. Krátké rotace, prio pro objectives, vlivový bod celého teamfight setupu.'
+  },
+  {
+    title: 'Bot Lane',
+    body: 'Marksmen v páru se Supportem. Hlavní damage carry v lategame, scaling přes farm, předměty a vize na drakovi.'
+  },
+  {
+    title: 'Support',
+    body: 'Vize, peel a engage pro ADC. Roam mezi linkami, kontrola výhledu, klíčový teamfight setup a wave management.'
+  },
+  {
+    title: 'Objectives',
+    body: 'Drak, Herald, Baron Nashor a věže. Kdo sbírá objectives, ten škáluje a tlačí. Win conditions vedou přes mapu, ne přes kills.'
+  }
+];
+
+// Position data — SECTION 01 lane pills
 const positions = [
-  { id: 'ALL', name: 'Všechny', icon: '🎮', count: 0 },
-  { id: 'TOP', name: 'Top', icon: '⚔️', count: 0 },
-  { id: 'JUNGLE', name: 'Jungle', icon: '🌲', count: 0 },
-  { id: 'MID', name: 'Mid', icon: '🔮', count: 0 },
-  { id: 'ADC', name: 'ADC', icon: '🏹', count: 0 },
-  { id: 'SUPPORT', name: 'Support', icon: '🛡️', count: 0 }
+  { id: 'ALL', name: 'Všichni', count: 0 },
+  { id: 'TOP', name: 'Top', count: 0 },
+  { id: 'JUNGLE', name: 'Jungle', count: 0 },
+  { id: 'MID', name: 'Mid', count: 0 },
+  { id: 'ADC', name: 'ADC', count: 0 },
+  { id: 'SUPPORT', name: 'Support', count: 0 }
 ];
 
 // Available locales for DataDragon API
@@ -136,12 +171,193 @@ const AVAILABLE_LOCALES = [
   { code: 'zh_CN', name: '中文', flag: '🇨🇳' }
 ];
 
+// Replace `/splash/` with `/loading/` to get DataDragon's portrait loading-screen image.
+const loadingFromSplash = (splashUrl: string) =>
+  splashUrl.replace('/champion/splash/', '/champion/loading/');
+
+// Memoized mosaic card. Two layers of perf protection on the images:
+//   1) IntersectionObserver — img elements are NOT mounted at all until the
+//      card is within ~600px of the viewport. With 172 cards this keeps initial
+//      image requests down to whatever's actually near visible (~30-40 instead
+//      of 344). The `loading="lazy"` attribute alone wasn't enough because the
+//      browser still triggers requests for images that are in the DOM.
+//   2) `loading="lazy"` + `decoding="async"` as belt-and-suspenders on the
+//      img tags themselves once they do mount.
+// Cards stay in the DOM at all times (so search/filter doesn't reflow); the
+// `content-visibility: auto` CSS rule on the card skips paint for off-screen
+// ones, which is the bigger render-perf win.
+type ChampionMosaicCardProps = {
+  champion: Champion;
+  index: number;
+  onOpen: (champion: Champion) => void;
+};
+const ChampionMosaicCard = memo(function ChampionMosaicCard({ champion, index, onOpen }: ChampionMosaicCardProps) {
+  const indexLabel = String(index + 1).padStart(3, '0');
+  const tileUrl = champion.splash ? loadingFromSplash(champion.splash) : champion.square;
+  const ref = useRef<HTMLButtonElement | null>(null);
+  const [shouldMountImages, setShouldMountImages] = useState(false);
+
+  useEffect(() => {
+    const node = ref.current;
+    if (!node) return;
+    // Once mounted, stay mounted — we don't want images flickering as the user
+    // scrolls back and forth past a card.
+    const obs = new IntersectionObserver(
+      entries => {
+        for (const entry of entries) {
+          if (entry.isIntersecting) {
+            setShouldMountImages(true);
+            obs.disconnect();
+            return;
+          }
+        }
+      },
+      { rootMargin: '600px 0px 600px 0px' }
+    );
+    obs.observe(node);
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <button
+      ref={ref}
+      type="button"
+      className="lol-mosaic-card"
+      onClick={() => onOpen(champion)}
+      aria-label={`${champion.name} — ${champion.title}`}
+    >
+      {shouldMountImages && (
+        <>
+          <img
+            className="layer tile"
+            src={tileUrl}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            width={308}
+            height={560}
+          />
+          <img
+            className="layer splash"
+            src={champion.splash}
+            alt=""
+            loading="lazy"
+            decoding="async"
+            draggable={false}
+            width={1215}
+            height={717}
+          />
+        </>
+      )}
+      <div className="vignette" />
+      <div className="ix">
+        <span className="num">{'// CHAMP · '}{indexLabel}</span>
+        {champion.difficulty && (
+          <span className="diff">{champion.difficulty.slice(0, 3).toUpperCase()}</span>
+        )}
+      </div>
+      <div className="meta">
+        <h3 className="name">{champion.name}</h3>
+        <p className="title">{champion.title}</p>
+        <div className="roles">
+          {champion.roles.map(r => (
+            <span key={r} className="role-tag">{r}</span>
+          ))}
+        </div>
+      </div>
+    </button>
+  );
+});
+
+// CommunityDragon video CDN — webm clips of every champion ability.
+// Pattern: https://d28xe8vt774jo5.cloudfront.net/champion-abilities/<paddedKey>/ability_<paddedKey>_<P|Q|W|E|R>1.webm
+const getAbilityVideoUrl = (championKey: string | number, slot: string) => {
+  const padded = String(championKey).padStart(4, '0');
+  return `https://d28xe8vt774jo5.cloudfront.net/champion-abilities/${padded}/ability_${padded}_${slot}1.webm`;
+};
+
+// Radar chart — six-axis hexagon for champion stats. Pure SVG, no library.
+function RadarChart({ stats }: { stats: ChampionDetails['stats'] }) {
+  const axes = [
+    { label: 'HP', value: Math.min(1, (stats.hp || 0) / 700) },
+    { label: 'AD', value: Math.min(1, (stats.attackdamage || 0) / 80) },
+    { label: 'AS', value: Math.min(1, (stats.attackspeed || 0) / 0.8) },
+    { label: 'AR', value: Math.min(1, (stats.armor || 0) / 50) },
+    { label: 'MR', value: Math.min(1, (stats.spellblock || 0) / 50) },
+    { label: 'MP', value: Math.min(1, (stats.mp || 0) / 500) }
+  ];
+  const cx = 130;
+  const cy = 130;
+  const r = 88;
+  const angle = (i: number) => (Math.PI * 2 * i) / axes.length - Math.PI / 2;
+  const ringLevels = [0.25, 0.5, 0.75, 1];
+
+  const ringPoints = (level: number) =>
+    axes
+      .map((_, i) => {
+        const a = angle(i);
+        return `${(cx + Math.cos(a) * r * level).toFixed(2)},${(cy + Math.sin(a) * r * level).toFixed(2)}`;
+      })
+      .join(' ');
+
+  const dataPoints = axes.map((axis, i) => {
+    const a = angle(i);
+    const v = Math.max(0.05, axis.value);
+    return { x: cx + Math.cos(a) * r * v, y: cy + Math.sin(a) * r * v };
+  });
+  const dataPath = dataPoints.map(p => `${p.x.toFixed(2)},${p.y.toFixed(2)}`).join(' ');
+
+  const labels = axes.map((axis, i) => {
+    const a = angle(i);
+    const off = r + 18;
+    return {
+      x: cx + Math.cos(a) * off,
+      y: cy + Math.sin(a) * off + 3,
+      label: axis.label
+    };
+  });
+
+  return (
+    <svg viewBox="0 0 260 260" role="img" aria-label="Champion stats radar">
+      {ringLevels.map(level => (
+        <polygon key={level} className="grid-line" points={ringPoints(level)} />
+      ))}
+      {axes.map((_, i) => {
+        const a = angle(i);
+        return (
+          <line
+            key={i}
+            className="axis-line"
+            x1={cx}
+            y1={cy}
+            x2={cx + Math.cos(a) * r}
+            y2={cy + Math.sin(a) * r}
+          />
+        );
+      })}
+      <polygon className="data-shape" points={dataPath} />
+      {dataPoints.map((p, i) => (
+        <circle key={i} className="data-point" cx={p.x} cy={p.y} r={3.5} />
+      ))}
+      {labels.map((l, i) => (
+        <text key={i} className="axis-label" x={l.x} y={l.y}>
+          {l.label}
+        </text>
+      ))}
+    </svg>
+  );
+}
+
 export default function LeagueOfLegendsNextJS() {
   const [champions, setChampions] = useState<Champion[]>([]);
-  const [filteredChampions, setFilteredChampions] = useState<Champion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  // Deferred value keeps the input responsive: React renders the typed
+  // character first, then re-runs the filter at lower priority. Without this,
+  // every keystroke blocks paint while we re-filter 172 champions.
+  const deferredSearchTerm = useDeferredValue(searchTerm);
   const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
   const [advancedFilters, setAdvancedFilters] = useState({
     difficulty: [] as string[],
@@ -154,36 +370,28 @@ export default function LeagueOfLegendsNextJS() {
   });
   const [activePosition, setActivePosition] = useState('ALL');
   const [positionCounts, setPositionCounts] = useState(positions);
-  
+
   // Modal state
   const [selectedChampion, setSelectedChampion] = useState<Champion | null>(null);
   const [championDetails, setChampionDetails] = useState<ChampionDetails | null>(null);
   const [modalLoading, setModalLoading] = useState(false);
   const [modalError, setModalError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'abilities' | 'skins' | 'tips'>('overview');
-  
+  const [activeAbility, setActiveAbility] = useState(0);
+  const [activeSkin, setActiveSkin] = useState(0);
+
   // Background rotation state
   const [currentChampionSplash, setCurrentChampionSplash] = useState<string | null>(null);
   const [currentChampionName, setCurrentChampionName] = useState<string>('');
-  
+
   // DataDragon API state
   const [currentVersion, setCurrentVersion] = useState<string>('15.10.1');
   const [currentLocale, setCurrentLocale] = useState<string>('cs_CZ');
   const [availableVersions, setAvailableVersions] = useState<string[]>([]);
-  const [showApiInfo, setShowApiInfo] = useState(false);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [refreshSuccess, setRefreshSuccess] = useState(false);
-
-  // Toggle state for Champions vs Summoner Search
-  const [showChampions, setShowChampions] = useState(false);
-
-  // Background rotation functions
-  const getRandomChampionSplash = () => {
-    if (champions.length === 0) return null;
-    const randomChampion = champions[Math.floor(Math.random() * champions.length)];
-    setCurrentChampionName(randomChampion.name);
-    return randomChampion.splash;
-  };
+  const modalShellRef = useRef<HTMLDivElement | null>(null);
+  const previousFocusRef = useRef<HTMLElement | null>(null);
 
   // Initialize random champion splash on component mount
   useEffect(() => {
@@ -192,97 +400,78 @@ export default function LeagueOfLegendsNextJS() {
       setCurrentChampionSplash(randomChampion.splash);
       setCurrentChampionName(randomChampion.name);
     }
-  }, [champions.length]); // Only depend on length, not the entire array
+  }, [champions.length]);
 
   // Change champion splash every 8 seconds
   useEffect(() => {
     if (champions.length === 0) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const interval = setInterval(() => {
       const randomChampion = champions[Math.floor(Math.random() * champions.length)];
       setCurrentChampionSplash(randomChampion.splash);
       setCurrentChampionName(randomChampion.name);
-    }, 8000); // Change every 8 seconds
-
+    }, 8000);
     return () => clearInterval(interval);
-  }, [champions.length]); // Only depend on length, not the entire array
+  }, [champions.length]);
 
-  // DataDragon API functions
   const getLatestVersion = async () => {
     try {
       const response = await fetch('https://ddragon.leagueoflegends.com/api/versions.json');
       if (!response.ok) throw new Error('Failed to fetch version');
       const versions = await response.json();
-      setAvailableVersions(versions.slice(0, 10)); // Store top 10 versions
+      setAvailableVersions(versions.slice(0, 10));
       return versions[0];
-    } catch (error) {
-      console.error('Failed to fetch version:', error);
-      return '15.10.1'; // Fallback version
+    } catch (err) {
+      console.error('Failed to fetch version:', err);
+      return '15.10.1';
     }
   };
 
   const handleLocaleChange = async (newLocale: string) => {
     setCurrentLocale(newLocale);
-    // Smoothly refresh champions with new locale without full page loading
     await refreshChampionsData(newLocale, currentVersion);
   };
 
   const handleVersionChange = async (newVersion: string) => {
     setCurrentVersion(newVersion);
-    // Smoothly refresh champions with new version without full page loading
     await refreshChampionsData(currentLocale, newVersion);
   };
 
   const refreshChampionsData = async (locale: string, version: string) => {
     try {
       setIsRefreshing(true);
-      // Use our API endpoint with locale and version parameters
       const params = new URLSearchParams();
       if (locale) params.append('locale', locale);
       if (version) params.append('version', version);
 
       const response = await fetch(`/api/lol/champions?${params.toString()}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
       let championList = await response.json();
-
-      // Force alphabetical sorting and fix Wukong positioning
       championList = championList.map((champion: any) => ({
         ...champion,
-        // Force MonkeyKing to be displayed as Wukong for proper alphabetical sorting
         name: champion.name === 'MonkeyKing' ? 'Wukong' : champion.name
       })).sort((a: any, b: any) => a.name.localeCompare(b.name));
 
       setChampions(championList);
-      setFilteredChampions(championList);
-      
-      // Update position counts
+
       const newCounts = positions.map(pos => ({
         ...pos,
         count: pos.id === 'ALL' ? championList.length : championList.filter((champ: Champion) => champ.roles.includes(pos.id)).length
       }));
       setPositionCounts(newCounts);
-      
-      // Show success indicator briefly
+
       setRefreshSuccess(true);
       setTimeout(() => setRefreshSuccess(false), 2000);
-      
     } catch (err) {
       console.error('Failed to refresh champions:', err);
-      // Show a subtle error message instead of full error state
       setError('Failed to update language. Please try again.');
-      // Clear error after 3 seconds
       setTimeout(() => setError(null), 3000);
     } finally {
       setIsRefreshing(false);
     }
   };
-
-
-
 
   const fetchChampions = async (locale?: string, version?: string) => {
     try {
@@ -294,36 +483,26 @@ export default function LeagueOfLegendsNextJS() {
         setCurrentVersion(apiVersion);
       }
 
-      // Use our API endpoint with locale and version parameters
       const params = new URLSearchParams();
       if (apiLocale) params.append('locale', apiLocale);
       if (apiVersion) params.append('version', apiVersion);
 
       const response = await fetch(`/api/lol/champions?${params.toString()}`);
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      
       let championList = await response.json();
-
-      // Force alphabetical sorting and fix Wukong positioning
       championList = championList.map((champion: any) => ({
         ...champion,
-        // Force MonkeyKing to be displayed as Wukong for proper alphabetical sorting
         name: champion.name === 'MonkeyKing' ? 'Wukong' : champion.name
       })).sort((a: any, b: any) => a.name.localeCompare(b.name));
 
       setChampions(championList);
-      setFilteredChampions(championList);
-      
-      // Update position counts
+
       const newCounts = positions.map(pos => ({
         ...pos,
         count: pos.id === 'ALL' ? championList.length : championList.filter((champ: Champion) => champ.roles.includes(pos.id)).length
       }));
       setPositionCounts(newCounts);
-      
     } catch (err) {
       console.error('Failed to fetch champions:', err);
       setError('Failed to load champions. Please try again later.');
@@ -338,19 +517,12 @@ export default function LeagueOfLegendsNextJS() {
       setModalError(null);
 
       const response = await fetch(`https://ddragon.leagueoflegends.com/cdn/${currentVersion}/data/${currentLocale}/champion/${championId}.json`);
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+      if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
       const data = await response.json();
       const champion = data.data[championId];
+      if (!champion) throw new Error('Champion not found');
 
-      if (!champion) {
-        throw new Error('Champion not found');
-      }
-
-      // Process spells with keys
       const spells = champion.spells.map((spell: any, index: number) => ({
         id: spell.id,
         name: spell.name,
@@ -362,14 +534,18 @@ export default function LeagueOfLegendsNextJS() {
         key: ['Q', 'W', 'E', 'R'][index]
       }));
 
-      // Process skins
-      const skins = champion.skins.map((skin: any) => ({
-        id: skin.id,
-        name: skin.name === 'default' ? champion.name : skin.name,
-        num: skin.num,
-        splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champion.id}_${skin.num}.jpg`,
-        loading: `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champion.id}_${skin.num}.jpg`
-      }));
+      // Filter out chromas (color variants) — they're listed as separate skins in
+      // DataDragon but share the parent skin's splash art (no own image file on CDN).
+      // Riot marks chromas with a `parentSkin` field pointing at the parent skin's num.
+      const skins = champion.skins
+        .filter((skin: any) => skin.parentSkin === undefined)
+        .map((skin: any) => ({
+          id: skin.id,
+          name: skin.name === 'default' ? champion.name : skin.name,
+          num: skin.num,
+          splash: `https://ddragon.leagueoflegends.com/cdn/img/champion/splash/${champion.id}_${skin.num}.jpg`,
+          loading: `https://ddragon.leagueoflegends.com/cdn/img/champion/loading/${champion.id}_${skin.num}.jpg`
+        }));
 
       const championDetails: ChampionDetails = {
         id: champion.id,
@@ -392,7 +568,6 @@ export default function LeagueOfLegendsNextJS() {
       };
 
       setChampionDetails(championDetails);
-      
     } catch (err) {
       console.error('Failed to fetch champion details:', err);
       setModalError('Failed to load champion details. Please try again.');
@@ -401,63 +576,54 @@ export default function LeagueOfLegendsNextJS() {
     }
   };
 
-
-
   useEffect(() => {
     fetchChampions();
   }, []);
 
-  useEffect(() => {
-    // Filter champions based on position, search, and advanced filters
+  // Filter is a derived value (useMemo) instead of a state-effect pair: this
+  // removes one render per change and lets useDeferredValue actually defer the
+  // expensive work. Inputs stay responsive while typing.
+  const filteredChampions = useMemo(() => {
     let filtered = champions;
 
-    // Filter by position
     if (activePosition !== 'ALL') {
       filtered = filtered.filter(champion => champion.roles.includes(activePosition));
     }
 
-    // Filter by search term
-    if (searchTerm) {
-      const searchLower = searchTerm.toLowerCase();
+    if (deferredSearchTerm) {
+      const searchLower = deferredSearchTerm.toLowerCase();
       filtered = filtered.filter(champion =>
         champion.name.toLowerCase().includes(searchLower) ||
         champion.title.toLowerCase().includes(searchLower)
       );
     }
 
-    // Apply advanced filters
     if (advancedFilters.difficulty.length > 0) {
       filtered = filtered.filter(champion => advancedFilters.difficulty.includes(champion.difficulty));
     }
-
     if (advancedFilters.damage.length > 0) {
       filtered = filtered.filter(champion => advancedFilters.damage.includes(champion.damage));
     }
-
     if (advancedFilters.survivability.length > 0) {
       filtered = filtered.filter(champion => advancedFilters.survivability.includes(champion.survivability));
     }
-
     if (advancedFilters.rangeType.length > 0) {
       filtered = filtered.filter(champion => advancedFilters.rangeType.includes(champion.rangeType));
     }
-
     if (advancedFilters.championClass.length > 0) {
       filtered = filtered.filter(champion => advancedFilters.championClass.includes(champion.championClass));
     }
-
     if (advancedFilters.region.length > 0) {
       filtered = filtered.filter(champion => advancedFilters.region.includes(champion.region));
     }
-
     if (advancedFilters.roles.length > 0) {
       filtered = filtered.filter(champion =>
         champion.roles.some(role => advancedFilters.roles.includes(role))
       );
     }
 
-    setFilteredChampions(filtered);
-  }, [champions, activePosition, searchTerm, advancedFilters]);
+    return filtered;
+  }, [champions, activePosition, deferredSearchTerm, advancedFilters]);
 
   // Close modal on Escape key
   useEffect(() => {
@@ -466,27 +632,32 @@ export default function LeagueOfLegendsNextJS() {
         closeChampionModal();
       }
     };
-
     document.addEventListener('keydown', handleEscape);
     return () => document.removeEventListener('keydown', handleEscape);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedChampion]);
 
-  const handlePositionFilter = (positionId: string) => {
-    setActivePosition(positionId);
-  };
+  const handlePositionFilter = (positionId: string) => setActivePosition(positionId);
 
-  const handleSearch = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setSearchTerm(e.target.value);
-  };
-
-  const openChampionModal = (champion: Champion) => {
+  // useCallback stabilizes the reference so the memoized ChampionMosaicCard
+  // doesn't re-render every time this parent re-renders.
+  const openChampionModal = useCallback((champion: Champion) => {
+    previousFocusRef.current = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
     setSelectedChampion(champion);
     setActiveTab('overview');
+    setActiveAbility(0);
+    setActiveSkin(0);
     setChampionDetails(null);
     setModalError(null);
     fetchChampionDetails(champion.id);
     document.body.style.overflow = 'hidden';
-  };
+    // fetchChampionDetails closes over currentVersion/currentLocale, but those
+    // change rarely (only when the user picks a new locale/version, at which
+    // point we want a fresh callback anyway).
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentVersion, currentLocale]);
 
   const closeChampionModal = () => {
     setSelectedChampion(null);
@@ -494,1248 +665,871 @@ export default function LeagueOfLegendsNextJS() {
     setModalError(null);
     setActiveTab('overview');
     document.body.style.overflow = 'auto';
+    previousFocusRef.current?.focus();
   };
 
-  const handleTabChange = (tab: 'overview' | 'abilities' | 'skins' | 'tips') => {
-    setActiveTab(tab);
+  useEffect(() => {
+    if (!selectedChampion) return;
+    modalShellRef.current?.focus();
+  }, [selectedChampion]);
+
+  const handleTabChange = (tab: 'overview' | 'abilities' | 'skins' | 'tips') => setActiveTab(tab);
+
+  const clearAllFilters = () => {
+    setSearchTerm('');
+    setActivePosition('ALL');
+    setAdvancedFilters({
+      difficulty: [], damage: [], survivability: [],
+      rangeType: [], championClass: [], region: [], roles: []
+    });
   };
 
+  const advancedActiveCount = Object.values(advancedFilters).flat().length;
+  const currentLocaleObj = AVAILABLE_LOCALES.find(l => l.code === currentLocale);
+
+  // ----- Loading branch -----
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+      <div className="lol-redesign section-heading-redesign min-h-screen text-white">
         <Header />
+        <section className="lol-hero">
+          <div className="wash" />
+          <div className="grid-overlay" />
+          <div className="content">
+            <div className="kicker">{'// CHAPTER 04 · STRATEGIC MOBA'}</div>
+            <h1><span>LEAGUE OF LEGENDS</span></h1>
+            <p className="lede">Načítání šampionů z DataDragon API…</p>
+          </div>
+        </section>
 
-        {/* Static content that Google can see */}
-        <section className="relative h-[80vh] min-h-[600px] flex items-center justify-center">
-          <div className="text-center max-w-4xl px-4">
-            <h1 className="text-6xl font-bold mb-4 text-white">League of Legends</h1>
-            <p className="text-xl text-gray-200 mb-4">
-              Nejpopulárnější MOBA hra na světě od Riot Games
-            </p>
-            <p className="text-lg text-gray-300 mb-8">
-              Komplexáci se specializuje na League of Legends. Objevte více než 160 unikátních šampionů,
-              jejich schopnosti, role a herní strategie.
-            </p>
-
-            {/* Loading indicator */}
-            <div className="mt-8">
-              <div className={styles.loadingSpinner}></div>
-              <p className="text-xl text-gray-300 mt-4">Načítání šampionů...</p>
+        <section className="lol-section">
+          <div className="lol-shell">
+            <div className="lol-section-header">
+              <div className="lol-section-kicker">{'// SECTION 01 · CHAMPIONS'}</div>
+              <h2 className="section-title"><span>ŠAMPIONI</span></h2>
+            </div>
+            <div className="lol-mosaic">
+              {Array.from({ length: 12 }).map((_, i) => (
+                <div key={i} className="lol-mosaic-skel" />
+              ))}
             </div>
           </div>
         </section>
 
-        {/* Static game info that's always visible */}
-        <section className="py-16 px-4">
-          <div className="max-w-6xl mx-auto text-center">
-            <h2 className="text-4xl font-bold text-white mb-8">O hře League of Legends</h2>
-            <p className="text-xl text-gray-200 max-w-4xl mx-auto">
-              League of Legends (LoL) je týmová strategická hra, ve které dva týmy po pěti hráčích
-              bojují proti sobě s cílem zničit nepřátelskou základnu. Každý hráč ovládá jedinečného
-              šampiona s unikátními schopnostmi a rolí v týmu.
-            </p>
-          </div>
-        </section>
+        <div style={{ position: 'fixed', bottom: 32, right: 32 }}>
+          <div className="lol-spinner" />
+        </div>
       </div>
     );
   }
 
-  if (error) {
+  // ----- Error branch -----
+  if (error && champions.length === 0) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900">
+      <div className="lol-redesign section-heading-redesign min-h-screen text-white">
         <Header />
-
-        {/* Static content that Google can see even with errors */}
-        <section className="relative h-[80vh] min-h-[600px] flex items-center justify-center">
-          <div className="text-center max-w-4xl px-4">
-            <h1 className="text-6xl font-bold mb-4 text-white">League of Legends</h1>
-            <p className="text-xl text-gray-200 mb-4">
-              Nejpopulárnější MOBA hra na světě od Riot Games
-            </p>
-            <p className="text-lg text-gray-300 mb-8">
-              Komplexáci se specializuje na League of Legends. Objevte více než 160 unikátních šampionů,
-              jejich schopnosti, role a herní strategie.
-            </p>
-
-            {/* Error message */}
-            <div className="mt-8 bg-red-900/20 border border-red-500/50 rounded-lg p-6">
-              <p className="text-xl text-red-400 mb-4">{error}</p>
-              <button
-                onClick={() => fetchChampions()}
-                className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
-                Zkusit znovu
-              </button>
-            </div>
-          </div>
-        </section>
-
-        {/* Static game info that's always visible */}
-        <section className="py-16 px-4">
-          <div className="max-w-6xl mx-auto text-center">
-            <h2 className="text-4xl font-bold text-white mb-8">O hře League of Legends</h2>
-            <p className="text-xl text-gray-200 max-w-4xl mx-auto mb-8">
-              League of Legends (LoL) je týmová strategická hra, ve které dva týmy po pěti hráčích
-              bojují proti sobě s cílem zničit nepřátelskou základnu. Každý hráč ovládá jedinečného
-              šampiona s unikátními schopnostmi a rolí v týmu.
-            </p>
-
-            <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              <div className="bg-black/30 border border-blue-500/30 rounded-lg p-6">
-                <h3 className="text-2xl font-bold text-white mb-4">Herní módy</h3>
-                <p className="text-gray-300">
-                  LoL nabízí různé herní módy od klasického 5v5 Ranked po rychlé ARAM zápasy
-                  a strategické Teamfight Tactics.
-                </p>
-              </div>
-              <div className="bg-black/30 border border-blue-500/30 rounded-lg p-6">
-                <h3 className="text-2xl font-bold text-white mb-4">Šampioni</h3>
-                <p className="text-gray-300">
-                  Více než 160 unikátních šampionů s různými schopnostmi, rolemi a herními styly.
-                  Každý šampion nabízí jiný způsob hry.
-                </p>
-              </div>
-            </div>
+        <section className="lol-hero">
+          <div className="wash" />
+          <div className="grid-overlay" />
+          <div className="content">
+            <div className="kicker">{'// CHAPTER 04 · STRATEGIC MOBA'}</div>
+            <h1><span>LEAGUE OF LEGENDS</span></h1>
+            <p className="lede">{error}</p>
+            <button
+              onClick={() => fetchChampions()}
+              className="cta-link"
+              style={{
+                display: 'inline-flex', alignItems: 'center', gap: 10,
+                padding: '14px 24px',
+                background: 'rgba(0,255,255,0.08)',
+                border: '1px solid rgba(0,255,255,0.4)',
+                borderRadius: 12,
+                color: '#fff', cursor: 'pointer', fontFamily: "'JetBrains Mono', monospace",
+                fontSize: 12, letterSpacing: '0.2em', textTransform: 'uppercase'
+              }}
+            >
+              {'// '}Zkusit znovu
+            </button>
           </div>
         </section>
       </div>
     );
   }
 
+  // ----- Main render -----
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900" style={{ fontFamily: "'Exo 2', 'Roboto', sans-serif" }}>
+    <div className="lol-redesign section-heading-redesign min-h-screen text-white">
+      <Header />
 
-        {/* NoScript fallback for crawlers and users without JavaScript */}
-        <noscript>
-          <div className="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 p-8">
-            <div className="max-w-6xl mx-auto">
-              <h1 className="text-6xl font-bold text-white text-center mb-8">League of Legends | Komplexáci</h1>
-              <p className="text-2xl text-gray-200 text-center mb-12">
-                Nejpopulárnější MOBA hra na světě od Riot Games
-              </p>
+      {/* Hero */}
+      <section className="lol-hero">
+        {currentChampionSplash && (
+          <div
+            className="bg"
+            style={{ backgroundImage: `url(${currentChampionSplash})` }}
+          />
+        )}
+        <div className="wash" />
+        <div className="grid-overlay" />
+        <div className="live-badge">{'// LIVE FEED'}</div>
 
-              <div className="grid md:grid-cols-2 gap-8 mb-12">
-                <div className="bg-black/30 border border-blue-500/30 rounded-lg p-8">
-                  <h2 className="text-3xl font-bold text-white mb-4">O hře</h2>
-                  <p className="text-lg text-gray-300 mb-4">
-                    League of Legends (LoL) je týmová strategická hra, ve které dva týmy po pěti hráčích
-                    bojují proti sobě s cílem zničit nepřátelskou základnu.
-                  </p>
-                  <p className="text-lg text-gray-300">
-                    Každý hráč ovládá jedinečného šampiona s unikátními schopnostmi a rolí v týmu.
-                  </p>
-                </div>
-
-                <div className="bg-black/30 border border-blue-500/30 rounded-lg p-8">
-                  <h2 className="text-3xl font-bold text-white mb-4">Šampioni</h2>
-                  <p className="text-lg text-gray-300 mb-4">
-                    Více než 160 unikátních šampionů s různými schopnostmi, rolemi a herními styly.
-                  </p>
-                  <p className="text-lg text-gray-300">
-                    Pro zobrazení interaktivního seznamu šampionů povolte JavaScript.
-                  </p>
-                </div>
-              </div>
-
-              <div className="text-center">
-                <h3 className="text-2xl font-bold text-white mb-4">Komplexáci a League of Legends</h3>
-                <p className="text-lg text-gray-300 max-w-4xl mx-auto">
-                  Klan Komplexáci se specializuje na League of Legends a sdílí herní strategie,
-                  tipy a zážitky z této populární MOBA hry. Připojte se k naší komunitě!
-                </p>
-              </div>
+        <div className="content">
+          <div className="kicker">
+            {'// CHAPTER 04'}<span className="dot" />STRATEGIC MOBA
+          </div>
+          <h1>
+            <span>LEAGUE OF LEGENDS</span>
+          </h1>
+          <p className="lede">
+            Týmová strategická MOBA od Riot Games. Více než 160 šampionů, pět rolí, jedna mapa a desítky objectives, které rozhodují zápas.
+          </p>
+          <div className="data-strip">
+            <div className="cell">
+              <span className="label">Released</span>
+              <span className="val">2009</span>
+            </div>
+            <div className="cell">
+              <span className="label">Genre</span>
+              <span className="val cyan">MOBA</span>
+            </div>
+            <div className="cell">
+              <span className="label">Players</span>
+              <span className="val">5v5</span>
+            </div>
+            <div className="cell">
+              <span className="label">Esport</span>
+              <span className="val pink">Worlds</span>
             </div>
           </div>
-        </noscript>
+        </div>
 
-        {/* Header */}
-        <Header />
-        
-        {/* Hero Section */}
-        <section className={`relative h-[80vh] min-h-[600px] flex items-center justify-center ${styles.heroSection} ${styles.parallaxBg} overflow-hidden`}>
-          {/* Background Image using champion splash art */}
-          {currentChampionSplash && (
-            <>
-              {/* Blurred background layer */}
-              <img
-                src={currentChampionSplash}
-                alt="Champion Splash Background"
-                className="absolute inset-0 w-full h-full object-cover filter blur-xl brightness-30 scale-110"
-                style={{ zIndex: 1 }}
-              />
+        {currentChampionName && (
+          <div className="splash-tag">
+            CURRENT<span className="name">{currentChampionName}</span>
+          </div>
+        )}
+      </section>
 
-              {/* Main image layer - shows full champion splash */}
-              <img
-                src={currentChampionSplash}
-                alt="Champion Splash"
-                className="absolute inset-0 w-full h-full object-contain filter brightness-75"
-                style={{ zIndex: 2 }}
+      {/* SECTION 01 · CHAMPIONS */}
+      <section className="lol-section">
+        <div className="lol-shell">
+          <div className="lol-section-header">
+            <div className="lol-section-kicker">{'// SECTION 01 · CHAMPIONS'}</div>
+            <h2 className="section-title"><span>ŠAMPIONI</span></h2>
+            <p className="lol-section-sub">
+              Více než 160 unikátních šampionů, každý s vlastní pasivkou, čtyřmi schopnostmi, lore a sadou skinů.
+            </p>
+          </div>
+
+          {/* Status bar (DDragon version + locale + count) */}
+          <div className="lol-status-bar">
+            <div className="seg">
+              <span className="lbl">{'// DDRAGON'}</span>
+              <span className="val cyan">v{currentVersion}</span>
+            </div>
+            <div className="seg">
+              <span className="lbl">Locale</span>
+              <select
+                value={currentLocale}
+                onChange={(e) => handleLocaleChange(e.target.value)}
+                disabled={isRefreshing}
+                aria-label="Locale"
+              >
+                {AVAILABLE_LOCALES.map(locale => (
+                  <option key={locale.code} value={locale.code}>
+                    {locale.flag} {locale.code}
+                  </option>
+                ))}
+              </select>
+              {isRefreshing && <span className="spin" aria-hidden="true" />}
+              {refreshSuccess && <span className="ok">✓</span>}
+            </div>
+            {availableVersions.length > 0 && (
+              <div className="seg">
+                <span className="lbl">Version</span>
+                <select
+                  value={currentVersion}
+                  onChange={(e) => handleVersionChange(e.target.value)}
+                  disabled={isRefreshing}
+                  aria-label="Version"
+                >
+                  {availableVersions.map(v => (
+                    <option key={v} value={v}>{v}</option>
+                  ))}
+                </select>
+              </div>
+            )}
+            <div className="seg">
+              <span className="lbl">Champions</span>
+              <span className="val pink">{champions.length}</span>
+            </div>
+            <div className="seg">
+              <span className="lbl">Showing</span>
+              <span className="val cyan">{filteredChampions.length}</span>
+            </div>
+          </div>
+
+          {/* Filter bar (sticky) */}
+          <div className="lol-filter-bar">
+            <div className="search">
+              <span className="icon">⌕</span>
+              <input
+                type="text"
+                placeholder="Hledat šampiona…"
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                aria-label="Hledat šampiona"
               />
-            </>
+            </div>
+
+            <div className="pills" role="tablist" aria-label="Lane filter">
+              {positionCounts.map(position => (
+                <button
+                  key={position.id}
+                  role="tab"
+                  aria-pressed={activePosition === position.id}
+                  className={`pill ${activePosition === position.id ? 'active' : ''}`}
+                  onClick={() => handlePositionFilter(position.id)}
+                >
+                  {position.name}
+                  <span className="count">/ {position.count}</span>
+                </button>
+              ))}
+            </div>
+
+            <button
+              type="button"
+              className={`adv-toggle ${showAdvancedFilters ? 'open' : ''}`}
+              onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+              aria-expanded={showAdvancedFilters}
+            >
+              {'// ADV'}
+              {advancedActiveCount > 0 && <span className="badge">{advancedActiveCount}</span>}
+              <span aria-hidden="true">{showAdvancedFilters ? '▲' : '▼'}</span>
+            </button>
+
+            {(searchTerm || activePosition !== 'ALL' || advancedActiveCount > 0) && (
+              <button type="button" className="clear" onClick={clearAllFilters}>
+                Vymazat ✕
+              </button>
+            )}
+          </div>
+
+          {/* Advanced disclosure */}
+          {showAdvancedFilters && (
+            <div className="lol-advanced">
+              <div className="grid">
+                <div className="group">
+                  <label className="head">{'// OBTÍŽNOST'}</label>
+                  <div className="checks">
+                    {['Nízká', 'Střední', 'Vysoká', 'Velmi vysoká'].map(difficulty => (
+                      <label key={difficulty}>
+                        <input
+                          type="checkbox"
+                          checked={advancedFilters.difficulty.includes(difficulty)}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? [...advancedFilters.difficulty, difficulty]
+                              : advancedFilters.difficulty.filter(d => d !== difficulty);
+                            setAdvancedFilters({ ...advancedFilters, difficulty: next });
+                          }}
+                        />
+                        <span>{difficulty}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="group">
+                  <label className="head">{'// TYP POŠKOZENÍ'}</label>
+                  <div className="checks">
+                    {[{ value: 'Physical', label: 'Fyzické' }, { value: 'Magic', label: 'Magické' }].map(damage => (
+                      <label key={damage.value}>
+                        <input
+                          type="checkbox"
+                          checked={advancedFilters.damage.includes(damage.value)}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? [...advancedFilters.damage, damage.value]
+                              : advancedFilters.damage.filter(d => d !== damage.value);
+                            setAdvancedFilters({ ...advancedFilters, damage: next });
+                          }}
+                        />
+                        <span>{damage.label}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="group">
+                  <label className="head">{'// PŘEŽITELNOST'}</label>
+                  <div className="checks">
+                    {['Nízká', 'Střední', 'Vysoká', 'Velmi vysoká'].map(s => (
+                      <label key={s}>
+                        <input
+                          type="checkbox"
+                          checked={advancedFilters.survivability.includes(s)}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? [...advancedFilters.survivability, s]
+                              : advancedFilters.survivability.filter(x => x !== s);
+                            setAdvancedFilters({ ...advancedFilters, survivability: next });
+                          }}
+                        />
+                        <span>{s}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="group">
+                  <label className="head">{'// DOSAH'}</label>
+                  <div className="checks">
+                    {['Melee', 'Ranged'].map(r => (
+                      <label key={r}>
+                        <input
+                          type="checkbox"
+                          checked={advancedFilters.rangeType.includes(r)}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? [...advancedFilters.rangeType, r]
+                              : advancedFilters.rangeType.filter(x => x !== r);
+                            setAdvancedFilters({ ...advancedFilters, rangeType: next });
+                          }}
+                        />
+                        <span>{r}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="group">
+                  <label className="head">{'// TŘÍDA'}</label>
+                  <div className="checks">
+                    {['Assassin', 'Fighter', 'Mage', 'Marksman', 'Support', 'Tank'].map(c => (
+                      <label key={c}>
+                        <input
+                          type="checkbox"
+                          checked={advancedFilters.championClass.includes(c)}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? [...advancedFilters.championClass, c]
+                              : advancedFilters.championClass.filter(x => x !== c);
+                            setAdvancedFilters({ ...advancedFilters, championClass: next });
+                          }}
+                        />
+                        <span>{c}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="group">
+                  <label className="head">{'// REGION'}</label>
+                  <div className="checks">
+                    {['Bandle City', 'Bilgewater', 'Demacia', 'Freljord', 'Ionia', 'Ixtal', 'Noxus', 'Piltover', 'Shadow Isles', 'Shurima', 'Targon', 'The Void', 'Zaun', 'Runeterra'].map(region => (
+                      <label key={region}>
+                        <input
+                          type="checkbox"
+                          checked={advancedFilters.region.includes(region)}
+                          onChange={(e) => {
+                            const next = e.target.checked
+                              ? [...advancedFilters.region, region]
+                              : advancedFilters.region.filter(x => x !== region);
+                            setAdvancedFilters({ ...advancedFilters, region: next });
+                          }}
+                        />
+                        <span>{region}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="footer">
+                <button
+                  type="button"
+                  className="reset"
+                  onClick={() => setAdvancedFilters({
+                    difficulty: [], damage: [], survivability: [],
+                    rangeType: [], championClass: [], region: [], roles: []
+                  })}
+                >
+                  Reset ADV
+                </button>
+              </div>
+            </div>
           )}
 
-          <div className="relative z-10 text-center max-w-4xl px-4">
-            <div className="relative">
-              {/* LoL-style overlay */}
-              <div className="bg-black/30 border-2 border-blue-500/50 rounded-2xl p-8 mx-8 relative overflow-hidden">
-                {/* LoL-style corner accents */}
-                <div className="absolute top-0 left-0 w-8 h-8 border-t-4 border-l-4 border-blue-400"></div>
-                <div className="absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4 border-blue-400"></div>
-                <div className="absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4 border-blue-400"></div>
-                <div className="absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4 border-blue-400"></div>
-
-                {/* Animated border effect */}
-                <div className="absolute inset-0 border-2 border-transparent bg-gradient-to-r from-blue-500/20 via-purple-500/20 to-blue-500/20 rounded-2xl opacity-50"></div>
-
-                {/* Content */}
-                <div className="relative z-10">
-                  <h1 className={`text-6xl font-bold mb-4 ${styles.textShadow} ${styles.textGradient}`}>
-                    League of Legends
-                  </h1>
-                  <p className="text-xl font-light text-gray-200 mb-4">
-                    <span className={styles.textGlow}>
-                      Nejpopulárnější MOBA hra na světě od Riot Games
-                    </span>
-                  </p>
-                  {currentChampionSplash && currentChampionName && (
-                    <div className="mt-4 text-sm text-blue-300 opacity-75"
-                         style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.9), 0 0 6px rgba(0,0,0,0.6)' }}>
-                      <Icon name="star" className="mr-2" />
-                      Aktuální šampion: {currentChampionName}
-                    </div>
-                  )}
-                </div>
-              </div>
-            </div>
+          {/* Champion mosaic */}
+          <div className="lol-mosaic">
+            {filteredChampions.length === 0 && (
+              <div className="empty">{'// NO MATCHES — UPRAVTE FILTRY'}</div>
+            )}
+            {filteredChampions.map((champion, idx) => (
+              <ChampionMosaicCard
+                key={champion.id}
+                champion={champion}
+                index={idx}
+                onOpen={openChampionModal}
+              />
+            ))}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Game Info Section */}
-        <section className={`${styles.gameInfoSection} ${styles.section}`}>
-          <div className={styles.container}>
-            <h2 className={styles.sectionTitle}>O hře League of Legends</h2>
-            <p style={{ textAlign: 'center', fontSize: '1.2rem', color: '#f0e6d2', maxWidth: '800px', margin: '0 auto 50px' }}>
-              League of Legends (LoL) je týmová strategická hra, ve které dva týmy po pěti hráčích bojují proti sobě s cílem zničit nepřátelskou základnu. Každý hráč ovládá jedinečného šampiona s unikátními schopnostmi a rolí v týmu.
+      {/* SECTION 02 · BATTLEGROUNDS */}
+      <section className="lol-section">
+        <div className="lol-shell">
+          <div className="lol-section-header">
+            <div className="lol-section-kicker">{'// SECTION 02 · BATTLEGROUNDS'}</div>
+            <h2 className="section-title"><span>MAPY V LOL</span></h2>
+            <p className="lol-section-sub">
+              Tři aktivní mapy: klasická Summoner's Rift, ARAM Bridge of Progress a auto-battler Teamfight Tactics.
             </p>
-            
-            <div className={styles.gameInfoGrid}>
-              <div className={styles.gameInfoCard}>
-                <h3>Herní módy</h3>
-                <p>LoL nabízí různé herní módy od klasického 5v5 Ranked po rychlé ARAM zápasy a strategické Teamfight Tactics.</p>
-              </div>
-              <div className={styles.gameInfoCard}>
-                <h3>Šampioni</h3>
-                <p>Více než 160 unikátních šampionů s různými schopnostmi, rolemi a herními styly. Každý šampion nabízí jiný způsob hry.</p>
-              </div>
-            </div>
+          </div>
 
-            {/* Maps Grid */}
-            <div className={styles.gameMapGrid}>
-              {maps.map((map) => (
-                <div key={map.id} className={styles.gameMapCard}>
-                  <div className={styles.gameMapImage}>
+          <div className="lol-grid-cards">
+            {maps.map((map, idx) => {
+              const indexLabel = String(idx + 1).padStart(2, '0');
+              return (
+                <article key={map.id} className="lol-card">
+                  <div className="ix-bar">
+                    <span className="index">{'// MAP · '}{indexLabel}</span>
+                    <span className="ix-tag">{map.mode.toUpperCase()}</span>
+                  </div>
+                  <div className="img-frame">
                     <Image
                       src={map.image}
                       alt={map.name}
-                      width={400}
-                      height={250}
-                      className="object-cover"
+                      fill
+                      sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                       unoptimized
                     />
                   </div>
-                  <div className={styles.gameMapContent}>
-                    <h3 className={styles.gameMapTitle}>{map.name}</h3>
-                    <p style={{ color: '#bababa', marginBottom: '10px' }}>{map.description}</p>
-                    <span style={{ 
-                      background: 'rgba(110, 79, 246, 0.2)', 
-                      color: '#6e4ff6', 
-                      padding: '4px 12px', 
-                      borderRadius: '12px', 
-                      fontSize: '0.8rem',
-                      fontWeight: '600'
-                    }}>
-                      {map.gameMode}
-                    </span>
+                  <div className="body">
+                    <h3>{map.name}</h3>
+                    <p className="desc">{map.description}</p>
+                    <div className="stats">
+                      <div className="s">
+                        <span className="lbl">Released</span>
+                        <span className="val">{map.released}</span>
+                      </div>
+                      <div className="s">
+                        <span className="lbl">Players</span>
+                        <span className="val">{map.players}</span>
+                      </div>
+                      <div className="s">
+                        <span className="lbl">Mode</span>
+                        <span className="val cyan">{map.mode}</span>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              ))}
-            </div>
+                </article>
+              );
+            })}
           </div>
-        </section>
+        </div>
+      </section>
 
-        {/* Komplexáci Status Section */}
-        <KomplexaciStatus />
-
-        {/* Toggle Switch Section */}
-        <section className={styles.toggleSection}>
-          <div className={styles.container}>
-            <div className={styles.toggleContainer}>
-              <h3 className={styles.toggleTitle}>Vyberte sekci</h3>
-              <div className={styles.toggleWrapper}>
-                <span className={`${styles.toggleLabel} ${!showChampions ? styles.active : ''}`}>
-                  🔍 Vyhledávání hráčů
-                </span>
-                <div className={styles.toggleSwitch} onClick={() => setShowChampions(!showChampions)}>
-                  <div className={`${styles.toggleSlider} ${showChampions ? styles.right : styles.left}`}>
-                    <div className={styles.toggleHandle}></div>
-                  </div>
-                </div>
-                <span className={`${styles.toggleLabel} ${showChampions ? styles.active : ''}`}>
-                  ⚔️ Championové
-                </span>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* Conditional Sections */}
-        {!showChampions && (
-          /* Summoner Search Section */
-          <SummonerSearch />
-        )}
-
-        {showChampions && (
-          /* Champions Section */
-          <section className={`${styles.section}`} style={{ background: 'rgba(0, 0, 0, 0.2)' }}>
-          <div className={styles.container}>
-            <h2 className={styles.sectionTitle}>Champions</h2>
-            <p style={{ textAlign: 'center', fontSize: '1.2rem', color: '#f0e6d2', maxWidth: '800px', margin: '0 auto 50px' }}>
-              Objevte více než 160 unikátních championů, každý s vlastními schopnostmi a herním stylem.
+      {/* SECTION 03 · LANES & OBJECTIVES */}
+      <section className="lol-section lol-mech">
+        <div className="lol-shell">
+          <div className="lol-section-header">
+            <div className="lol-section-kicker">{'// SECTION 03 · LANES & OBJECTIVES'}</div>
+            <h2 className="section-title"><span>LINKY &amp; CÍLE</span></h2>
+            <p className="lol-section-sub">
+              Pět rolí na mapě plus objectives, které řídí tempo zápasu. Win conditions vedou přes mapu, ne přes kills.
             </p>
-
-            {/* Static content visible even before champions load */}
-            {champions.length === 0 && !loading && !error && (
-              <div className="text-center py-16">
-                <div className="max-w-4xl mx-auto">
-                  <h3 className="text-3xl font-bold text-white mb-6">League of Legends Champions</h3>
-                  <p className="text-xl text-gray-300 mb-8">
-                    League of Legends obsahuje více než 160 unikátních šampionů rozdělených do různých rolí:
-                  </p>
-
-                  <div className="grid md:grid-cols-3 lg:grid-cols-5 gap-6 mb-12">
-                    <div className="bg-black/30 border border-blue-500/30 rounded-lg p-4">
-                      <div className="text-3xl mb-2">⚔️</div>
-                      <h4 className="text-lg font-bold text-white mb-2">Top Lane</h4>
-                      <p className="text-sm text-gray-300">Tanky a fighters pro horní linku</p>
-                    </div>
-                    <div className="bg-black/30 border border-green-500/30 rounded-lg p-4">
-                      <div className="text-3xl mb-2">🌲</div>
-                      <h4 className="text-lg font-bold text-white mb-2">Jungle</h4>
-                      <p className="text-sm text-gray-300">Šampioni pro džungli a ganky</p>
-                    </div>
-                    <div className="bg-black/30 border border-purple-500/30 rounded-lg p-4">
-                      <div className="text-3xl mb-2">🔮</div>
-                      <h4 className="text-lg font-bold text-white mb-2">Mid Lane</h4>
-                      <p className="text-sm text-gray-300">Mágové a assassini pro střed</p>
-                    </div>
-                    <div className="bg-black/30 border border-red-500/30 rounded-lg p-4">
-                      <div className="text-3xl mb-2">🏹</div>
-                      <h4 className="text-lg font-bold text-white mb-2">ADC</h4>
-                      <p className="text-sm text-gray-300">Střelci pro spodní linku</p>
-                    </div>
-                    <div className="bg-black/30 border border-yellow-500/30 rounded-lg p-4">
-                      <div className="text-3xl mb-2">🛡️</div>
-                      <h4 className="text-lg font-bold text-white mb-2">Support</h4>
-                      <p className="text-sm text-gray-300">Podpora pro ADC</p>
-                    </div>
-                  </div>
-
-                  <p className="text-lg text-gray-400">
-                    Načítání detailních informací o šampionech...
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* Search Bar */}
-            <div className={styles.searchContainer}>
-              <input
-                type="text"
-                placeholder="Hledat šampiona..."
-                value={searchTerm}
-                onChange={handleSearch}
-                className={styles.searchBar}
-              />
-            </div>
-
-            {/* DataDragon API Info */}
-            <div className={styles.apiInfoSection}>
-              <div className={styles.apiInfoHeader}>
-                <div className={styles.apiInfoTitle}>
-                  <span className={styles.apiIcon}>🔗</span>
-                  DataDragon API
-                </div>
-                <div className={styles.apiHeaderControls}>
-                  <div className={styles.apiQuickControl}>
-                    <span className={styles.apiQuickLabel}>Jazyk:</span>
-                    <div className={styles.selectContainer}>
-                      <select
-                        value={currentLocale}
-                        onChange={(e) => handleLocaleChange(e.target.value)}
-                        className={`${styles.apiQuickSelect} ${isRefreshing ? styles.refreshing : ''}`}
-                        disabled={isRefreshing}
-                      >
-                        {AVAILABLE_LOCALES.map(locale => (
-                          <option key={locale.code} value={locale.code}>
-                            {locale.flag} {locale.name}
-                          </option>
-                        ))}
-                      </select>
-                      {isRefreshing && (
-                        <div className={styles.refreshSpinner}>
-                          <div className={styles.miniSpinner}></div>
-                        </div>
-                      )}
-                      {refreshSuccess && (
-                        <div className={styles.successIndicator}>
-                          ✓
-                        </div>
-                      )}
-                    </div>
-                  </div>
-                  <button
-                    className={styles.apiToggleButton}
-                    onClick={() => setShowApiInfo(!showApiInfo)}
-                  >
-                    {showApiInfo ? '▼' : '▶'} Více
-                  </button>
-                </div>
-              </div>
-              
-              <div className={styles.apiInfoBasic}>
-                <div className={styles.apiInfoItem}>
-                  <span className={styles.apiLabel}>Verze:</span>
-                  <span className={styles.apiValue}>{currentVersion}</span>
-                </div>
-                <div className={styles.apiInfoItem}>
-                  <span className={styles.apiLabel}>Šampioni:</span>
-                  <span className={styles.apiValue}>{champions.length}</span>
-                </div>
-                <div className={styles.apiInfoItem}>
-                  <span className={styles.apiLabel}>Aktuální jazyk:</span>
-                  <span className={styles.apiValue}>
-                    {AVAILABLE_LOCALES.find(l => l.code === currentLocale)?.flag} {AVAILABLE_LOCALES.find(l => l.code === currentLocale)?.name}
-                  </span>
-                </div>
-              </div>
-
-              {showApiInfo && (
-                <div className={styles.apiInfoExpanded}>
-                  <div className={styles.apiControls}>
-                    <div className={styles.apiControlGroup}>
-                      <label className={styles.apiControlLabel}>Verze API:</label>
-                      <select
-                        value={currentVersion}
-                        onChange={(e) => handleVersionChange(e.target.value)}
-                        className={styles.apiSelect}
-                      >
-                        {availableVersions.map(version => (
-                          <option key={version} value={version}>
-                            {version}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                  </div>
-                  
-                  <div className={styles.apiDescription}>
-                    <p>
-                      Data jsou načítána z oficiálního Riot Games DataDragon API.
-                      Změna jazyka nebo verze automaticky aktualizuje všechny informace o šampionech.
-                    </p>
-                    <a
-                      href="https://developer.riotgames.com/docs/lol#data-dragon"
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={styles.apiLink}
-                    >
-                      📖 Dokumentace DataDragon API
-                    </a>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Position Filters */}
-            <div className={styles.positionFilters}>
-              {positionCounts.map((position) => (
-                <div
-                  key={position.id}
-                  className={`${styles.positionFilterItem} ${activePosition === position.id ? styles.active : ''}`}
-                  onClick={() => handlePositionFilter(position.id)}
-                >
-                  <div className={styles.positionIcon}>{position.icon}</div>
-                  <div className={styles.positionLabel}>{position.name}</div>
-                  <div className={styles.positionCount}>{position.count}</div>
-                </div>
-              ))}
-            </div>
-
-            {/* Advanced Filters */}
-            <div className={styles.advancedFilters}>
-              <button
-                className={styles.toggleFiltersBtn}
-                onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
-              >
-                Pokročilé filtry <span className={styles.toggleArrow}>{showAdvancedFilters ? '▲' : '▼'}</span>
-                {Object.values(advancedFilters).flat().length > 0 && (
-                  <span className={styles.filterCount}>
-                    {Object.values(advancedFilters).flat().length}
-                  </span>
-                )}
-              </button>
-
-              {showAdvancedFilters && (
-                <div className={styles.filtersPanel}>
-                  <div className={styles.filtersGrid}>
-                    {/* Difficulty Filter */}
-                    <div className={styles.filterGroup}>
-                      <label>Obtížnost:</label>
-                      <div className={styles.filterCheckboxes}>
-                        {['Nízká', 'Střední', 'Vysoká', 'Velmi vysoká'].map(difficulty => (
-                          <label key={difficulty}>
-                            <input
-                              type="checkbox"
-                              checked={advancedFilters.difficulty.includes(difficulty)}
-                              onChange={(e) => {
-                                const newDifficulty = e.target.checked
-                                  ? [...advancedFilters.difficulty, difficulty]
-                                  : advancedFilters.difficulty.filter(d => d !== difficulty);
-                                setAdvancedFilters({...advancedFilters, difficulty: newDifficulty});
-                              }}
-                            />
-                            <span>{difficulty}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Damage Type Filter */}
-                    <div className={styles.filterGroup}>
-                      <label>Typ poškození:</label>
-                      <div className={styles.filterCheckboxes}>
-                        {[{value: 'Physical', label: 'Fyzické'}, {value: 'Magic', label: 'Magické'}].map(damage => (
-                          <label key={damage.value}>
-                            <input
-                              type="checkbox"
-                              checked={advancedFilters.damage.includes(damage.value)}
-                              onChange={(e) => {
-                                const newDamage = e.target.checked
-                                  ? [...advancedFilters.damage, damage.value]
-                                  : advancedFilters.damage.filter(d => d !== damage.value);
-                                setAdvancedFilters({...advancedFilters, damage: newDamage});
-                              }}
-                            />
-                            <span>{damage.label}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Survivability Filter */}
-                    <div className={styles.filterGroup}>
-                      <label>Přežitelnost:</label>
-                      <div className={styles.filterCheckboxes}>
-                        {['Nízká', 'Střední', 'Vysoká', 'Velmi vysoká'].map(survivability => (
-                          <label key={survivability}>
-                            <input
-                              type="checkbox"
-                              checked={advancedFilters.survivability.includes(survivability)}
-                              onChange={(e) => {
-                                const newSurvivability = e.target.checked
-                                  ? [...advancedFilters.survivability, survivability]
-                                  : advancedFilters.survivability.filter(s => s !== survivability);
-                                setAdvancedFilters({...advancedFilters, survivability: newSurvivability});
-                              }}
-                            />
-                            <span>{survivability}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Range Type Filter */}
-                    <div className={styles.filterGroup}>
-                      <label>Typ dosahu:</label>
-                      <div className={styles.filterCheckboxes}>
-                        {['Melee', 'Ranged'].map(rangeType => (
-                          <label key={rangeType}>
-                            <input
-                              type="checkbox"
-                              checked={advancedFilters.rangeType.includes(rangeType)}
-                              onChange={(e) => {
-                                const newRangeType = e.target.checked
-                                  ? [...advancedFilters.rangeType, rangeType]
-                                  : advancedFilters.rangeType.filter(r => r !== rangeType);
-                                setAdvancedFilters({...advancedFilters, rangeType: newRangeType});
-                              }}
-                            />
-                            <span>{rangeType}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Champion Class Filter */}
-                    <div className={styles.filterGroup}>
-                      <label>Třída šampiona:</label>
-                      <div className={styles.filterCheckboxes}>
-                        {['Assassin', 'Fighter', 'Mage', 'Marksman', 'Support', 'Tank'].map(championClass => (
-                          <label key={championClass}>
-                            <input
-                              type="checkbox"
-                              checked={advancedFilters.championClass.includes(championClass)}
-                              onChange={(e) => {
-                                const newChampionClass = e.target.checked
-                                  ? [...advancedFilters.championClass, championClass]
-                                  : advancedFilters.championClass.filter(c => c !== championClass);
-                                setAdvancedFilters({...advancedFilters, championClass: newChampionClass});
-                              }}
-                            />
-                            <span>{championClass}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-
-                    {/* Region Filter */}
-                    <div className={styles.filterGroup}>
-                      <label>Region:</label>
-                      <div className={styles.filterCheckboxes}>
-                        {['Bandle City', 'Bilgewater', 'Demacia', 'Freljord', 'Ionia', 'Ixtal', 'Noxus', 'Piltover', 'Shadow Isles', 'Shurima', 'Targon', 'The Void', 'Zaun', 'Runeterra'].map(region => (
-                          <label key={region}>
-                            <input
-                              type="checkbox"
-                              checked={advancedFilters.region.includes(region)}
-                              onChange={(e) => {
-                                const newRegion = e.target.checked
-                                  ? [...advancedFilters.region, region]
-                                  : advancedFilters.region.filter(r => r !== region);
-                                setAdvancedFilters({...advancedFilters, region: newRegion});
-                              }}
-                            />
-                            <span>{region}</span>
-                          </label>
-                        ))}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* Role Filters */}
-                  <div className={styles.roleFilters}>
-                    <label>Role:</label>
-                    <div className={styles.roleCheckboxes}>
-                      {['TOP', 'JUNGLE', 'MID', 'ADC', 'SUPPORT'].map(role => (
-                        <label key={role}>
-                          <input
-                            type="checkbox"
-                            checked={advancedFilters.roles.includes(role)}
-                            onChange={(e) => {
-                              const newRoles = e.target.checked
-                                ? [...advancedFilters.roles, role]
-                                : advancedFilters.roles.filter(r => r !== role);
-                              setAdvancedFilters({...advancedFilters, roles: newRoles});
-                            }}
-                          />
-                          <span>{role}</span>
-                        </label>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Filter Actions */}
-                  <div className={styles.filterActions}>
-                    <button
-                      onClick={() => setAdvancedFilters({
-                        difficulty: [],
-                        damage: [],
-                        survivability: [],
-                        rangeType: [],
-                        championClass: [],
-                        region: [],
-                        roles: []
-                      })}
-                      className={styles.clearFiltersBtn}
-                    >
-                      Vymazat filtry
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Champions Grid */}
-            <div className={styles.championOverview}>
-              {filteredChampions.map((champion) => (
-                <div 
-                  key={champion.id} 
-                  className={styles.championCard}
-                  onClick={() => openChampionModal(champion)}
-                  style={{ cursor: 'pointer' }}
-                >
-                  <div className={styles.championSplash}>
-                    <Image
-                      src={champion.splash}
-                      alt={champion.name}
-                      width={400}
-                      height={300}
-                      className={styles.championImage}
-                      onError={(e) => {
-                        // Fallback to square image if splash fails
-                        e.currentTarget.src = champion.square;
-                      }}
-                    />
-                    
-                    {/* Position Badges */}
-                    <div className={styles.championPositionBadges}>
-                      {champion.roles.map((role, index) => (
-                        <span 
-                          key={index}
-                          className={styles.championPositionBadge}
-                          data-role={role}
-                        >
-                          {role}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-
-                  <div className={styles.championInfo}>
-                    <h3 className={styles.championName}>{champion.name}</h3>
-                    <p className={styles.championTitle}>"{champion.title}"</p>
-                    <p className={styles.championDescription}>{champion.description}</p>
-                    
-                    {/* Champion Stats */}
-                    <div className={styles.championStats}>
-                      <div className={styles.championStat}>
-                        <span className={styles.statLabel}>OBTÍŽNOST</span>
-                        <div className={styles.statProgressContainer}>
-                          <div
-                            className={styles.statProgressBar}
-                            data-difficulty={champion.difficulty.toLowerCase()}
-                            style={{
-                              width: champion.difficulty === 'Nízká' ? '33%' :
-                                     champion.difficulty === 'Střední' ? '66%' : '100%'
-                            }}
-                          ></div>
-                        </div>
-                        <span className={styles.statText} data-difficulty={champion.difficulty.toLowerCase()}>
-                          {champion.difficulty}
-                        </span>
-                      </div>
-                      <div className={styles.championStat}>
-                        <span className={styles.statLabel}>TYP</span>
-                        <div className={styles.statTextSpacer}></div>
-                        <span className={styles.statText} data-damage={champion.damage.toLowerCase()}>
-                          {champion.damage === 'Physical' ? 'Fyzické' : 'Magické'}
-                        </span>
-                      </div>
-                      <div className={styles.championStat}>
-                        <span className={styles.statLabel}>PŘEŽITELNOST</span>
-                        <div className={styles.statProgressContainer}>
-                          <div
-                            className={styles.statProgressBar}
-                            data-survivability={champion.survivability.toLowerCase()}
-                            style={{
-                              width: champion.survivability === 'Nízká' ? '25%' :
-                                     champion.survivability === 'Střední' ? '50%' :
-                                     champion.survivability === 'Vysoká' ? '75%' : '100%'
-                            }}
-                          ></div>
-                        </div>
-                        <span className={styles.statText} data-survivability={champion.survivability.toLowerCase()}>
-                          {champion.survivability}
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {filteredChampions.length === 0 && !loading && (
-              <div className={styles.noChampions}>
-                <p>Žádní championové nenalezeni pro aktuální filtry.</p>
-              </div>
-            )}
           </div>
-        </section>
-        )}
 
-        {/* Back Button */}
-        <section className={styles.backSection}>
-          <Link href="/" className={styles.backButton}>
-            ← Zpět na hlavní stránku
-          </Link>
-        </section>
+          <div className="lol-mech-grid">
+            {lanesAndObjectives.map((block, idx) => {
+              const numLabel = String(idx + 1).padStart(2, '0');
+              return (
+                <div key={idx} className="lol-mech-block">
+                  <div className="num">{'// '}{numLabel}<span className="glyph">·</span></div>
+                  <h3>{block.title}</h3>
+                  <p>{block.body}</p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </section>
 
-        {/* Champion Modal */}
-        {selectedChampion && (
-          <div 
-            className={styles.modal}
-            onClick={(e) => {
-              if (e.target === e.currentTarget) {
-                closeChampionModal();
-              }
-            }}
-          >
-            <div className={styles.modalContent}>
-              <div className={styles.modalBackground}>
-                {championDetails && (
-                  <Image
-                    src={championDetails.splash}
-                    alt={championDetails.name}
-                    fill
-                    className="object-cover"
-                    style={{ filter: 'blur(3px) brightness(0.4)' }}
-                  />
-                )}
+      {/* SECTION 04 · SUMMONER LOOKUP */}
+      <section className="lol-section lol-wrap-section">
+        <div className="lol-wrap-shell">
+          <div className="lol-section-header">
+            <div className="lol-section-kicker">{'// SECTION 04 · SUMMONER LOOKUP'}</div>
+            <h2 className="section-title"><span>VYHLEDÁNÍ HRÁČE</span></h2>
+            <p className="lol-section-sub">
+              Live Riot data — rank, match history, mastery a aktivní zápasy. Zadejte Riot ID nebo summoner name.
+            </p>
+          </div>
+          <div className="lol-wrap-frame">
+            <SummonerSearch />
+          </div>
+        </div>
+      </section>
+
+      {/* SECTION 05 · SERVER STATUS */}
+      <section className="lol-section lol-wrap-section">
+        <div className="lol-wrap-shell">
+          <div className="lol-section-header">
+            <div className="lol-section-kicker">{'// SECTION 05 · SERVER STATUS'}</div>
+            <h2 className="section-title"><span>STATUS KOMPLEXÁCI</span></h2>
+            <p className="lol-section-sub">
+              Kdo z klanu je právě online a co hraje. Live Discord feed.
+            </p>
+          </div>
+          <div className="lol-wrap-frame">
+            <KomplexaciStatus />
+          </div>
+        </div>
+      </section>
+
+      {/* CTA strip */}
+      <section className="lol-cta-strip">
+        <div className="cta-kicker">{'// END · CHAPTER 04'}</div>
+        <Link href="/" className="cta-link">
+          Zpět na hlavní stránku <span className="arrow" aria-hidden="true">→</span>
+        </Link>
+      </section>
+
+      {/* Champion Modal */}
+      {selectedChampion && (
+        <div
+          className="lol-redesign-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="champion-modal-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget) closeChampionModal();
+          }}
+        >
+          <div className="shell" tabIndex={-1} ref={modalShellRef}>
+            {/* Splash hero */}
+            <div className="splash-hero">
+              {championDetails && (
+                <div
+                  className="splash-bg"
+                  style={{ backgroundImage: `url(${championDetails.splash})` }}
+                />
+              )}
+              {!championDetails && selectedChampion.splash && (
+                <div
+                  className="splash-bg"
+                  style={{ backgroundImage: `url(${selectedChampion.splash})` }}
+                />
+              )}
+              <div className="wash" />
+              <div className="grid" />
+              <div className="ident">
+                <div>
+                  <div className="num">{'// CHAMP · '}{selectedChampion.name.toUpperCase()}</div>
+                  <h2 id="champion-modal-title"><span>{championDetails?.name || selectedChampion.name}</span></h2>
+                  <div className="title">"{championDetails?.title || selectedChampion.title}"</div>
+                  <div className="roles">
+                    {(championDetails?.roles || selectedChampion.roles).map((role, i) => (
+                      <span key={i} className="role-tag">{role}</span>
+                    ))}
+                  </div>
+                </div>
               </div>
-              
-              <div className={styles.modalOverlay}></div>
-              
-              <button 
-                className={styles.closeButton}
-                onClick={closeChampionModal}
-              >
-                ×
-              </button>
+            </div>
 
-              <div className={styles.modalContentInner}>
-                <div className={styles.modalHeader}>
-                  <div className={styles.modalChampionImage}>
-                    {championDetails && (
-                      <Image
-                        src={championDetails.square}
-                        alt={championDetails.name}
-                        width={100}
-                        height={100}
-                        className="rounded-lg"
-                      />
-                    )}
-                  </div>
-                  <div className={styles.modalChampionInfo}>
-                    <h2 className={styles.modalChampionName}>
-                      {championDetails?.name || selectedChampion.name}
-                    </h2>
-                    <p className={styles.modalChampionTitle}>
-                      {championDetails?.title || selectedChampion.title}
-                    </p>
-                    <div className={styles.modalRoles}>
-                      {(championDetails?.roles || selectedChampion.roles).map((role, index) => (
-                        <span key={index} className={styles.championPositionBadge}>
-                          {role}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
+            <button className="close" onClick={closeChampionModal} aria-label="Zavřít">×</button>
+
+            {/* Tabs */}
+            <div className="tabs" role="tablist">
+              {(['overview', 'abilities', 'skins', 'tips'] as const).map((tab, i) => {
+                const labels = { overview: 'Přehled', abilities: 'Schopnosti', skins: 'Skiny', tips: 'Tipy' };
+                const glyphs = ['01', '02', '03', '04'];
+                return (
+                  <button
+                    key={tab}
+                    role="tab"
+                    aria-selected={activeTab === tab}
+                    className={`tab ${activeTab === tab ? 'active' : ''}`}
+                    onClick={() => handleTabChange(tab)}
+                  >
+                    <span className="glyph">{'// '}{glyphs[i]}</span>
+                    {labels[tab]}
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Body */}
+            <div className="body">
+              {modalLoading && (
+                <div className="center">
+                  <div className="lol-spinner" style={{ marginBottom: 16 }} />
+                  Načítání detailů…
                 </div>
+              )}
 
-                <div className={styles.modalTabs}>
+              {modalError && !modalLoading && (
+                <div className="center">
+                  <div style={{ color: '#ff6ec7', marginBottom: 12 }}>{modalError}</div>
                   <button
-                    className={`${styles.modalTab} ${activeTab === 'overview' ? styles.active : ''}`}
-                    onClick={() => handleTabChange('overview')}
+                    onClick={() => fetchChampionDetails(selectedChampion.id)}
+                    style={{
+                      padding: '8px 16px',
+                      background: 'rgba(0,255,255,0.08)',
+                      border: '1px solid rgba(0,255,255,0.4)',
+                      borderRadius: 8, color: '#fff', cursor: 'pointer',
+                      fontFamily: "'JetBrains Mono', monospace", fontSize: 11,
+                      letterSpacing: '0.18em', textTransform: 'uppercase'
+                    }}
                   >
-                    Přehled
-                  </button>
-                  <button
-                    className={`${styles.modalTab} ${activeTab === 'abilities' ? styles.active : ''}`}
-                    onClick={() => handleTabChange('abilities')}
-                  >
-                    Schopnosti
-                  </button>
-                  <button
-                    className={`${styles.modalTab} ${activeTab === 'skins' ? styles.active : ''}`}
-                    onClick={() => handleTabChange('skins')}
-                  >
-                    Skiny
-                  </button>
-                  <button
-                    className={`${styles.modalTab} ${activeTab === 'tips' ? styles.active : ''}`}
-                    onClick={() => handleTabChange('tips')}
-                  >
-                    Tipy
+                    Zkusit znovu
                   </button>
                 </div>
+              )}
 
-                <div className={styles.modalBody}>
-                  {modalLoading && (
-                    <div className="text-center py-8">
-                      <div className={styles.loadingSpinner}></div>
-                      <p className="text-gray-300 mt-4">Načítání detailů...</p>
-                    </div>
-                  )}
-
-                  {modalError && (
-                    <div className="text-center py-8">
-                      <p className="text-red-400 mb-4">{modalError}</p>
-                      <button 
-                        onClick={() => fetchChampionDetails(selectedChampion.id)}
-                        className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-                      >
-                        Zkusit znovu
-                      </button>
-                    </div>
-                  )}
-
-                  {championDetails && !modalLoading && (
+              {championDetails && !modalLoading && (
+                <>
+                  {/* Overview */}
+                  {activeTab === 'overview' && (
                     <>
-                      {/* Overview Tab */}
-                      {activeTab === 'overview' && (
-                        <div className={styles.modalTabContent}>
-                          <div className={styles.championLoreSection}>
-                            <h3>Příběh</h3>
-                            <div className={styles.loreContainer}>
-                              <div
-                                className={styles.loreText}
-                                dangerouslySetInnerHTML={{
-                                  __html: championDetails.lore
-                                    .replace(/\n/g, ' ')
-                                    .trim()
+                      <h3>Příběh</h3>
+                      <div
+                        className="lore"
+                        dangerouslySetInnerHTML={{ __html: championDetails.lore.replace(/\n/g, ' ').trim() }}
+                      />
+                      <div className="overview-cols">
+                        <div className="stat-list">
+                          {[
+                            { lbl: 'Zdraví', val: Math.round(championDetails.stats.hp), max: 700, per: `+${Math.round(championDetails.stats.hpperlevel)}` },
+                            { lbl: 'Mana', val: Math.round(championDetails.stats.mp), max: 500, per: `+${Math.round(championDetails.stats.mpperlevel)}` },
+                            { lbl: 'Útok', val: Math.round(championDetails.stats.attackdamage), max: 80, per: `+${Math.round(championDetails.stats.attackdamageperlevel)}` },
+                            { lbl: 'Rych. útoku', val: championDetails.stats.attackspeed.toFixed(2), max: 0.8, per: `+${(championDetails.stats.attackspeedperlevel * 100).toFixed(1)}%` },
+                            { lbl: 'Brnění', val: Math.round(championDetails.stats.armor), max: 50, per: `+${championDetails.stats.armorperlevel.toFixed(1)}` },
+                            { lbl: 'Mag. odolnost', val: Math.round(championDetails.stats.spellblock), max: 50, per: `+${championDetails.stats.spellblockperlevel.toFixed(2)}` }
+                          ].map((s, i) => {
+                            const num = typeof s.val === 'string' ? parseFloat(s.val) : s.val;
+                            const pct = Math.min(100, (num / s.max) * 100);
+                            return (
+                              <div key={i} className="row">
+                                <span className="lbl">{s.lbl}</span>
+                                <div className="bar"><i style={{ width: `${pct}%` }} /></div>
+                                <span className="v">
+                                  {s.val}
+                                  <small>{s.per} / lvl</small>
+                                </span>
+                              </div>
+                            );
+                          })}
+                        </div>
+                        <div className="radar">
+                          <div className="heading">{'// COMBAT PROFILE'}</div>
+                          <RadarChart stats={championDetails.stats} />
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Abilities */}
+                  {activeTab === 'abilities' && (
+                    <>
+                      <h3>{'// PASSIVE & SPELLS'}</h3>
+                      <div className="ability-keys">
+                        {[
+                          {
+                            key: 'P',
+                            name: championDetails.passive.name,
+                            description: championDetails.passive.description,
+                            image: championDetails.passive.image,
+                            cooldown: [], cost: [], range: []
+                          },
+                          ...championDetails.spells
+                        ].map((ab: any, idx: number) => (
+                          <button
+                            key={idx}
+                            type="button"
+                            className={`slot ${activeAbility === idx ? 'active' : ''}`}
+                            onClick={() => setActiveAbility(idx)}
+                            aria-pressed={activeAbility === idx}
+                          >
+                            <div className="key">{ab.key || ['P', 'Q', 'W', 'E', 'R'][idx]}</div>
+                            <div className="icon">
+                              <Image src={ab.image} alt={ab.name} width={44} height={44} unoptimized />
+                            </div>
+                          </button>
+                        ))}
+                      </div>
+
+                      {(() => {
+                        const all = [
+                          { key: 'P', name: championDetails.passive.name, description: championDetails.passive.description, cooldown: [] as number[], cost: [] as number[], range: [] as number[] },
+                          ...championDetails.spells
+                        ];
+                        const ab = all[activeAbility] || all[0];
+                        const videoUrl = getAbilityVideoUrl(selectedChampion.key, ab.key);
+                        return (
+                          <div className="ability-panel">
+                            <div
+                              className="ability-video-frame"
+                              key={`${selectedChampion.key}-${ab.key}`}
+                            >
+                              <video
+                                src={videoUrl}
+                                autoPlay
+                                loop
+                                muted
+                                playsInline
+                                preload="metadata"
+                                onError={(e) => {
+                                  const frame = e.currentTarget.parentElement;
+                                  if (frame) frame.classList.add('no-video');
                                 }}
+                              />
+                              <div className="vfallback">
+                                <span>{'// no preview available'}</span>
+                                <span style={{ fontSize: 9, opacity: 0.6 }}>{ab.name}</span>
+                              </div>
+                              <div className="vlbl">
+                                <span className="live" />
+                                {'// '}{ab.key}{' · ABILITY · '}{selectedChampion.name.toUpperCase()}
+                              </div>
+                            </div>
+                            <div className="body-pad">
+                              <div className="head">
+                                <h4>{ab.name}</h4>
+                                <div className="meta">
+                                  {ab.cooldown && ab.cooldown.length > 0 && (
+                                    <div>CD <span className="v">{ab.cooldown.join('/')}</span></div>
+                                  )}
+                                  {ab.cost && ab.cost.length > 0 && (
+                                    <div>Cost <span className="v">{ab.cost.join('/')}</span></div>
+                                  )}
+                                  {ab.range && ab.range.length > 0 && (
+                                    <div>Range <span className="v">{ab.range.join('/')}</span></div>
+                                  )}
+                                </div>
+                              </div>
+                              <div
+                                className="desc"
+                                dangerouslySetInnerHTML={{ __html: ab.description }}
                               />
                             </div>
                           </div>
-                          
-                          <div className={styles.championStatsDetailed}>
-                            <h3>Detailní statistiky</h3>
-                            <div className={styles.detailedStatsGrid}>
-                              {/* Health */}
-                              <div className={styles.detailedStatItem}>
-                                <div className={styles.statHeader}>
-                                  <span className={styles.statLabel}>Zdraví</span>
-                                  <span className={styles.statValue}>{Math.round(championDetails.stats.hp)}</span>
-                                </div>
-                                <div className={styles.statStars}>
-                                  {[...Array(5)].map((_, i) => (
-                                    <span
-                                      key={i}
-                                      className={`${styles.statStar} ${i < Math.min(5, Math.max(1, Math.round(championDetails.stats.hp / 200))) ? styles.filled : ''}`}
-                                    >
-                                      ★
-                                    </span>
-                                  ))}
-                                </div>
-                                <div className={styles.statBarContainer}>
-                                  <div
-                                    className={styles.statBar}
-                                    style={{
-                                      width: `${Math.min(100, (championDetails.stats.hp / 1000) * 100)}%`,
-                                      background: 'linear-gradient(90deg, #6bcf7f, #5bb36f)'
-                                    }}
-                                  ></div>
-                                </div>
-                                <div className={styles.statPerLevel}>+{Math.round(championDetails.stats.hpperlevel)} za úroveň</div>
-                              </div>
-
-                              {/* Mana */}
-                              <div className={styles.detailedStatItem}>
-                                <div className={styles.statHeader}>
-                                  <span className={styles.statLabel}>Mana</span>
-                                  <span className={styles.statValue}>{Math.round(championDetails.stats.mp)}</span>
-                                </div>
-                                <div className={styles.statStars}>
-                                  {[...Array(5)].map((_, i) => (
-                                    <span
-                                      key={i}
-                                      className={`${styles.statStar} ${championDetails.stats.mp > 0 && i < Math.min(5, Math.max(1, Math.round(championDetails.stats.mp / 120))) ? styles.filled : ''}`}
-                                    >
-                                      ★
-                                    </span>
-                                  ))}
-                                </div>
-                                <div className={styles.statBarContainer}>
-                                  <div
-                                    className={styles.statBar}
-                                    style={{
-                                      width: `${Math.min(100, (championDetails.stats.mp / 600) * 100)}%`,
-                                      background: 'linear-gradient(90deg, #4ecdc4, #3bb3b0)'
-                                    }}
-                                  ></div>
-                                </div>
-                                <div className={styles.statPerLevel}>+{Math.round(championDetails.stats.mpperlevel)} za úroveň</div>
-                              </div>
-
-                              {/* Attack Damage */}
-                              <div className={styles.detailedStatItem}>
-                                <div className={styles.statHeader}>
-                                  <span className={styles.statLabel}>Útok</span>
-                                  <span className={styles.statValue}>{Math.round(championDetails.stats.attackdamage)}</span>
-                                </div>
-                                <div className={styles.statStars}>
-                                  {[...Array(5)].map((_, i) => (
-                                    <span
-                                      key={i}
-                                      className={`${styles.statStar} ${i < Math.min(5, Math.max(1, Math.round(championDetails.stats.attackdamage / 20))) ? styles.filled : ''}`}
-                                    >
-                                      ★
-                                    </span>
-                                  ))}
-                                </div>
-                                <div className={styles.statBarContainer}>
-                                  <div
-                                    className={styles.statBar}
-                                    style={{
-                                      width: `${Math.min(100, (championDetails.stats.attackdamage / 100) * 100)}%`,
-                                      background: 'linear-gradient(90deg, #ff8c42, #e67e22)'
-                                    }}
-                                  ></div>
-                                </div>
-                                <div className={styles.statPerLevel}>+{Math.round(championDetails.stats.attackdamageperlevel)} za úroveň</div>
-                              </div>
-
-                              {/* Attack Speed */}
-                              <div className={styles.detailedStatItem}>
-                                <div className={styles.statHeader}>
-                                  <span className={styles.statLabel}>Rychlost útoku</span>
-                                  <span className={styles.statValue}>{championDetails.stats.attackspeed.toFixed(2)}</span>
-                                </div>
-                                <div className={styles.statStars}>
-                                  {[...Array(5)].map((_, i) => (
-                                    <span
-                                      key={i}
-                                      className={`${styles.statStar} ${i < Math.min(5, Math.max(1, Math.round(championDetails.stats.attackspeed * 5))) ? styles.filled : ''}`}
-                                    >
-                                      ★
-                                    </span>
-                                  ))}
-                                </div>
-                                <div className={styles.statBarContainer}>
-                                  <div
-                                    className={styles.statBar}
-                                    style={{
-                                      width: `${Math.min(100, (championDetails.stats.attackspeed / 1.0) * 100)}%`,
-                                      background: 'linear-gradient(90deg, #ffd93d, #e6c235)'
-                                    }}
-                                  ></div>
-                                </div>
-                                <div className={styles.statPerLevel}>+{(championDetails.stats.attackspeedperlevel * 100).toFixed(1)}% za úroveň</div>
-                              </div>
-
-                              {/* Armor */}
-                              <div className={styles.detailedStatItem}>
-                                <div className={styles.statHeader}>
-                                  <span className={styles.statLabel}>Brnění</span>
-                                  <span className={styles.statValue}>{Math.round(championDetails.stats.armor)}</span>
-                                </div>
-                                <div className={styles.statStars}>
-                                  {[...Array(5)].map((_, i) => (
-                                    <span
-                                      key={i}
-                                      className={`${styles.statStar} ${i < Math.min(5, Math.max(1, Math.round(championDetails.stats.armor / 16))) ? styles.filled : ''}`}
-                                    >
-                                      ★
-                                    </span>
-                                  ))}
-                                </div>
-                                <div className={styles.statBarContainer}>
-                                  <div
-                                    className={styles.statBar}
-                                    style={{
-                                      width: `${Math.min(100, (championDetails.stats.armor / 80) * 100)}%`,
-                                      background: 'linear-gradient(90deg, #95a5a6, #7f8c8d)'
-                                    }}
-                                  ></div>
-                                </div>
-                                <div className={styles.statPerLevel}>+{championDetails.stats.armorperlevel.toFixed(1)} za úroveň</div>
-                              </div>
-
-                              {/* Magic Resistance */}
-                              <div className={styles.detailedStatItem}>
-                                <div className={styles.statHeader}>
-                                  <span className={styles.statLabel}>Magická odolnost</span>
-                                  <span className={styles.statValue}>{Math.round(championDetails.stats.spellblock)}</span>
-                                </div>
-                                <div className={styles.statStars}>
-                                  {[...Array(5)].map((_, i) => (
-                                    <span
-                                      key={i}
-                                      className={`${styles.statStar} ${i < Math.min(5, Math.max(1, Math.round(championDetails.stats.spellblock / 16))) ? styles.filled : ''}`}
-                                    >
-                                      ★
-                                    </span>
-                                  ))}
-                                </div>
-                                <div className={styles.statBarContainer}>
-                                  <div
-                                    className={styles.statBar}
-                                    style={{
-                                      width: `${Math.min(100, (championDetails.stats.spellblock / 80) * 100)}%`,
-                                      background: 'linear-gradient(90deg, #9b59b6, #8e44ad)'
-                                    }}
-                                  ></div>
-                                </div>
-                                <div className={styles.statPerLevel}>+{championDetails.stats.spellblockperlevel.toFixed(2)} za úroveň</div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Abilities Tab */}
-                      {activeTab === 'abilities' && (
-                        <div className={styles.modalTabContent}>
-                          <div className={styles.abilitiesContainer}>
-                            <div className={styles.passiveAbility}>
-                              <h3>Pasivní schopnost</h3>
-                              <div className={styles.abilityItem}>
-                                <div className={styles.abilityIcon}>
-                                  <Image
-                                    src={championDetails.passive.image}
-                                    alt={championDetails.passive.name}
-                                    width={50}
-                                    height={50}
-                                    className="rounded"
-                                  />
-                                </div>
-                                <div className={styles.abilityDetails}>
-                                  <h4>{championDetails.passive.name}</h4>
-                                  <div 
-                                    className={styles.abilityDescription}
-                                    dangerouslySetInnerHTML={{ __html: championDetails.passive.description }}
-                                  />
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className={styles.activeAbilities}>
-                              <h3>Aktivní schopnosti</h3>
-                              {championDetails.spells.map((spell, index) => (
-                                <div key={spell.id} className={styles.abilityItem}>
-                                  <div className={styles.abilityIconContainer}>
-                                    <div className={styles.abilityKey}>{spell.key}</div>
-                                    <div className={styles.abilityIcon}>
-                                      <Image
-                                        src={spell.image}
-                                        alt={spell.name}
-                                        width={50}
-                                        height={50}
-                                        className="rounded"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div className={styles.abilityDetails}>
-                                    <div className={styles.abilityHeader}>
-                                      <h4>{spell.name}</h4>
-                                      <div className={styles.abilityStats}>
-                                        {spell.cooldown?.length > 0 && (
-                                          <div className={styles.abilityStat}>
-                                            <span className={styles.abilityStatLabel}>Cooldown:</span>
-                                            <span>{spell.cooldown.join('/')}</span>
-                                          </div>
-                                        )}
-                                        {spell.cost?.length > 0 && (
-                                          <div className={styles.abilityStat}>
-                                            <span className={styles.abilityStatLabel}>Cost:</span>
-                                            <span>{spell.cost.join('/')}</span>
-                                          </div>
-                                        )}
-                                        {spell.range?.length > 0 && (
-                                          <div className={styles.abilityStat}>
-                                            <span className={styles.abilityStatLabel}>Range:</span>
-                                            <span>{spell.range.join('/')}</span>
-                                          </div>
-                                        )}
-                                      </div>
-                                    </div>
-                                    <div 
-                                      className={styles.abilityDescription}
-                                      dangerouslySetInnerHTML={{ __html: spell.description }}
-                                    />
-                                  </div>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Skins Tab */}
-                      {activeTab === 'skins' && (
-                        <div className={styles.modalTabContent}>
-                          <div className={styles.skinsContainer}>
-                            <h3>Dostupné skiny</h3>
-                            <div className={styles.skinsGrid}>
-                              {championDetails.skins.map((skin) => (
-                                <div key={skin.id} className={styles.skinItem}>
-                                  <Image
-                                    src={skin.splash}
-                                    alt={skin.name}
-                                    width={300}
-                                    height={200}
-                                    className="object-cover rounded"
-                                    onError={(e) => {
-                                      // Fallback to loading image if splash fails
-                                      e.currentTarget.src = skin.loading;
-                                    }}
-                                  />
-                                  <h4>{skin.name}</h4>
-                                </div>
-                              ))}
-                            </div>
-                          </div>
-                        </div>
-                      )}
-
-                      {/* Tips Tab */}
-                      {activeTab === 'tips' && (
-                        <div className={styles.modalTabContent}>
-                          <div className={styles.tipsContainer}>
-                            {/* Ally Tips */}
-                            {championDetails.allytips && championDetails.allytips.length > 0 && (
-                              <div className={styles.tipsSection}>
-                                <h3 className={styles.tipsSectionTitle}>
-                                  <span className={styles.tipsIcon}>💡</span>
-                                  Tipy pro hraní
-                                </h3>
-                                <div className={styles.tipsList}>
-                                  {championDetails.allytips.map((tip, index) => (
-                                    <div key={index} className={styles.tipItem}>
-                                      <div className={styles.tipBullet}>•</div>
-                                      <div className={styles.tipText}>{tip}</div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* Enemy Tips */}
-                            {championDetails.enemytips && championDetails.enemytips.length > 0 && (
-                              <div className={styles.tipsSection}>
-                                <h3 className={styles.tipsSectionTitle}>
-                                  <span className={styles.tipsIcon}>🛡️</span>
-                                  Jak hrát proti
-                                </h3>
-                                <div className={styles.tipsList}>
-                                  {championDetails.enemytips.map((tip, index) => (
-                                    <div key={index} className={styles.tipItem}>
-                                      <div className={styles.tipBullet}>•</div>
-                                      <div className={styles.tipText}>{tip}</div>
-                                    </div>
-                                  ))}
-                                </div>
-                              </div>
-                            )}
-
-                            {/* No tips available */}
-                            {(!championDetails.allytips || championDetails.allytips.length === 0) &&
-                             (!championDetails.enemytips || championDetails.enemytips.length === 0) && (
-                              <div className={styles.noTips}>
-                                <div className={styles.noTipsIcon}>📝</div>
-                                <h3>Žádné tipy nejsou k dispozici</h3>
-                                <p>Pro tohoto šampiona nejsou momentálně dostupné žádné tipy.</p>
-                              </div>
-                            )}
-                          </div>
-                        </div>
-                      )}
+                        );
+                      })()}
                     </>
                   )}
-                </div>
-              </div>
+
+                  {/* Skins */}
+                  {activeTab === 'skins' && championDetails.skins.length > 0 && (
+                    <div className="skin-carousel">
+                      <div className="frame">
+                        <Image
+                          src={championDetails.skins[activeSkin].splash}
+                          alt={championDetails.skins[activeSkin].name}
+                          fill
+                          sizes="(max-width: 1100px) 100vw, 1100px"
+                          unoptimized
+                          onError={(e) => {
+                            (e.currentTarget as HTMLImageElement).src = championDetails.skins[activeSkin].loading;
+                          }}
+                        />
+                        {championDetails.skins.length > 1 && (
+                          <>
+                            <button
+                              className="arrow prev"
+                              type="button"
+                              onClick={() => setActiveSkin((activeSkin - 1 + championDetails.skins.length) % championDetails.skins.length)}
+                              aria-label="Předchozí skin"
+                            >
+                              ‹
+                            </button>
+                            <button
+                              className="arrow next"
+                              type="button"
+                              onClick={() => setActiveSkin((activeSkin + 1) % championDetails.skins.length)}
+                              aria-label="Další skin"
+                            >
+                              ›
+                            </button>
+                          </>
+                        )}
+                        <div className="caption">
+                          <h3 className="name" style={{ color: '#fff' }}>{championDetails.skins[activeSkin].name}</h3>
+                          <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                            <span className="badge">{championDetails.skins[activeSkin].num === 0 ? 'Base' : 'Skin'}</span>
+                            <span className="progress">
+                              {String(activeSkin + 1).padStart(2, '0')} / {String(championDetails.skins.length).padStart(2, '0')}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="skin-thumbs">
+                        {championDetails.skins.map((skin, i) => (
+                          <button
+                            key={skin.id}
+                            type="button"
+                            className={i === activeSkin ? 'active' : ''}
+                            onClick={() => setActiveSkin(i)}
+                            aria-label={skin.name}
+                            aria-pressed={i === activeSkin}
+                          >
+                            <Image
+                              src={skin.loading}
+                              alt={skin.name}
+                              width={84}
+                              height={47}
+                              unoptimized
+                            />
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Tips */}
+                  {activeTab === 'tips' && (
+                    <div className="tips-grid">
+                      <div className="col">
+                        <h3>Tipy pro hraní<span className="glyph"> · ALLY</span></h3>
+                        {championDetails.allytips.length === 0 ? (
+                          <p style={{ color: '#9b9bb0', fontSize: 13 }}>Žádné tipy nejsou k dispozici.</p>
+                        ) : (
+                          <ol>
+                            {championDetails.allytips.map((tip, i) => (
+                              <li key={i}>
+                                <span className="badge">{String(i + 1).padStart(2, '0')}</span>
+                                <span>{tip}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        )}
+                      </div>
+                      <div className="col enemy">
+                        <h3>Jak hrát proti<span className="glyph"> · ENEMY</span></h3>
+                        {championDetails.enemytips.length === 0 ? (
+                          <p style={{ color: '#9b9bb0', fontSize: 13 }}>Žádné tipy nejsou k dispozici.</p>
+                        ) : (
+                          <ol>
+                            {championDetails.enemytips.map((tip, i) => (
+                              <li key={i}>
+                                <span className="badge">{String(i + 1).padStart(2, '0')}</span>
+                                <span>{tip}</span>
+                              </li>
+                            ))}
+                          </ol>
+                        )}
+                      </div>
+                    </div>
+                  )}
+                </>
+              )}
             </div>
           </div>
-        )}
+        </div>
+      )}
     </div>
   );
 }

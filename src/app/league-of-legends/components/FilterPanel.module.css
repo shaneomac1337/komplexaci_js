@@ -1,12 +1,16 @@
+/* FilterPanel — light Hextech reskin (mirrors champion-grid filter bar). */
+
 .filterPanel {
   position: fixed;
   top: 0;
   right: -400px;
   width: 380px;
   height: 100vh;
-  background: linear-gradient(135deg, rgba(14, 14, 35, 0.98), rgba(20, 20, 45, 0.98));
-  border-left: 2px solid rgba(110, 79, 246, 0.3);
-  box-shadow: -5px 0 20px rgba(0, 0, 0, 0.5);
+  background:
+    radial-gradient(ellipse at 12% 6%, rgba(200,170,110,0.04), transparent 35%),
+    linear-gradient(135deg, rgba(10, 14, 22, 0.98), rgba(14, 16, 28, 0.98));
+  border-left: 1px solid var(--gold-dim);
+  box-shadow: -5px 0 30px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(200,170,110,0.06) inset;
   transition: right 0.3s ease;
   z-index: 1000;
   overflow-y: auto;
@@ -19,8 +23,8 @@
 
 .filterHeader {
   padding: 1.5rem;
-  border-bottom: 1px solid rgba(110, 79, 246, 0.2);
-  background: rgba(110, 79, 246, 0.1);
+  border-bottom: 1px solid var(--gold-faint);
+  background: rgba(200, 170, 110, 0.06);
   position: sticky;
   top: 0;
   z-index: 10;
@@ -30,51 +34,65 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  color: #f0e6d2;
-  font-size: 1.2rem;
-  font-weight: 600;
+  font-family: var(--font-hex-display);
+  color: var(--gold-bright);
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
   margin-bottom: 0.5rem;
 }
 
 .toggleButton {
-  background: none;
-  border: none;
-  color: #f0e6d2;
-  font-size: 1.2rem;
+  background: rgba(7, 7, 13, 0.6);
+  border: 1px solid var(--gold-faint);
+  color: var(--parchment);
+  font-size: 1.1rem;
   cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   transition: all 0.3s ease;
 }
 
 .toggleButton:hover {
-  background: rgba(110, 79, 246, 0.2);
-  color: #6e4ff6;
+  background: rgba(200, 170, 110, 0.10);
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
 }
 
 .resultCount {
-  color: #c9aa71;
-  font-size: 0.9rem;
+  font-family: var(--font-mono);
+  color: var(--parchment-dim);
+  font-size: 0.78rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
   margin-bottom: 0.5rem;
 }
 
 .clearButton {
-  background: linear-gradient(135deg, #ef4444, #dc2626);
-  border: none;
-  color: white;
+  background: rgba(209, 54, 57, 0.10);
+  border: 1px solid var(--blood-red);
+  color: var(--blood-red);
   padding: 0.5rem 1rem;
   border-radius: 6px;
-  font-size: 0.8rem;
-  font-weight: 500;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   cursor: pointer;
   transition: all 0.3s ease;
   width: 100%;
 }
 
 .clearButton:hover {
-  background: linear-gradient(135deg, #dc2626, #b91c1c);
+  background: rgba(209, 54, 57, 0.18);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(239, 68, 68, 0.3);
+  box-shadow: 0 4px 12px rgba(209, 54, 57, 0.32);
 }
 
 .filterContent {
@@ -83,19 +101,22 @@
 
 .filterSection {
   margin-bottom: 1.5rem;
-  border: 1px solid rgba(110, 79, 246, 0.2);
+  border: 1px solid var(--gold-faint);
   border-radius: 8px;
   overflow: hidden;
 }
 
 .sectionHeader {
   width: 100%;
-  background: rgba(110, 79, 246, 0.1);
+  background: rgba(200, 170, 110, 0.06);
   border: none;
   padding: 1rem;
-  color: #f0e6d2;
-  font-size: 1rem;
-  font-weight: 500;
+  font-family: var(--font-mono);
+  color: var(--gold-bright);
+  font-size: 0.85rem;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
   cursor: pointer;
   display: flex;
   justify-content: space-between;
@@ -104,12 +125,12 @@
 }
 
 .sectionHeader:hover {
-  background: rgba(110, 79, 246, 0.2);
+  background: rgba(200, 170, 110, 0.12);
 }
 
 .arrow {
   transition: transform 0.3s ease;
-  color: #6e4ff6;
+  color: var(--hex-cyan);
 }
 
 .arrow.expanded {
@@ -118,7 +139,7 @@
 
 .sectionContent {
   padding: 1rem;
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.30);
 }
 
 .filterGroup {
@@ -131,9 +152,12 @@
 
 .filterLabel {
   display: block;
-  color: #c9aa71;
-  font-size: 0.9rem;
-  font-weight: 500;
+  font-family: var(--font-mono);
+  color: var(--gold-bright);
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.20em;
+  text-transform: uppercase;
   margin-bottom: 0.5rem;
 }
 
@@ -144,27 +168,32 @@
 }
 
 .filterButton {
-  background: rgba(110, 79, 246, 0.1);
-  border: 1px solid rgba(110, 79, 246, 0.3);
-  color: #f0e6d2;
-  padding: 0.5rem 1rem;
-  border-radius: 6px;
-  font-size: 0.8rem;
+  background: rgba(12, 14, 24, 0.6);
+  border: 1px solid var(--gold-faint);
+  color: var(--parchment-dim);
+  padding: 0.45rem 1rem;
+  border-radius: 999px;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
 }
 
 .filterButton:hover {
-  background: rgba(110, 79, 246, 0.2);
-  border-color: rgba(110, 79, 246, 0.5);
+  background: rgba(200, 170, 110, 0.10);
+  border-color: var(--gold-dim);
+  color: var(--gold-bright);
 }
 
 .filterButton.active {
-  background: linear-gradient(135deg, #6e4ff6, #8b5cf6);
-  border-color: #6e4ff6;
-  color: white;
-  font-weight: 600;
+  background: linear-gradient(135deg, rgba(200,170,110,0.22), rgba(120,90,40,0.22));
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
+  font-weight: 700;
+  box-shadow: 0 0 10px rgba(200, 170, 110, 0.18);
 }
 
 .roleGrid {
@@ -174,12 +203,15 @@
 }
 
 .roleButton {
-  background: rgba(110, 79, 246, 0.1);
-  border: 1px solid rgba(110, 79, 246, 0.3);
-  color: #f0e6d2;
+  background: rgba(12, 14, 24, 0.6);
+  border: 1px solid var(--gold-faint);
+  color: var(--parchment-dim);
   padding: 0.75rem 0.5rem;
   border-radius: 6px;
-  font-size: 0.7rem;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
   cursor: pointer;
   transition: all 0.3s ease;
   display: flex;
@@ -189,16 +221,17 @@
 }
 
 .roleButton:hover {
-  background: rgba(110, 79, 246, 0.2);
-  border-color: rgba(110, 79, 246, 0.5);
+  background: rgba(200, 170, 110, 0.10);
+  border-color: var(--gold-dim);
+  color: var(--gold-bright);
   transform: translateY(-1px);
 }
 
 .roleButton.active {
-  background: linear-gradient(135deg, #6e4ff6, #8b5cf6);
-  border-color: #6e4ff6;
-  color: white;
-  font-weight: 600;
+  background: linear-gradient(135deg, rgba(200,170,110,0.22), rgba(120,90,40,0.22));
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
+  font-weight: 700;
 }
 
 .roleIcon {
@@ -206,8 +239,9 @@
 }
 
 .roleName {
-  font-size: 0.7rem;
+  font-size: 0.65rem;
   font-weight: 500;
+  letter-spacing: 0.12em;
 }
 
 .championGrid {
@@ -219,12 +253,14 @@
 }
 
 .championButton {
-  background: rgba(110, 79, 246, 0.1);
-  border: 1px solid rgba(110, 79, 246, 0.3);
-  color: #f0e6d2;
+  background: rgba(12, 14, 24, 0.6);
+  border: 1px solid var(--gold-faint);
+  color: var(--parchment-dim);
   padding: 0.5rem;
   border-radius: 6px;
+  font-family: var(--font-mono);
   font-size: 0.7rem;
+  letter-spacing: 0.06em;
   cursor: pointer;
   transition: all 0.3s ease;
   white-space: nowrap;
@@ -233,62 +269,63 @@
 }
 
 .championButton:hover {
-  background: rgba(110, 79, 246, 0.2);
-  border-color: rgba(110, 79, 246, 0.5);
+  background: rgba(200, 170, 110, 0.10);
+  border-color: var(--gold-dim);
+  color: var(--gold-bright);
   transform: translateY(-1px);
 }
 
 .championButton.active {
-  background: linear-gradient(135deg, #6e4ff6, #8b5cf6);
-  border-color: #6e4ff6;
-  color: white;
-  font-weight: 600;
+  background: linear-gradient(135deg, rgba(200,170,110,0.22), rgba(120,90,40,0.22));
+  border-color: var(--gold-bright);
+  color: var(--gold-bright);
+  font-weight: 700;
 }
 
 .moreChampions {
   text-align: center;
-  color: #c9aa71;
-  font-size: 0.8rem;
-  margin-top: 0.5rem;
+  font-family: var(--font-hex-editorial);
   font-style: italic;
+  color: var(--parchment-dim);
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
 }
 
-/* Mobile Responsiveness */
 @media (max-width: 768px) {
   .filterPanel {
     width: 100vw;
     right: -100vw;
   }
-  
+
   .filterPanel.visible {
     right: 0;
   }
-  
+
   .roleGrid {
     grid-template-columns: repeat(3, 1fr);
   }
-  
+
   .championGrid {
     grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
   }
 }
 
-/* Scrollbar Styling */
+/* Scrollbar */
 .filterPanel::-webkit-scrollbar {
   width: 6px;
 }
 
 .filterPanel::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.2);
+  background: rgba(0, 0, 0, 0.3);
 }
 
 .filterPanel::-webkit-scrollbar-thumb {
-  background: rgba(110, 79, 246, 0.5);
+  background: var(--gold-dim);
   border-radius: 3px;
 }
 
 .filterPanel::-webkit-scrollbar-thumb:hover {
-  background: rgba(110, 79, 246, 0.7);
+  background: var(--gold-bright);
 }
 
 .championGrid::-webkit-scrollbar {
@@ -296,10 +333,10 @@
 }
 
 .championGrid::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
+  background: rgba(0, 0, 0, 0.2);
 }
 
 .championGrid::-webkit-scrollbar-thumb {
-  background: rgba(110, 79, 246, 0.3);
+  background: var(--gold-faint);
   border-radius: 2px;
 }

@@ -311,6 +311,32 @@
 }
 .cs2-redesign .cs2-cta-strip .cta-link .arrow { color: var(--brand-cyan); }
 
+.cs2-redesign .cs2-retry {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 24px;
+  border: 1px solid rgba(0,255,255,0.4);
+  border-radius: 12px;
+  background: rgba(0,255,255,0.08);
+  color: var(--text-0);
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 12px;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  transition: border-color 200ms ease, background 200ms ease, transform 200ms ease;
+}
+.cs2-redesign .cs2-retry:hover {
+  border-color: rgba(0,255,255,0.55);
+  background: rgba(0,255,255,0.13);
+  transform: translateY(-2px);
+}
+.cs2-redesign .cs2-retry:focus-visible {
+  outline: 2px solid var(--brand-cyan);
+  outline-offset: 4px;
+}
+
 /* ---------- Loading spinner (replaces .loadingSpinner from cs2.module.css) ---------- */
 .cs2-redesign .cs2-spinner {
   width: 24px; height: 24px;
