@@ -2,7 +2,7 @@
 
 ## Overview
 
-Complete API reference for the Komplexaci gaming community platform. This Next.js 15 application exposes 50+ endpoints across multiple categories including Discord integration, League of Legends statistics, Counter-Strike 2 information, WWE games database, music management, analytics, and health monitoring.
+Complete API reference for the Komplexaci gaming community platform. This Next.js 15 application exposes 49 route handlers across multiple categories including Discord integration, League of Legends statistics, Counter-Strike 2 information, WWE games database, music management, analytics, and health monitoring.
 
 **Base URL:** `http://localhost:3000` (development) or production domain
 
@@ -907,7 +907,7 @@ Upload audio file and add to playlist (requires Discord authentication).
 
 **Method:** POST
 
-**Authentication:** Requires NextAuth session (Discord login)
+**Authentication:** Requires NextAuth session (Discord login) and an active Supabase `profiles` row with role >= member
 
 **Request Body:** multipart/form-data
 | Field | Type | Required | Description |
@@ -1023,12 +1023,12 @@ Get detailed user analytics with time range filtering.
 |----------|--------|-------------|
 | GET /api/analytics/status | GET | System status overview |
 | GET /api/analytics/data-info | GET | Database statistics |
-| POST /api/analytics/export | POST | Export analytics data |
-| POST /api/analytics/populate-today | POST | Save daily statistics |
-| POST /api/analytics/cleanup | POST | Remove old data |
+| POST /api/analytics/export | GET, POST | Export analytics data |
+| POST /api/analytics/populate-today | GET, POST | Save daily statistics |
+| POST /api/analytics/cleanup | GET, POST | Remove old data |
 | GET /api/analytics/debug | GET | Debug analytics data |
-| POST /api/analytics/reset-daily | POST | Reset daily counters |
-| POST /api/analytics/reset-monthly | POST | Reset monthly counters |
+| POST /api/analytics/reset-daily | GET, POST | Reset daily counters |
+| POST /api/analytics/reset-monthly | GET, POST | Reset monthly counters |
 
 ---
 
@@ -1055,7 +1055,7 @@ Get today's daily awards with winners.
         "displayName": "GamerName",
         "avatar": "https://cdn.discordapp.com/avatars/123456789/HASH.png",
         "value": 480,
-        "unit": "minutes"
+        "unit": "minut"
       },
       "participantCount": 12
     },
@@ -1068,7 +1068,7 @@ Get today's daily awards with winners.
         "userId": "987654321",
         "displayName": "OnlineNerd",
         "value": 720,
-        "unit": "minutes"
+        "unit": "minut"
       },
       "participantCount": 15
     },
@@ -1081,7 +1081,7 @@ Get today's daily awards with winners.
         "userId": "555555555",
         "displayName": "MusicLover",
         "value": 150,
-        "unit": "songs"
+        "unit": "písniček"
       },
       "participantCount": 8
     }
@@ -1113,7 +1113,7 @@ Get standings for specific award category.
       "displayName": "TopGamer",
       "avatar": "https://cdn.discordapp.com/avatars/123456789/HASH.png",
       "value": 480,
-      "unit": "minutes",
+      "unit": "minut",
       "rank": 1
     }
   ],
@@ -1123,7 +1123,7 @@ Get standings for specific award category.
     "totalParticipants": 12,
     "totalValue": 4200,
     "averageValue": 350,
-    "unit": "minutes"
+    "unit": "minut"
   },
   "lastUpdated": "2025-11-30T10:30:45.123Z"
 }
@@ -1224,7 +1224,7 @@ Get detailed voice state information for all members.
 
 NextAuth authentication endpoint supporting Discord OAuth.
 
-**Supported Methods:** GET, POST, OPTIONS
+**Supported Methods:** GET, POST
 
 **Endpoints:**
 - `/api/auth/signin` - Sign in page
@@ -1274,8 +1274,8 @@ All endpoints follow standard HTTP status codes:
 
 ## Rate Limiting
 
-- Riot API endpoints: Subject to Riot's rate limits (usually 20 requests/second)
-- Most endpoints: 60 requests/minute per IP
+- Riot API endpoints: Subject to Riot's upstream rate limits (usually 20 requests/second)
+- The app itself does not implement custom rate limiting (no per-IP limits enforced in middleware or route handlers)
 - Caching: Utilizes ETags and Cache-Control headers
 
 ---
@@ -1299,17 +1299,16 @@ All endpoints follow standard HTTP status codes:
 Common response headers:
 ```
 Content-Type: application/json
-Cache-Control: public, s-maxage=300, stale-while-revalidate=600
-X-Content-Type-Options: nosniff
-X-Frame-Options: DENY
 ```
+
+The `Cache-Control` header varies per endpoint (e.g. health/probe = `no-store`; champions = `public, s-maxage=3600`; many endpoints set none).
 
 ---
 
 ## Versioning
 
 API version: 1.0.0
-Latest update: 2025-11-30
+Latest update: 2026-06-14
 
 ---
 

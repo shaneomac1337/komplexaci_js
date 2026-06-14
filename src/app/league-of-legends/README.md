@@ -21,7 +21,7 @@
 
 The League of Legends feature is a comprehensive summoner search and champion browsing system for the Komplexaci gaming community website. It provides:
 
-- **Champion Database**: Browse 160+ champions with filtering, searching, and detailed information
+- **Champion Database**: Browse all current champions (loaded dynamically via DataDragon) with filtering, searching, and detailed information
 - **Summoner Search**: Look up player profiles by Riot ID (gameName#tagLine)
 - **Live Game Tracking**: Real-time display of ongoing matches
 - **Match History**: Detailed match analysis with filtering and statistics
@@ -31,7 +31,7 @@ The League of Legends feature is a comprehensive summoner search and champion br
 
 ### Key Technologies
 
-- **Next.js 14** (App Router, Server Components, Client Components)
+- **Next.js 15** (App Router, Server Components, Client Components)
 - **TypeScript** for type safety
 - **Riot Games API** (Account-v1, Summoner-v4, Champion-Mastery-v4, Match-v5, League-v4, Spectator-v5)
 - **DataDragon CDN** for champion images and static data
@@ -48,6 +48,7 @@ src/app/league-of-legends/
 ├── page.tsx                 # Main page component (Champions + Summoner Search)
 ├── layout.tsx               # SEO metadata and structured data
 ├── lol.module.css          # Main page styles
+├── lol-redesign.css        # Redesign global stylesheet (imported by page.tsx)
 ├── summoner.module.css     # Summoner search styles
 ├── components/             # React components
 │   ├── SummonerSearch.tsx  # Main search component
@@ -59,11 +60,15 @@ src/app/league-of-legends/
 │   ├── MatchStatistics.tsx # Statistics overview
 │   ├── PlayedWithAnalysis.tsx # Teammate analysis
 │   ├── FilterPanel.tsx     # Advanced filtering
+│   ├── FilterPanel.module.css # FilterPanel scoped styles
 │   ├── FilterChips.tsx     # Active filter chips
+│   ├── FilterChips.module.css # FilterChips scoped styles
 │   ├── SearchHistory.tsx   # Recent searches
 │   ├── EnhancedLoading.tsx # Loading animations
 │   ├── KeyboardShortcuts.tsx # Keyboard navigation
-│   └── KomplexaciStatus.tsx # Team status display
+│   ├── Tooltip.tsx         # Tooltip component
+│   ├── KomplexaciStatus.tsx # Team status display
+│   └── KomplexaciStatus.module.css # KomplexaciStatus scoped styles
 ├── types/
 │   ├── lol.ts             # Champion type definitions
 │   └── summoner-ui.ts     # UI component type definitions
@@ -79,12 +84,16 @@ src/app/api/lol/
 ├── types/
 │   └── summoner.ts        # API type definitions
 └── [routes]/
-    ├── summoner/route.ts  # GET summoner profile
-    ├── matches/route.ts   # GET match history
-    ├── mastery/route.ts   # GET champion mastery
-    ├── live-game/route.ts # GET current game
-    ├── regions/route.ts   # GET available regions
-    └── champions/route.ts # GET champion list
+    ├── summoner/route.ts            # GET summoner profile
+    ├── summoner-by-puuid/route.ts   # GET summoner profile by PUUID
+    ├── puuid-only/route.ts          # GET PUUID for a Riot ID
+    ├── matches/route.ts             # GET match history
+    ├── mastery/route.ts             # GET champion mastery
+    ├── live-game/route.ts           # GET current game
+    ├── live-game-immediate/route.ts # GET current game (immediate, no cache)
+    ├── live-game-optimized/route.ts # GET current game (optimized)
+    ├── regions/route.ts             # GET available regions
+    └── champions/route.ts           # GET champion list
 ```
 
 ### Design Patterns

@@ -6,7 +6,7 @@ This file provides guidance to WARP (warp.dev) when working with code in this re
 
 Komplexáci Gaming Clan Website - A modern Next.js 15 application for a Czech gaming community featuring real-time Discord integration, League of Legends player tracking, CS2 databases, WWE games collection, and comprehensive analytics.
 
-**Tech Stack**: Next.js 15.3.3 (App Router) | TypeScript 5 (Strict) | React 19 | Tailwind CSS 4 | Supabase | Discord.js | better-sqlite3
+**Tech Stack**: Next.js 15.5.7 (App Router) | TypeScript 5 (Strict) | React 19 | Tailwind CSS 4 | Supabase | Discord.js | better-sqlite3
 
 ## Development Commands
 
@@ -40,10 +40,13 @@ RIOT_API_KEY=RGAPI-your-api-key  # Development keys expire every 24 hours
 # Authentication (Required for admin panel)
 NEXTAUTH_SECRET=your_nextauth_secret
 NEXTAUTH_URL=http://localhost:3000  # Or production URL
+DISCORD_CLIENT_ID=your_discord_client_id      # Required for admin OAuth
+DISCORD_CLIENT_SECRET=your_discord_client_secret  # Required for admin OAuth
 
 # Database (Optional - for Supabase features)
-SUPABASE_URL=your_supabase_url
-SUPABASE_ANON_KEY=your_supabase_anon_key
+NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 ```
 
 ### Local Database
@@ -81,7 +84,6 @@ Analytics data is stored in SQLite at `data/analytics.db`. The database auto-ini
 - **Caching**: API responses cached with appropriate headers
 
 #### Performance Optimization
-- **Context**: `src/contexts/PerformanceContext.tsx` - Global performance mode toggle
 - **GPU Acceleration**: Animations use `transform` and `will-change` for smooth rendering
 - **Lazy Loading**: Images and components load on demand
 - **Turbopack**: Development builds use Turbopack for faster HMR
@@ -131,7 +133,6 @@ Three session types (game_sessions, voice_sessions, spotify_sessions):
 - **Page-specific components**: Place in `src/app/[page]/components/`
 - Use TypeScript interfaces for props
 - Wrap client-side interactivity with `"use client"` directive
-- Consider performance mode from `PerformanceContext` for animations
 
 ### Working with Discord Data
 - Always check if Gateway is ready: `gateway.isReady()`
@@ -152,8 +153,8 @@ Uses Next.js recommended config (`next/core-web-vitals`, `next/typescript`). Err
 
 ### CSS
 - **Tailwind CSS 4**: Primary styling framework
-- **CSS Modules**: Used for page-specific styles (e.g., `cs2.module.css`, `lol.module.css`)
-- **Global Styles**: `src/app/globals.css` for base styles, `low-performance.css` for reduced animation mode
+- **CSS Modules**: Used for page-specific styles (e.g., `lol.module.css`); CS2 now uses `cs2-redesign.css`
+- **Global Styles**: `src/app/globals.css` for base styles
 
 ## Deployment
 
@@ -186,8 +187,8 @@ See `DEPLOYMENT.md` for Nginx configuration and detailed setup.
 - **GET /api/discord/streaming-status**: Dedicated streaming detection with voice channel details
 
 ### League of Legends API  
-- **GET /api/lol/summoner/[name]**: Summoner profile lookup
-- **GET /api/lol/live-game/[name]**: Current game status
+- **GET /api/lol/summoner**: Summoner profile lookup
+- **GET /api/lol/live-game**: Current game status
 - **GET /api/lol/champions**: Champion database
 
 ### CS2 API
@@ -196,10 +197,10 @@ See `DEPLOYMENT.md` for Nginx configuration and detailed setup.
 - **GET /api/cs2/game-info**: General CS2 game data
 
 ### Analytics API
-- **GET /api/analytics/admin/status**: Database health check
-- **GET /api/analytics/admin/user/[userId]**: User statistics
-- **POST /api/analytics/admin/reset-daily**: Trigger daily stats reset
-- **POST /api/analytics/admin/cleanup**: Clean up stale sessions
+- **GET /api/analytics/status**: Database health check
+- **GET /api/analytics/user/[userId]**: User statistics
+- **POST /api/analytics/reset-daily**: Trigger daily stats reset
+- **POST /api/analytics/cleanup**: Clean up stale sessions
 
 See `API.md` for detailed endpoint documentation.
 
@@ -211,8 +212,8 @@ See `API.md` for detailed endpoint documentation.
 - **SQLite Analytics**: Local database for historical tracking and statistics
 
 ### Rate Limits
-- **Riot API**: 20 requests per second (development key), handle 429 responses
-- **Discord API**: 50 requests per second, automatic retries implemented
+- **Riot API**: Limits are external Riot policy (not enforced in code); handle 429 responses
+- **Discord API**: discord.js handles its own rate limits
 - **Gateway Events**: No rate limits, but requires proper intent configuration
 
 ### Path Aliases
@@ -238,8 +239,8 @@ import Header from '@/app/components/Header';
 ### Analytics Database Issues
 1. Check `data/` directory exists and is writable
 2. Database auto-creates on first run with migrations
-3. Use `/api/analytics/admin/status` to check database health
-4. Stale sessions can be cleaned with `/api/analytics/admin/cleanup`
+3. Use `/api/analytics/status` to check database health
+4. Stale sessions can be cleaned with `/api/analytics/cleanup`
 
 ### Build Errors
 - TypeScript and ESLint errors are intentionally ignored during builds

@@ -37,9 +37,9 @@ The Counter-Strike 2 (CS2) feature is a comprehensive gaming information section
 
 ### Technology Stack
 
-- **Framework**: Next.js 14+ (App Router)
+- **Framework**: Next.js 15 (App Router)
 - **Rendering**: Client-side rendering (`'use client'`)
-- **Styling**: CSS Modules + Tailwind CSS
+- **Styling**: Global stylesheet (`cs2-redesign.css`) + Tailwind CSS
 - **Type Safety**: TypeScript with strict interfaces
 - **Image Optimization**: Next.js Image component
 - **Data Fetching**: Parallel fetch with Promise.all
@@ -78,7 +78,7 @@ src/app/cs2/
 ├── layout.tsx            # Layout with metadata and structured data
 ├── loading.tsx           # Loading state UI
 ├── error.tsx             # Error boundary UI
-└── cs2.module.css        # Feature-specific styles
+└── cs2-redesign.css      # Feature-specific global styles
 
 src/app/types/
 └── cs2.ts                # TypeScript type definitions
@@ -96,7 +96,7 @@ src/app/api/cs2/
 
 ## Type Definitions
 
-Location: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\types\cs2.ts`
+Location: `D:\Projects\komplexaci_js\src\app\types\cs2.ts`
 
 ### Core Types
 
@@ -208,10 +208,10 @@ const data = await response.json();
 
 **Data Structure**:
 - 6 weapon categories: pistole, smg, pusky, odstrelova, tezke, granaty
-- Total of 40+ weapons with complete statistics
+- 36 weapons with complete statistics
 - Each weapon includes damage values, accuracy ratings, team availability
 
-**Location**: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\api\cs2\weapons\route.ts`
+**Location**: `D:\Projects\komplexaci_js\src\app\api\cs2\weapons\route.ts`
 
 ---
 
@@ -243,7 +243,7 @@ const data = await response.json();
 - Each map includes description, release date, type, and feature tags
 - Images stored in `/cs2/maps/` directory
 
-**Location**: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\api\cs2\maps\route.ts`
+**Location**: `D:\Projects\komplexaci_js\src\app\api\cs2\maps\route.ts`
 
 ---
 
@@ -265,10 +265,11 @@ const data = await response.json();
 **Data Structure**:
 - Basic information (developer, release date, engine, etc.)
 - Game mechanics and features
-- Screenshot URLs (24 official screenshots)
 - Schema.org structured data for SEO
 
-**Location**: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\api\cs2\game-info\route.ts`
+> **Note**: The rotating hero screenshots (19 official Steam CDN URLs) are defined in `cs2Screenshots` inside `page.tsx`, not in this game-info endpoint.
+
+**Location**: `D:\Projects\komplexaci_js\src\app\api\cs2\game-info\route.ts`
 
 ---
 
@@ -276,7 +277,7 @@ const data = await response.json();
 
 ### Main Page Component
 
-**Location**: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\cs2\page.tsx`
+**Location**: `D:\Projects\komplexaci_js\src\app\cs2\page.tsx`
 
 **State Management**:
 ```typescript
@@ -340,8 +341,10 @@ const [currentScreenshot, setCurrentScreenshot] = useState<string>('');
 
 ### Shared Components
 
+> **Note**: `AnimatedSection` and `StaggeredGrid` still exist in `src/app/components/` but are **not** imported by the redesigned CS2 page. The current `page.tsx` only imports `WeaponCardSkeleton`, `MapCardSkeleton`, and `Header`.
+
 #### AnimatedSection
-**Location**: Referenced from `src/app/components/AnimatedSection.tsx`
+**Location**: Referenced from `src/app/components/AnimatedSection.tsx` (not used by the current CS2 page)
 
 Provides entrance animations for content sections. Supports multiple animation types:
 - `fadeInUp`: Fade in while moving up
@@ -350,7 +353,7 @@ Provides entrance animations for content sections. Supports multiple animation t
 - `scaleIn`: Fade in with scale effect
 
 #### StaggeredGrid
-**Location**: Referenced from `src\app\components\StaggeredGrid.tsx`
+**Location**: Referenced from `src\app\components\StaggeredGrid.tsx` (not used by the current CS2 page)
 
 Wraps grid layouts to apply staggered animation delays to children, creating a cascade effect.
 
@@ -368,7 +371,7 @@ Loading placeholder for map cards during data fetch.
 
 ### Layout Component
 
-**Location**: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\cs2\layout.tsx`
+**Location**: `D:\Projects\komplexaci_js\src\app\cs2\layout.tsx`
 
 **Responsibilities**:
 - SEO metadata (title, description, keywords)
@@ -396,7 +399,7 @@ export const metadata: Metadata = {
 
 ### Loading Component
 
-**Location**: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\cs2\loading.tsx`
+**Location**: `D:\Projects\komplexaci_js\src\app\cs2\loading.tsx`
 
 Simple loading screen with:
 - Centered layout
@@ -408,7 +411,7 @@ Simple loading screen with:
 
 ### Error Component
 
-**Location**: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\cs2\error.tsx`
+**Location**: `D:\Projects\komplexaci_js\src\app\cs2\error.tsx`
 
 Error boundary providing:
 - Error logging to console
@@ -421,11 +424,11 @@ Error boundary providing:
 
 ## Styling
 
-### CSS Module Architecture
+### Global Stylesheet Architecture
 
-**Location**: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\cs2\cs2.module.css`
+**Location**: `D:\Projects\komplexaci_js\src\app\cs2\cs2-redesign.css`
 
-The CS2 feature uses CSS Modules for scoped, component-specific styling combined with Tailwind utility classes.
+The CS2 feature uses a global stylesheet (imported directly in `page.tsx`) for feature-specific styling combined with Tailwind utility classes. Class names are plain global selectors (e.g. `cs2-section`, `cs2-card`), not scoped CSS-Module exports.
 
 ### Key Style Classes
 
@@ -697,7 +700,7 @@ To keep data current with CS2 updates:
 
 ### Adding a New Weapon
 
-**File**: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\api\cs2\weapons\route.ts`
+**File**: `D:\Projects\komplexaci_js\src\app\api\cs2\weapons\route.ts`
 
 1. **Choose appropriate category** based on weapon type
 2. **Add weapon object** to category's `weapons` array:
@@ -749,7 +752,7 @@ To keep data current with CS2 updates:
 
 ### Adding a New Map
 
-**File**: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\api\cs2\maps\route.ts`
+**File**: `D:\Projects\komplexaci_js\src\app\api\cs2\maps\route.ts`
 
 1. **Add map object** to `maps` array:
 
@@ -807,7 +810,7 @@ To keep data current with CS2 updates:
 
 ### Adding a New Weapon Category
 
-**File**: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\api\cs2\weapons\route.ts`
+**File**: `D:\Projects\komplexaci_js\src\app\api\cs2\weapons\route.ts`
 
 1. **Add category object** to `weaponCategories` array:
 
@@ -863,7 +866,7 @@ To keep data current with CS2 updates:
 
 ### Updating Game Information
 
-**File**: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\api\cs2\game-info\route.ts`
+**File**: `D:\Projects\komplexaci_js\src\app\api\cs2\game-info\route.ts`
 
 **Common Updates**:
 
@@ -902,7 +905,7 @@ schema: {
 
 ### Updating Hero Screenshots
 
-**File**: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\cs2\page.tsx`
+**File**: `D:\Projects\komplexaci_js\src\app\cs2\page.tsx`
 
 To update the rotating hero screenshots:
 
@@ -1139,11 +1142,11 @@ npm run start
 - Confirm cs2Screenshots array is populated
 
 **Issue**: Animations not playing
-**Cause**: CSS module not imported or prefers-reduced-motion
+**Cause**: Stylesheet not imported or prefers-reduced-motion
 **Solution**:
-- Import cs2.module.css in component
+- Ensure `cs2-redesign.css` is imported in `page.tsx`
 - Check browser reduced motion setting
-- Verify class names match CSS module exports
+- Verify class names match the global stylesheet selectors
 
 ---
 
@@ -1210,10 +1213,10 @@ For questions, issues, or contributions related to the CS2 feature:
 - Follow existing code style and patterns
 
 **File Locations Summary**:
-- Main page: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\cs2\page.tsx`
-- Types: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\types\cs2.ts`
-- API routes: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\api\cs2\`
-- Styles: `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\cs2\cs2.module.css`
+- Main page: `D:\Projects\komplexaci_js\src\app\cs2\page.tsx`
+- Types: `D:\Projects\komplexaci_js\src\app\types\cs2.ts`
+- API routes: `D:\Projects\komplexaci_js\src\app\api\cs2\`
+- Styles: `D:\Projects\komplexaci_js\src\app\cs2\cs2-redesign.css`
 
 ---
 

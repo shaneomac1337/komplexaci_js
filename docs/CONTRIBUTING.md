@@ -53,13 +53,18 @@ Thank you for your interest in contributing to the Komplexaci gaming community w
    DISCORD_BOT_TOKEN=your_bot_token
    DISCORD_SERVER_ID=your_server_id
 
+   # Required - Discord OAuth (NextAuth admin login)
+   DISCORD_CLIENT_ID=your_discord_client_id
+   DISCORD_CLIENT_SECRET=your_discord_client_secret
+
    # Required - NextAuth
    NEXTAUTH_SECRET=random_32_char_string
    NEXTAUTH_URL=http://localhost:3000
 
-   # Optional - Supabase
-   SUPABASE_URL=https://xxx.supabase.co
-   SUPABASE_ANON_KEY=your_anon_key
+   # Optional - Supabase (admin profile/role storage)
+   NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+   NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+   SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
    # Optional - Debug
    RIOT_API_DEBUG=true

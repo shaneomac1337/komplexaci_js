@@ -28,7 +28,7 @@ The WWE Games feature is a comprehensive showcase of WWE/WWF wrestling game hist
 - Responsive layout with smooth animations
 - Dynamic hero section with rotating WWE 2K25 screenshots
 
-**Location:** `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\wwe-games\`
+**Location:** `D:\Projects\komplexaci_js\src\app\wwe-games\`
 
 ---
 
@@ -40,7 +40,15 @@ The WWE Games feature is a comprehensive showcase of WWE/WWF wrestling game hist
 src/app/wwe-games/
 ├── page.tsx              # Main page component with game display logic
 ├── layout.tsx            # Layout with metadata and structured data
-└── wwe.module.css        # SmackDown!-inspired styling
+├── eraTheme.ts           # Per-era theme tokens
+├── wwe-redesign.css      # SmackDown!-inspired global styling
+└── components/           # Page-local redesign components
+    ├── Cover.tsx         # Game cover art
+    ├── EraNav.tsx        # Era navigation
+    ├── EraSection.tsx    # Era section block
+    ├── GameModal.tsx     # Game detail modal
+    ├── Hero.tsx          # Hero section
+    └── UndercardPoster.tsx # Undercard game poster
 
 src/app/types/
 └── wwe.ts                # TypeScript type definitions
@@ -237,6 +245,8 @@ Provides SEO metadata and structured data for:
   - SportsTeam schema for Komplexaci
 
 ### Shared Components
+
+> **Note**: The redesigned page now renders through page-local components in `wwe-games/components/*` (`Hero`, `EraNav`, `EraSection`, `Cover`, `GameModal`, `UndercardPoster`), themed via `eraTheme.ts`. The shared `AnimatedSection`/`SmartGrid` wrappers below describe earlier building blocks and are not all used by the current redesign.
 
 **AnimatedSection:**
 Wrapper component providing entrance animations:
@@ -556,7 +566,9 @@ const ScrollingText = ({ text, className, maxWidth = 150 }) => {
 
 ## Styling System
 
-Location: `src/app/wwe-games/wwe.module.css`
+Location: `src/app/wwe-games/wwe-redesign.css`
+
+The WWE Games feature uses a global stylesheet (imported directly in `page.tsx`), not CSS Modules. Class names are plain global selectors combined with Tailwind utility classes.
 
 ### Design Philosophy
 
@@ -1199,17 +1211,17 @@ npm run type-check
 ### Styling Issues
 
 **Check:**
-1. CSS module imported correctly in component
-2. Class names use camelCase (not kebab-case)
+1. `wwe-redesign.css` imported correctly in `page.tsx`
+2. Class names match the global stylesheet selectors
 3. CSS variables defined in parent scope
 4. No conflicting global styles
 
 **Solution:**
 ```tsx
-// Correct CSS module usage
-import styles from './wwe.module.css';
+// Correct global stylesheet usage
+import './wwe-redesign.css';
 
-<div className={styles.gameCard}>...</div>
+<div className="gameCard">...</div>
 ```
 
 ### Filter Not Working
@@ -1300,7 +1312,9 @@ console.log('API URL:', `/api/wwe/games?era=${selectedEra}&series=${selectedSeri
 Component Files:
 ├── src/app/wwe-games/page.tsx
 ├── src/app/wwe-games/layout.tsx
-├── src/app/wwe-games/wwe.module.css
+├── src/app/wwe-games/eraTheme.ts
+├── src/app/wwe-games/wwe-redesign.css
+├── src/app/wwe-games/components/   (Cover, EraNav, EraSection, GameModal, Hero, UndercardPoster)
 └── src/app/wwe-games/README.md (this file)
 
 Type Definitions:

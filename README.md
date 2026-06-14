@@ -8,7 +8,7 @@ Next.js 15 gaming community website with real-time Discord integration, Riot Gam
 
 | Component | Technology | Version |
 |-----------|------------|---------|
-| Framework | Next.js (App Router) | 15.3.3 |
+| Framework | Next.js (App Router) | 15.5.7 |
 | Runtime | React | 19.0.0 |
 | Language | TypeScript (strict) | 5.x |
 | Styling | Tailwind CSS | 4.x |
@@ -47,9 +47,14 @@ DISCORD_SERVER_ID=your_server_id
 NEXTAUTH_SECRET=random_32_char_string
 NEXTAUTH_URL=http://localhost:3000
 
+# Required - Discord OAuth (NextAuth)
+DISCORD_CLIENT_ID=your_client_id
+DISCORD_CLIENT_SECRET=your_client_secret
+
 # Optional - Supabase
-SUPABASE_URL=https://xxx.supabase.co
-SUPABASE_ANON_KEY=your_anon_key
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your_anon_key
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
 
 # Optional - Debug
 RIOT_API_DEBUG=true
@@ -91,8 +96,7 @@ komplexaci_js/
 ├── data/                    # Runtime data (SQLite database)
 ├── docker/                  # Docker configuration
 ├── tests/                   # Test scripts
-├── public/                  # Static assets
-└── .assets/                 # Reference images
+└── public/                  # Static assets
 ```
 
 See [src/README.md](./src/README.md) for detailed source code organization.
@@ -223,7 +227,7 @@ See [docs/DEPLOYMENT.md](./docs/DEPLOYMENT.md) for:
 
 ## Documentation
 
-**[View Full Documentation Index](./docs/DOCS.md)** - Central hub for all 17 documentation files.
+**[View Full Documentation Index](./docs/DOCS.md)** - Central hub for the documentation files in docs/.
 
 ### Quick Links
 

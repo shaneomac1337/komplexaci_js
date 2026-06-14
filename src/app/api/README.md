@@ -632,15 +632,15 @@ src/
 │   ├── lol/
 │   │   ├── summoner/route.ts   # Calls RiotAPIService
 │   │   ├── matches/route.ts
-│   │   └── champions/route.ts
+│   │   ├── champions/route.ts
+│   │   └── services/
+│   │       └── RiotAPIService.ts # Business logic for LoL API
 │   └── discord/
-│       └── server-stats/route.ts # Calls DiscordGatewayService
+│       └── server-stats/route.ts # Calls Discord gateway
 ├── lib/
-│   ├── services/
-│   │   ├── RiotAPIService.ts   # Business logic for LoL API
-│   │   ├── DiscordGatewayService.ts
-│   │   └── AnalyticsService.ts
+│   ├── discord-gateway.ts      # Discord gateway service (singleton)
 │   └── analytics/
+│       ├── service.ts          # Analytics tracking service
 │       └── database.ts         # Database access layer
 ```
 
@@ -716,7 +716,6 @@ export async function GET() {
 - `getServerStats()`: Get guild statistics
 - `getAllMembers()`: Get all members
 - `getMemberCount()`: Get member count
-- `getVoiceStates()`: Get voice channel states
 
 ### AnalyticsDatabase Integration
 

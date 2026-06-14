@@ -32,7 +32,7 @@ Komplexaci is a monolithic Next.js 15 application using the App Router architect
 
 | Layer | Technology | Version | Purpose |
 |-------|------------|---------|---------|
-| **Framework** | Next.js | 15.3.3 | Full-stack React framework with App Router |
+| **Framework** | Next.js | 15.5.7 | Full-stack React framework with App Router |
 | **Runtime** | React | 19.0.0 | UI library with Server Components |
 | **Language** | TypeScript | 5.x | Type safety with strict mode |
 | **Styling** | Tailwind CSS | 4.x | Utility-first CSS framework |
@@ -76,9 +76,9 @@ komplexaci_js/
 │   │   ├── components/        # Shared React components
 │   │   ├── hooks/             # Custom React hooks
 │   │   ├── types/             # TypeScript definitions
-│   │   ├── utils/             # Utility functions
-│   │   └── contexts/          # React Context providers
+│   │   └── utils/             # Utility functions
 │   │
+│   ├── components/            # Shared providers (SessionProvider.tsx, AuthButton.tsx)
 │   ├── lib/                   # Server-side libraries
 │   │   ├── discord-gateway.ts # Discord WebSocket service
 │   │   ├── discord-startup.ts # Gateway initialization
@@ -108,29 +108,27 @@ komplexaci_js/
 ```
 RootLayout (Server Component)
 ├── SessionProvider (Client)
-│   └── PerformanceProvider (Client)
-│       ├── Header (Client - navigation)
-│       └── Page Content
-│           ├── Homepage
-│           │   ├── MemberCards
-│           │   ├── AudioPlayer
-│           │   ├── DiscordServerStats
-│           │   ├── MostActiveMembers
-│           │   └── DailyAwards
-│           │
-│           ├── League of Legends
-│           │   ├── SummonerSearch
-│           │   ├── KomplexaciStatus
-│           │   ├── ChampionGrid
-│           │   └── ChampionModal
-│           │
-│           ├── CS2
-│           │   ├── WeaponCards
-│           │   └── MapGallery
-│           │
-│           └── WWE Games
-│               ├── GameCards
-│               └── WWEMusicPlayer
+│   ├── Header (Client - navigation)
+│   └── Page Content
+│       ├── Homepage
+│       │   ├── MemberCards
+│       │   ├── AudioPlayer
+│       │   ├── DiscordServerStats
+│       │   ├── MostActiveMembers
+│       │   └── DailyAwards
+│       │
+│       ├── League of Legends
+│       │   ├── SummonerSearch
+│       │   ├── KomplexaciStatus
+│       │   └── ChampionMastery
+│       │
+│       ├── CS2
+│       │   ├── WeaponCards
+│       │   └── MapGallery
+│       │
+│       └── WWE Games
+│           ├── GameCards
+│           └── WWEMusicPlayer
 ```
 
 ---
@@ -381,7 +379,8 @@ const intents = [
   GatewayIntentBits.Guilds,
   GatewayIntentBits.GuildMembers,
   GatewayIntentBits.GuildPresences,
-  GatewayIntentBits.GuildVoiceStates
+  GatewayIntentBits.GuildVoiceStates,
+  GatewayIntentBits.GuildMessages
 ];
 ```
 
@@ -393,13 +392,12 @@ const intents = [
 
 **Singleton Pattern:**
 ```typescript
-let discordGateway: DiscordGatewayService | null = null;
-
+// Stored on globalThis to survive module reloads in dev/serverless
 export function getDiscordGateway(): DiscordGatewayService {
-  if (!discordGateway) {
-    discordGateway = new DiscordGatewayService();
+  if (!globalThis.__komplexaciDiscordGateway) {
+    globalThis.__komplexaciDiscordGateway = new DiscordGatewayService();
   }
-  return discordGateway;
+  return globalThis.__komplexaciDiscordGateway;
 }
 ```
 
@@ -420,7 +418,7 @@ export function getDiscordGateway(): DiscordGatewayService {
 **Rate Limiting:**
 - Development keys: 20 requests/second
 - Production keys: Higher limits (requires approval)
-- Service includes automatic retry logic for 429 responses
+- Service throws on 429, surfacing Retry-After — no retry
 
 ### Supabase
 
@@ -534,8 +532,9 @@ Configured remote patterns for external images:
 | `DISCORD_SERVER_ID` | Yes | Target Discord server ID |
 | `NEXTAUTH_SECRET` | Yes | NextAuth encryption secret |
 | `NEXTAUTH_URL` | Yes | Application URL |
-| `SUPABASE_URL` | No | Supabase project URL |
-| `SUPABASE_ANON_KEY` | No | Supabase anonymous key |
+| `NEXT_PUBLIC_SUPABASE_URL` | No | Supabase project URL |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | No | Supabase anonymous key |
+| `SUPABASE_SERVICE_ROLE_KEY` | No | Supabase service role key |
 | `ANALYTICS_DATA_DIR` | No | Custom analytics DB path |
 | `RIOT_API_DEBUG` | No | Enable Riot API debug logs |
 | `ENABLE_DISCORD_GATEWAY` | No | Force enable Discord Gateway |
@@ -548,9 +547,9 @@ Configured remote patterns for external images:
 
 | Document | Description |
 |----------|-------------|
-| [README.md](./README.md) | Project overview and quick start |
+| [README.md](../README.md) | Project overview and quick start |
 | [API.md](./API.md) | Complete API endpoint reference |
 | [DEPLOYMENT.md](./DEPLOYMENT.md) | Deployment instructions |
 | [CONTRIBUTING.md](./CONTRIBUTING.md) | Development workflow |
-| [src/lib/analytics/README.md](./src/lib/analytics/README.md) | Analytics system details |
-| [src/lib/README.md](./src/lib/README.md) | Server-side library code |
+| [src/lib/analytics/README.md](../src/lib/analytics/README.md) | Analytics system details |
+| [src/lib/README.md](../src/lib/README.md) | Server-side library code |

@@ -49,7 +49,7 @@ The Komplexáci analytics system provides real-time tracking of community member
 - **Stale Detection**: Automatically detects and closes inactive sessions after 5 minutes
 - **In-Memory State**: Active user sessions cached in service for quick access
 - **Transaction Safety**: Uses SQLite transactions for critical operations
-- **UTC Normalization**: All timestamps stored as ISO 8601 UTC strings
+- **Timestamp Normalization**: All timestamps stored as ISO 8601 UTC strings; day/month boundaries use Europe/Prague time
 
 ---
 
@@ -142,7 +142,7 @@ Cumulative daily and monthly statistics per user. Updated in real-time as sessio
 CREATE TABLE user_stats (
   user_id TEXT PRIMARY KEY,
 
-  -- Daily metrics (reset at 00:00 UTC)
+  -- Daily metrics (reset at day boundary in Europe/Prague time)
   daily_online_minutes INTEGER DEFAULT 0,
   daily_voice_minutes INTEGER DEFAULT 0,
   daily_games_played INTEGER DEFAULT 0,
@@ -151,7 +151,7 @@ CREATE TABLE user_stats (
   daily_spotify_songs INTEGER DEFAULT 0,
   daily_streaming_minutes INTEGER DEFAULT 0,
 
-  -- Monthly metrics (reset on 1st of month at 00:00 UTC)
+  -- Monthly metrics (reset on 1st of month, Europe/Prague time)
   monthly_online_minutes INTEGER DEFAULT 0,
   monthly_voice_minutes INTEGER DEFAULT 0,
   monthly_games_played INTEGER DEFAULT 0,
@@ -179,20 +179,20 @@ CREATE INDEX idx_user_stats_monthly_reset ON user_stats(last_monthly_reset);
 | Field | Type | Description | Reset Frequency |
 |-------|------|-------------|-----------------|
 | `user_id` | TEXT | Discord user ID (primary key) | Never |
-| `daily_online_minutes` | INTEGER | Total online time today | 00:00 UTC daily |
-| `daily_voice_minutes` | INTEGER | Total voice channel time today | 00:00 UTC daily |
-| `daily_games_played` | INTEGER | Unique games played today | 00:00 UTC daily |
-| `daily_games_minutes` | INTEGER | Total gaming time today | 00:00 UTC daily |
-| `daily_spotify_minutes` | INTEGER | Total Spotify listening today | 00:00 UTC daily |
-| `daily_spotify_songs` | INTEGER | Unique songs started today | 00:00 UTC daily |
-| `daily_streaming_minutes` | INTEGER | Screen sharing duration today | 00:00 UTC daily |
-| `monthly_online_minutes` | INTEGER | Total online time this month | 1st of month 00:00 UTC |
-| `monthly_voice_minutes` | INTEGER | Total voice time this month | 1st of month 00:00 UTC |
-| `monthly_games_played` | INTEGER | Unique games this month | 1st of month 00:00 UTC |
-| `monthly_games_minutes` | INTEGER | Total game time this month | 1st of month 00:00 UTC |
-| `monthly_spotify_minutes` | INTEGER | Total Spotify time this month | 1st of month 00:00 UTC |
-| `monthly_spotify_songs` | INTEGER | Unique songs this month | 1st of month 00:00 UTC |
-| `monthly_streaming_minutes` | INTEGER | Screen sharing this month | 1st of month 00:00 UTC |
+| `daily_online_minutes` | INTEGER | Total online time today | Daily (Europe/Prague) |
+| `daily_voice_minutes` | INTEGER | Total voice channel time today | Daily (Europe/Prague) |
+| `daily_games_played` | INTEGER | Unique games played today | Daily (Europe/Prague) |
+| `daily_games_minutes` | INTEGER | Total gaming time today | Daily (Europe/Prague) |
+| `daily_spotify_minutes` | INTEGER | Total Spotify listening today | Daily (Europe/Prague) |
+| `daily_spotify_songs` | INTEGER | Unique songs started today | Daily (Europe/Prague) |
+| `daily_streaming_minutes` | INTEGER | Screen sharing duration today | Daily (Europe/Prague) |
+| `monthly_online_minutes` | INTEGER | Total online time this month | 1st of month (Europe/Prague) |
+| `monthly_voice_minutes` | INTEGER | Total voice time this month | 1st of month (Europe/Prague) |
+| `monthly_games_played` | INTEGER | Unique games this month | 1st of month (Europe/Prague) |
+| `monthly_games_minutes` | INTEGER | Total game time this month | 1st of month (Europe/Prague) |
+| `monthly_spotify_minutes` | INTEGER | Total Spotify time this month | 1st of month (Europe/Prague) |
+| `monthly_spotify_songs` | INTEGER | Unique songs this month | 1st of month (Europe/Prague) |
+| `monthly_streaming_minutes` | INTEGER | Screen sharing this month | 1st of month (Europe/Prague) |
 | `last_daily_reset` | TEXT | ISO 8601 timestamp of last daily reset | Automatic |
 | `last_monthly_reset` | TEXT | ISO 8601 timestamp of last monthly reset | Automatic |
 | `created_at` | TEXT | Account creation timestamp | Never |
@@ -345,7 +345,7 @@ CREATE INDEX idx_daily_snapshots_user_date ON daily_snapshots(user_id, date);
 | Field | Type | Notes |
 |-------|------|-------|
 | `user_id` | TEXT | Discord user ID |
-| `date` | TEXT | Date in YYYY-MM-DD format (UTC) |
+| `date` | TEXT | Date in YYYY-MM-DD format (Europe/Prague time) |
 | `online_minutes` | INTEGER | Estimated online time for the day |
 | `voice_minutes` | INTEGER | Total voice channel time |
 | `games_played` | INTEGER | Count of unique games played |
@@ -451,7 +451,9 @@ Three categories of sessions trigger immediate user_stats updates:
 **Method:** `updateGameTimeImmediately(userId)`
 
 ```typescript
-// Counts:
+// Counts (simplified): the real query uses a CASE expression with a bound
+// resetTime parameter so active sessions that started before the reset only
+// count the portion of time after the reset.
 SELECT SUM(duration_minutes) as total_minutes,
        COUNT(DISTINCT game_name) as games_played
 FROM game_sessions
@@ -486,8 +488,15 @@ WHERE user_id = ? AND (
 ```typescript
 // Counts:
 SELECT COUNT(*) as songs_played
-FROM spotify_sessions
-WHERE user_id = ? AND start_time > last_daily_reset AND status IN ('active', 'ended')
+FROM spotify_sessions s
+WHERE s.user_id = ?
+  AND s.start_time > (
+    SELECT COALESCE(last_daily_reset, '1970-01-01')
+    FROM user_stats
+    WHERE user_id = ?
+  )
+  AND s.status IN ('active', 'ended')
+  AND (s.duration_minutes >= 1 OR s.status = 'active')
 ```
 
 ---
@@ -496,7 +505,7 @@ WHERE user_id = ? AND start_time > last_daily_reset AND status IN ('active', 'en
 
 ### Daily Reset
 
-**Trigger:** Automatic at 00:00 UTC each day
+**Trigger:** Automatic at the day boundary in Europe/Prague time
 
 **Scope:** All daily_* columns in user_stats
 
@@ -507,7 +516,7 @@ resetDailyStats('user123')              // Reset single user
 resetDailyStats()                        // Reset all users
 ```
 
-**Reset Time:** Set to 2 minutes before actual reset to ensure recovered sessions are counted
+**Reset Time:** Set to the actual current time (`resetTime = now.toISOString()`)
 
 ```sql
 UPDATE user_stats SET
@@ -518,7 +527,7 @@ UPDATE user_stats SET
   daily_spotify_minutes = 0,
   daily_spotify_songs = 0,
   daily_streaming_minutes = 0,
-  last_daily_reset = ? (current time - 2 minutes),
+  last_daily_reset = ? (current time),
   updated_at = CURRENT_TIMESTAMP
 WHERE user_id = ?
 ```
@@ -530,7 +539,7 @@ WHERE user_id = ?
 
 ### Monthly Reset
 
-**Trigger:** Automatic at 00:00 UTC on the 1st of each month
+**Trigger:** Automatic on the 1st of each month (Europe/Prague time)
 
 **Scope:** All monthly_* columns in user_stats
 
@@ -541,7 +550,7 @@ resetMonthlyStats('user123')            // Reset single user
 resetMonthlyStats()                      // Reset all users
 ```
 
-**Reset Time:** 2 minutes before actual month boundary
+**Reset Time:** Set to the actual current time (`new Date().toISOString()`)
 
 ```sql
 UPDATE user_stats SET
@@ -1168,7 +1177,7 @@ Get the singleton analytics service instance.
 
 **`cleanupStaleSessions(staleMinutes?)`**
 - **Type:** `(staleMinutes?) => void`
-- **Purpose:** Legacy method (no-op, uses real-time validation)
+- **Purpose:** Marks active game/voice/Spotify sessions whose `last_updated` is older than `staleMinutes` as `'stale'`, setting their `end_time` and calculated `duration_minutes`
 
 ##### Health & Debug
 
@@ -1898,9 +1907,9 @@ export interface UserActivity {
 
 ## Related Files
 
-- `database.ts` - SQLite database implementation (892 lines)
-- `service.ts` - Analytics service with session management (1254 lines)
-- `index.ts` - System initialization and exports (74 lines)
+- `database.ts` - SQLite database implementation (918 lines)
+- `service.ts` - Analytics service with session management (1422 lines)
+- `index.ts` - System initialization and exports (73 lines)
 
 ## Document Metadata
 

@@ -2,7 +2,9 @@
 
 Inspected: 2026-04-26
 
-This note captures the current Discord analytics implementation and the local database contents so the next pass can build on it without rediscovering the system.
+> **HISTORICAL SNAPSHOT** — Database row counts below are frozen at the inspection date and the "next work items" may already be resolved. The code-map section is the durable part; verify specifics against current source before relying on them.
+
+This note captures the Discord analytics implementation and the local database contents at the time of inspection so a later pass can build on it without rediscovering the system.
 
 ## What It Tracks
 

@@ -5,7 +5,7 @@
 The `src/lib/` directory contains server-side utilities and services for the Komplexaci Next.js 15 gaming community website. This library layer provides core infrastructure for Discord integration, analytics tracking, database access, and utility functions.
 
 **Key Technologies:**
-- Next.js 15.3.3 with App Router (server-side only)
+- Next.js 15.5.7 with App Router (server-side only)
 - Discord.js for real-time Discord Gateway integration
 - better-sqlite3 for local analytics database
 - Supabase for primary data storage
@@ -24,6 +24,7 @@ src/lib/
 ├── discord-gateway.ts     # Discord WebSocket service (singleton)
 ├── discord-startup.ts     # Gateway initialization
 ├── discord-avatar-utils.ts # Avatar URL utilities
+├── czech-time.ts          # Czech timezone utilities
 └── supabase.ts            # Supabase client configuration
 ```
 

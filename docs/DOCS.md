@@ -24,45 +24,45 @@ Central navigation hub for all technical documentation for the Komplexaci gaming
 
 ### Project Overview
 
-| Document | Description | Audience | Pages |
-|----------|-------------|----------|-------|
-| [README.md](../README.md) | Main project documentation with technology stack, quick start instructions, and core systems overview. Includes environment setup and basic usage. | All users | 12 |
-| [ARCHITECTURE.md](./ARCHITECTURE.md) | Complete system architecture including component hierarchy, data flow diagrams, database schema, and integration points. | Developers, Architects | 20 |
+| Document | Description | Audience |
+|----------|-------------|----------|
+| [README.md](../README.md) | Main project documentation with technology stack, quick start instructions, and core systems overview. Includes environment setup and basic usage. | All users |
+| [ARCHITECTURE.md](./ARCHITECTURE.md) | Complete system architecture including component hierarchy, data flow diagrams, database schema, and integration points. | Developers, Architects |
 
 ### Source Code Organization
 
-| Document | Description | Audience | Pages |
-|----------|-------------|----------|-------|
-| [src/README.md](../src/README.md) | Source code directory structure, component patterns, client vs server components, and import conventions. | Developers | 5 |
-| [src/app/api/README.md](../src/app/api/README.md) | API route organization, handler patterns, and endpoint conventions. | Backend Developers | 3 |
-| [src/lib/README.md](../src/lib/README.md) | Server-side library code including Discord Gateway, Analytics, and utilities. | Backend Developers | 3 |
-| [src/lib/analytics/README.md](../src/lib/analytics/README.md) | Complete technical reference for the analytics subsystem. Covers database schema, session management, Discord integration, and API usage. | Backend Developers | 65 |
+| Document | Description | Audience |
+|----------|-------------|----------|
+| [src/README.md](../src/README.md) | Source code directory structure, component patterns, client vs server components, and import conventions. | Developers |
+| [src/app/api/README.md](../src/app/api/README.md) | API route organization, handler patterns, and endpoint conventions. | Backend Developers |
+| [src/lib/README.md](../src/lib/README.md) | Server-side library code including Discord Gateway, Analytics, and utilities. | Backend Developers |
+| [src/lib/analytics/README.md](../src/lib/analytics/README.md) | Complete technical reference for the analytics subsystem. Covers database schema, session management, Discord integration, and API usage. | Backend Developers |
 
 ### Feature Documentation
 
-| Document | Description | Audience | Pages |
-|----------|-------------|----------|-------|
-| [src/app/league-of-legends/README.md](../src/app/league-of-legends/README.md) | League of Legends integration including Riot API usage, champion database, summoner search, and live game tracking. | Developers | 8 |
-| [src/app/cs2/README.md](../src/app/cs2/README.md) | Counter-Strike 2 weapon database, map gallery, and game information management. | Developers | 4 |
-| [src/app/wwe-games/README.md](../src/app/wwe-games/README.md) | WWE games collection organized by era, platform support, and music player integration. | Developers | 5 |
-| [src/app/admin/README.md](../src/app/admin/README.md) | Admin dashboard features, authentication requirements, and management interfaces. | Developers, Administrators | 4 |
-| [src/app/videotvorba/README.md](../src/app/videotvorba/README.md) | YouTube video gallery with immersive player and channel integration. | Developers, Content Managers | 3 |
+| Document | Description | Audience |
+|----------|-------------|----------|
+| [src/app/league-of-legends/README.md](../src/app/league-of-legends/README.md) | League of Legends integration including Riot API usage, champion database, summoner search, and live game tracking. | Developers |
+| [src/app/cs2/README.md](../src/app/cs2/README.md) | Counter-Strike 2 weapon database, map gallery, and game information management. | Developers |
+| [src/app/wwe-games/README.md](../src/app/wwe-games/README.md) | WWE games collection organized by era, platform support, and music player integration. | Developers |
+| [src/app/admin/README.md](../src/app/admin/README.md) | Admin dashboard features, authentication requirements, and management interfaces. | Developers, Administrators |
+| [src/app/videotvorba/README.md](../src/app/videotvorba/README.md) | YouTube video gallery with immersive player and channel integration. | Developers, Content Managers |
 
 ### Infrastructure & Data
 
-| Document | Description | Audience | Pages |
-|----------|-------------|----------|-------|
-| [data/README.md](../data/README.md) | SQLite database reference covering file structure, schema, backup procedures, Docker volume mounting, and maintenance. | DevOps, Database Administrators | 55 |
-| [docker/README.md](../docker/README.md) | Docker containerization setup, docker-compose configuration, volume management, and container orchestration. | DevOps | 8 |
-| [tests/README.md](../tests/README.md) | Testing strategies, manual test procedures, and quality assurance guidelines. | QA Engineers, Developers | 6 |
+| Document | Description | Audience |
+|----------|-------------|----------|
+| [data/README.md](../data/README.md) | SQLite database reference covering file structure, schema, backup procedures, Docker volume mounting, and maintenance. | DevOps, Database Administrators |
+| [docker/README.md](../docker/README.md) | Docker containerization setup, docker-compose configuration, volume management, and container orchestration. | DevOps |
+| [tests/README.md](../tests/README.md) | Testing strategies, manual test procedures, and quality assurance guidelines. | QA Engineers, Developers |
 
 ### Operations
 
-| Document | Description | Audience | Pages |
-|----------|-------------|----------|-------|
-| [API.md](./API.md) | Complete API endpoint reference with request/response schemas, error codes, and usage examples for all 50+ endpoints. | Backend Developers, API Consumers | 45 |
-| [DEPLOYMENT.md](./DEPLOYMENT.md) | Comprehensive deployment guide covering Vercel, manual server setup, Nginx configuration, SSL, monitoring, and troubleshooting. | DevOps, System Administrators | 65 |
-| [CONTRIBUTING.md](./CONTRIBUTING.md) | Development workflow, code style guidelines, Git conventions, testing requirements, and pull request process. | Contributors, Developers | 45 |
+| Document | Description | Audience |
+|----------|-------------|----------|
+| [API.md](./API.md) | Complete API endpoint reference with request/response schemas, error codes, and usage examples for all endpoints. | Backend Developers, API Consumers |
+| [DEPLOYMENT.md](./DEPLOYMENT.md) | Comprehensive deployment guide covering Vercel, manual server setup, Nginx configuration, SSL, monitoring, and troubleshooting. | DevOps, System Administrators |
+| [CONTRIBUTING.md](./CONTRIBUTING.md) | Development workflow, code style guidelines, Git conventions, testing requirements, and pull request process. | Contributors, Developers |
 
 ---
 
@@ -137,7 +137,7 @@ Central navigation hub for all technical documentation for the Komplexaci gaming
 
 | Technology | Version | Documentation Link | Purpose |
 |------------|---------|-------------------|---------|
-| Next.js | 15.3.3 | [nextjs.org/docs](https://nextjs.org/docs) | Full-stack React framework |
+| Next.js | 15.5.7 | [nextjs.org/docs](https://nextjs.org/docs) | Full-stack React framework |
 | React | 19.0.0 | [react.dev](https://react.dev) | UI library with Server Components |
 | TypeScript | 5.x | [typescriptlang.org](https://www.typescriptlang.org) | Type safety (strict mode) |
 | Tailwind CSS | 4.x | [tailwindcss.com](https://tailwindcss.com) | Utility-first CSS framework |
@@ -297,7 +297,6 @@ docker-compose up -d
 | Application won't start | [DEPLOYMENT.md](./DEPLOYMENT.md) | Troubleshooting - Application Not Starting |
 | Discord bot offline | [DEPLOYMENT.md](./DEPLOYMENT.md) | Troubleshooting - Discord Bot Not Responding |
 | Database errors | [data/README.md](../data/README.md) | Troubleshooting - Common Issues |
-| API rate limiting | [API.md](./API.md) | Rate Limiting section |
 | Build failures | [CONTRIBUTING.md](./CONTRIBUTING.md) | Testing Requirements |
 | Slow queries | [data/README.md](../data/README.md) | Performance Characteristics |
 
@@ -320,22 +319,22 @@ Available debug endpoints for troubleshooting:
 
 | Metric | Count |
 |--------|-------|
-| API Endpoints | 50+ |
+| API Endpoints | 49 route handlers |
 | Database Tables | 5 (analytics) |
-| React Components | 100+ |
-| TypeScript Files | 200+ |
-| Documentation Pages | 300+ |
+| React Components | ~67 |
+| TypeScript Files | ~147 |
+| Documentation files | 29 .md |
 
 ### Performance Benchmarks
 
-| Operation | Target | Measured |
-|-----------|--------|----------|
-| API Response Time | < 200ms | 50-150ms avg |
-| Database Queries | < 100ms | 20-80ms avg |
-| Page Load (FCP) | < 1.5s | 800ms-1.2s |
-| Build Time | < 2min | 60-90s |
+> Note: these are design targets/rough estimates, not measured benchmarks. No benchmark suite exists in the repo.
 
-**Source:** [ARCHITECTURE.md](./ARCHITECTURE.md) - Performance Optimizations
+| Operation | Target |
+|-----------|--------|
+| API Response Time | < 200ms |
+| Database Queries | < 100ms |
+| Page Load (FCP) | < 1.5s |
+| Build Time | < 2min |
 
 ---
 
@@ -440,7 +439,6 @@ RIOT_API_DEBUG=true                   # Debug Riot API calls
 ### API Security
 
 - Input validation on all endpoints
-- Rate limiting (60 requests/min per IP)
 - No sensitive data in client code
 - Environment variables for secrets
 
@@ -486,8 +484,8 @@ Private and proprietary to the Komplexaci gaming clan.
 
 ### Last Updated
 
-**Date:** 2025-11-30
-**Version:** 1.0.0
+**Date:** 2026-06-14
+**Version:** 1.0.1
 
 ### Update Guidelines
 

@@ -524,7 +524,7 @@ const beforeState = getDBState(userId);
 const afterState = getDBState(userId);
 
 // Verify change
-console.assert(afterState.monthlyGameTime !== beforeState.monthlyGameTime);
+console.assert(afterState.monthly_games_minutes !== beforeState.monthly_games_minutes);
 
 db.close();
 ```
@@ -663,7 +663,7 @@ const userStats = db.prepare(`
   SELECT * FROM user_stats WHERE user_id = ?
 `).get('239823014126944257');
 
-console.log('Monthly game time:', userStats.monthly_game_time);
+console.log('Monthly game time:', userStats.monthly_games_minutes);
 
 // Query game sessions
 const sessions = db.prepare(`
@@ -683,11 +683,11 @@ db.close();
 - `game_sessions` - Historical game session records
 - `spotify_sessions` - Spotify listening history
 - `voice_sessions` - Discord voice channel time
-- `historical_snapshots` - Daily state archives
+- `daily_snapshots` - Daily state archives
 
 **Important columns:**
-- `monthly_game_time` - Monthly game duration in minutes
-- `daily_game_time` - Daily game duration in minutes
+- `monthly_games_minutes` - Monthly game duration in minutes
+- `daily_games_minutes` - Daily game duration in minutes
 - `updated_at` - Last modification timestamp
 - `created_at` - Record creation timestamp
 
@@ -701,7 +701,7 @@ const db = new Database('./analytics.db');
 // Check if daily counters are zero
 const stats = db.prepare(`
   SELECT COUNT(*) as count FROM user_stats
-  WHERE daily_game_time > 0
+  WHERE daily_games_minutes > 0
 `).get();
 
 if (stats.count === 0) {

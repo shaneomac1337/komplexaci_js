@@ -172,17 +172,17 @@ PRAGMA temp_store = MEMORY;
 **better-sqlite3 Configuration:**
 ```typescript
 const db = new Database(dbPath);
-// Default settings:
+// Constructed with no options; better-sqlite3 library defaults apply:
 // - readonly: false
 // - fileMustExist: false
-// - timeout: 5000 ms
+// - timeout: 5000 ms (library default, not explicitly configured)
 // - verbose: undefined
 ```
 
 **Multi-Connection Support:**
 - Simultaneous readers: Unlimited
 - Concurrent writers: 1 (serialized via SQLite)
-- Typical response to write contention: Automatic retry with exponential backoff
+- Typical response to write contention: better-sqlite3 waits up to the busy timeout (5000 ms library default)
 
 **Connection Lifecycle:**
 1. Database file checked/created on initialization
@@ -716,7 +716,7 @@ FROM daily_snapshots;
 **Delete Old Data (365 day retention):**
 ```typescript
 // Via Node.js API
-const { database } = initializeAnalytics();
+const database = getAnalyticsDatabase();
 const result = database.cleanupOldData(365);
 
 console.log(`Deleted ${result.deletedRecords.gameSessions} game sessions`);
@@ -940,7 +940,7 @@ EOF
 
 1. **Run data cleanup (365-day retention):**
    ```typescript
-   const { database } = initializeAnalytics();
+   const database = getAnalyticsDatabase();
    database.cleanupOldData(365);
    ```
 
@@ -1216,7 +1216,7 @@ du -sh data/* | sort -h
 
 1. **Immediate: Cleanup Old Data**
    ```typescript
-   const { database } = initializeAnalytics();
+   const database = getAnalyticsDatabase();
    database.cleanupOldData(90);  // Keep only 90 days
    ```
 

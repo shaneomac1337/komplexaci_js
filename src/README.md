@@ -7,6 +7,8 @@ This directory contains all source code for the Komplexaci application.
 ```
 src/
 ├── app/                    # Next.js App Router (pages, API, components)
+├── components/             # Top-level shared components (SessionProvider, AuthButton)
+├── config/                 # App configuration (CDN, etc.)
 ├── lib/                    # Server-side library code
 ├── hooks/                  # Shared React hooks
 └── data/                   # Static data files
@@ -51,7 +53,6 @@ Next.js App Router directory. Contains all pages, API routes, and app-specific c
 | `components/` | Shared React components |
 | `hooks/` | App-specific React hooks |
 | `types/` | TypeScript type definitions |
-| `contexts/` | React Context providers |
 | `utils/` | Utility functions |
 
 ---
@@ -100,7 +101,7 @@ Configured in `tsconfig.json`:
 // From any file in the project
 import { getDiscordGateway } from '@/lib/discord-gateway';
 import { getAnalyticsDatabase } from '@/lib/analytics/database';
-import { Header } from '@/app/components/Header';
+import Header from '@/app/components/Header';
 import type { Weapon } from '@/app/types/cs2';
 ```
 
@@ -275,7 +276,6 @@ const gateway = getDiscordGateway();
 
 - `app/globals.css` - Base styles, CSS variables
 - `komplexaci.css` - Legacy shared styles (large file)
-- `low-performance.css` - Reduced animation mode
 
 ### CSS Modules
 
@@ -283,9 +283,7 @@ Page-specific scoped styles:
 
 ```
 app/
-├── league-of-legends/lol.module.css
-├── cs2/cs2.module.css
-└── wwe-games/wwe.module.css
+└── league-of-legends/lol.module.css
 ```
 
 Usage:

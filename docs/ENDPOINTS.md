@@ -176,8 +176,8 @@ X-Frame-Options: DENY
 ## Rate Limiting Info
 
 ### Per-Service Limits
-- **Riot API endpoints**: Riot's limits (typically 20/sec)
-- **General endpoints**: 60/min per IP
+- **Riot API endpoints**: Riot's upstream limits (typically 20/sec)
+- **App-level limits**: None — the app does not enforce per-IP rate limits
 - **Discord endpoints**: Discord's limits
 - **Internal endpoints**: No limit
 

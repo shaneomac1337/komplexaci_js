@@ -5,8 +5,9 @@
 The Videotvorba (Video Content) feature is a dedicated section of the Komplexaci gaming community website that showcases YouTube content from the clan's channel. It provides an immersive, full-screen experience with embedded videos, responsive design, and smooth animations.
 
 **Key Features:**
-- Featured latest video section with prominent display
-- Grid layout of 6 selected videos with embedded players
+- Featured latest video section with prominent display (derived from `VIDEO_CATEGORIES.latest`)
+- Category-grouped video collection (7 videos across the `latest`, `retro`, and `gaming` categories)
+- Category filter chips that narrow the displayed grid by active category
 - Responsive design for mobile, tablet, and desktop
 - Animated particle background effects
 - Direct integration with YouTube channel
@@ -24,13 +25,16 @@ https://yourdomain.com/videotvorba
 ```
 src/app/videotvorba/
 ├── page.tsx          # Main component with video configuration
+├── layout.tsx        # Layout with metadata
+├── videotvorba.css   # Feature-specific styles (imported by page.tsx)
 └── README.md         # This documentation file
 ```
 
 **Dependencies:**
 - `komplexaci.css` - Shared styling including particle animations
+- `videotvorba.css` - Feature-specific styling
 - Next.js Image and Link components
-- React hooks (useState, useEffect)
+- React hooks (useState, useEffect, useMemo, useRef)
 
 ---
 
@@ -60,108 +64,51 @@ Embed URL: https://www.youtube.com/embed/5CnFK-7bRQc
 
 ## Video Configuration
 
-### Adding New Videos to the Featured Grid
+### The `VIDEO_CATEGORIES` Structure
 
-Videos are configured in the `featuredVideos` array at the top of `page.tsx` (lines 15-46).
+All videos are defined in a single `VIDEO_CATEGORIES` constant near the top of `page.tsx`. It maps each category key (`latest`, `retro`, `gaming`) to a label and a list of videos:
 
-**Configuration Structure:**
 ```typescript
-const featuredVideos = [
-  {
-    id: 'i3KL5t-EXPw',                    // YouTube video ID
-    title: 'Video Title',                 // Display title
-    description: 'Video description'      // Short description (1-2 sentences)
-  },
-  // Add up to 6 videos for optimal grid layout
-];
+type Video = {
+  id: string;          // YouTube video ID
+  title: string;       // Display title
+  description: string; // Short description
+  views?: string;      // Optional view count
+  featured?: boolean;  // Optional featured flag
+  platform?: string;   // Optional platform tag (e.g. 'PS2', 'PSX')
+};
+
+const VIDEO_CATEGORIES: Record<'latest' | 'retro' | 'gaming', { label: string; videos: Video[] }> = {
+  latest: { label: 'Nejnovější', videos: [ /* ... */ ] },
+  retro:  { label: 'Retro Gaming', videos: [ /* ... */ ] },
+  gaming: { label: 'Modern Gaming', videos: [ /* ... */ ] },
+};
 ```
 
-**Step-by-Step: Adding a New Video**
+Derived values built from this constant:
 
-1. **Extract Video ID:**
-   - Navigate to your video on YouTube
-   - Copy the URL from the browser
-   - Extract the ID (the part after `v=`)
+- `featuredVideo` — the prominently displayed hero video, taken from `VIDEO_CATEGORIES.latest.videos[0]`. The hero embed, title, description, and view count all read from this object (e.g. `https://www.youtube.com/embed/${featuredVideo.id}`).
+- `allVideosWithCategory` — a flattened list of every video tagged with its category key, used to render the grid and apply category filtering.
 
-   Example: `https://www.youtube.com/watch?v=abc123xyz` → ID is `abc123xyz`
+The grid cards and the hero both build their URLs from the video `id` using template literals (`embed/${video.id}`, `youtu.be/${video.id}`), so there is no separate "video ID" string to edit anywhere else.
 
-2. **Add to Array:**
-   ```typescript
-   const featuredVideos = [
-     // Existing videos...
-     {
-       id: 'abc123xyz',
-       title: 'Your New Video Title',
-       description: 'Brief description of the video content'
-     }
-   ];
-   ```
+### Adding or Updating a Video
 
-3. **Save and Deploy:**
-   - Save the file
-   - The page will hot-reload in development
-   - Commit and deploy to production
+1. **Extract the Video ID** from the YouTube URL (the part after `v=`).
+   Example: `https://www.youtube.com/watch?v=abc123xyz` → ID is `abc123xyz`.
+
+2. **Edit `VIDEO_CATEGORIES`** in `page.tsx`:
+   - To add a grid video, append a `Video` object to the `videos` array of the relevant category.
+   - To change the featured hero video, edit the first entry of `VIDEO_CATEGORIES.latest.videos` (its `id`, `title`, `description`, and `views`).
+   - To remove a video, delete its object from the category's `videos` array.
+
+3. **Save and deploy** — the page hot-reloads in development; commit and push for production.
 
 **Best Practices:**
-- Keep titles concise (under 50 characters)
-- Write descriptions in 1-2 sentences (under 80 characters)
-- Use Czech language for consistency with site content
-- Maintain 6 videos for clean 3x2 grid on desktop
-- Order videos by relevance (newest or most popular first)
-
-### Updating the Featured Latest Video
-
-The featured latest video appears prominently at the top of the page (lines 184-212).
-
-**Step-by-Step Update:**
-
-1. **Locate the Latest Video Section:**
-   Find line 188 in `page.tsx`:
-   ```typescript
-   src="https://www.youtube.com/embed/5CnFK-7bRQc"
-   ```
-
-2. **Replace the Video ID:**
-   ```typescript
-   src="https://www.youtube.com/embed/YOUR_NEW_VIDEO_ID"
-   ```
-
-3. **Update Title and Description:**
-   Lines 196-197:
-   ```typescript
-   <h3 className="text-2xl font-bold text-white mb-2">
-     Your New Video Title
-   </h3>
-   <p className="text-gray-400">
-     Brief description - view count
-   </p>
-   ```
-
-4. **Update the title Attribute:**
-   Line 192:
-   ```typescript
-   title="Your New Video Title"
-   ```
-
-**Example Complete Update:**
-```typescript
-<iframe
-  src="https://www.youtube.com/embed/xyz789new"
-  className="w-full h-full"
-  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-  allowFullScreen
-  title="CS:GO Competitive Highlights March 2025"
-></iframe>
-
-{/* ... */}
-
-<h3 className="text-2xl font-bold text-white mb-2">
-  CS:GO Competitive Highlights March 2025
-</h3>
-<p className="text-gray-400">
-  Nejlepší momenty z competitive zápasů - 245 views
-</p>
-```
+- Keep titles concise and descriptions to 1-2 sentences.
+- Use Czech language for consistency with site content.
+- Place a video in the category that matches its content (`latest`, `retro`, or `gaming`).
+- Order videos within a category by relevance (newest or most popular first).
 
 ---
 
@@ -172,7 +119,9 @@ The featured latest video appears prominently at the top of the page (lines 184-
 ```
 VideotvorbaPage (Client Component)
 ├── State Management
-│   └── isLoaded (controls animation timing)
+│   ├── isLoaded (controls animation timing)
+│   ├── activeCategory (selected category filter)
+│   └── clock (live HH:MM:SS readout via a clock hook)
 │
 ├── Navigation Header
 │   └── Back to homepage link
@@ -194,8 +143,9 @@ VideotvorbaPage (Client Component)
 │
 ├── Featured Videos Grid Section
 │   ├── Heading
+│   ├── Category filter chips (activeCategory)
 │   ├── 3-column responsive grid
-│   │   └── Video cards (map over featuredVideos)
+│   │   └── Video cards (map over allVideosWithCategory, filtered by activeCategory)
 │   │       ├── Embedded iframe
 │   │       ├── Title
 │   │       ├── Description
@@ -216,7 +166,8 @@ The component is marked with `"use client"` to enable:
 
 1. **Animation States:** Fade-in and slide-up transitions on mount
 2. **Interactive Hover Effects:** Scale and glow effects on cards
-3. **Dynamic Rendering:** Video grid generation from array
+3. **Dynamic Rendering:** Video grid generated from `allVideosWithCategory`, filtered by the active category
+4. **Live Clock:** HH:MM:SS broadcast readout driven by a clock hook
 
 **Animation Timing:**
 ```typescript
@@ -336,119 +287,23 @@ The particle effect background is defined in `komplexaci.css`:
 
 ### Scenario: Update Page with New Content
 
-**Goal:** Replace the featured latest video and add 2 new videos to the grid
+**Goal:** Replace the featured latest video and add new videos to the grid
+
+All content lives in the `VIDEO_CATEGORIES` constant in `page.tsx`. Both the hero embed and every grid card derive their YouTube URLs from a video's `id` via template literals (`embed/${video.id}`, `youtu.be/${video.id}`), so you only ever edit the data objects — never a hardcoded embed URL.
 
 **Steps:**
 
-1. **Gather Video Information:**
+1. **Gather video information** for each video: the YouTube ID (the part after `v=`), a title, and a short description. Optionally a `views` count or `platform` tag.
 
-   Latest Video:
-   - URL: `https://www.youtube.com/watch?v=newVideo123`
-   - Title: "League of Legends Team Fight Highlights"
-   - Description: "Epické týmové souboje z ranked her"
+2. **Open `page.tsx`** and locate `VIDEO_CATEGORIES`.
 
-   Grid Video 1:
-   - URL: `https://www.youtube.com/watch?v=gridVid456`
-   - Title: "Valorant ACE Montage"
-   - Description: "Všechny naše ACE momenty ze sezóny 2025"
+3. **Replace the featured latest video** by editing the first entry of `VIDEO_CATEGORIES.latest.videos` — update its `id`, `title`, `description`, and `views`. The hero section (embed, heading, description, view count, and the `title` attribute) is rendered from this `featuredVideo` object, so no other change is needed.
 
-   Grid Video 2:
-   - URL: `https://www.youtube.com/watch?v=gridVid789`
-   - Title: "Minecraft Building Tour"
-   - Description: "Prohlídka našeho klanovního serveru"
+4. **Add grid videos** by appending `Video` objects to the appropriate category's `videos` array (`retro` or `gaming`, or `latest` for additional recent clips). Each new video automatically appears in the grid and is included when its category filter is active.
 
-2. **Open page.tsx:**
-   ```bash
-   code src/app/videotvorba/page.tsx
-   ```
+5. **Save and test:** the page hot-reloads in development; verify embeds load and the responsive layout holds on mobile.
 
-3. **Update Featured Latest Video (Line 188):**
-
-   Before:
-   ```typescript
-   src="https://www.youtube.com/embed/5CnFK-7bRQc"
-   ```
-
-   After:
-   ```typescript
-   src="https://www.youtube.com/embed/newVideo123"
-   ```
-
-4. **Update Latest Video Title (Line 196):**
-
-   Before:
-   ```typescript
-   <h3 className="text-2xl font-bold text-white mb-2">
-     Best way to play Retro Wrestling Games on Windows
-   </h3>
-   ```
-
-   After:
-   ```typescript
-   <h3 className="text-2xl font-bold text-white mb-2">
-     League of Legends Team Fight Highlights
-   </h3>
-   ```
-
-5. **Update Latest Video Description (Line 197):**
-
-   Before:
-   ```typescript
-   <p className="text-gray-400">
-     Návod jak hrát retro wrestlingové hry na Windows - 118 views
-   </p>
-   ```
-
-   After:
-   ```typescript
-   <p className="text-gray-400">
-     Epické týmové souboje z ranked her
-   </p>
-   ```
-
-6. **Update iframe title (Line 192):**
-
-   Before:
-   ```typescript
-   title="Best way to play Retro Wrestling Games on Windows"
-   ```
-
-   After:
-   ```typescript
-   title="League of Legends Team Fight Highlights"
-   ```
-
-7. **Add New Videos to Grid (Lines 15-46):**
-
-   Add to the `featuredVideos` array:
-   ```typescript
-   const featuredVideos = [
-     // Existing videos...
-     {
-       id: 'gridVid456',
-       title: 'Valorant ACE Montage',
-       description: 'Všechny naše ACE momenty ze sezóny 2025'
-     },
-     {
-       id: 'gridVid789',
-       title: 'Minecraft Building Tour',
-       description: 'Prohlídka našeho klanovního serveru'
-     }
-   ];
-   ```
-
-8. **Save and Test:**
-   - Save the file (Ctrl+S or Cmd+S)
-   - Check browser for hot-reload
-   - Verify all embeds load correctly
-   - Test responsive layout on mobile view
-
-9. **Commit Changes:**
-   ```bash
-   git add src/app/videotvorba/page.tsx
-   git commit -m "Update videotvorba page with new video content"
-   git push
-   ```
+6. **Commit and push** the change to `page.tsx`.
 
 ---
 
@@ -457,23 +312,19 @@ The particle effect background is defined in `komplexaci.css`:
 ### Quick Update Checklist
 
 **To update the featured latest video:**
-- [ ] Extract video ID from YouTube URL
-- [ ] Update line 188 with new video ID
-- [ ] Update line 196 with new title
-- [ ] Update line 197 with new description
-- [ ] Update line 192 with new title (for accessibility)
+- [ ] Extract the video ID from the YouTube URL
+- [ ] Edit the first entry of `VIDEO_CATEGORIES.latest.videos` (`id`, `title`, `description`, `views`)
 - [ ] Save file
 
 **To add a video to the grid:**
-- [ ] Extract video ID from YouTube URL
-- [ ] Add new object to `featuredVideos` array (lines 15-46)
-- [ ] Include id, title, and description
-- [ ] Keep total at 6 videos for best layout
+- [ ] Extract the video ID from the YouTube URL
+- [ ] Append a `Video` object to the relevant category's `videos` array in `VIDEO_CATEGORIES`
+- [ ] Include `id`, `title`, and `description` (optionally `views`/`platform`)
 - [ ] Save file
 
 **To remove a video from the grid:**
-- [ ] Find video object in `featuredVideos` array
-- [ ] Delete entire object (including curly braces and comma)
+- [ ] Find the video object in its category's `videos` array
+- [ ] Delete the entire object (including curly braces and comma)
 - [ ] Save file
 
 ### Common Issues and Solutions
@@ -483,8 +334,8 @@ The particle effect background is defined in `komplexaci.css`:
 - Check: Video must not be age-restricted or private
 
 **Problem: Grid layout looks broken**
-- Solution: Ensure you have valid JSON structure (commas between objects, no trailing comma)
-- Check: Each video object has all three required fields (id, title, description)
+- Solution: Ensure each `Video` object is valid (commas between objects, no trailing comma issues)
+- Check: Each video object has at least the `id`, `title`, and `description` fields
 
 **Problem: Title or description has special characters**
 - Solution: Escape single quotes as `\'` or use double quotes inside JSX
@@ -501,13 +352,22 @@ The particle effect background is defined in `komplexaci.css`:
 ### Props and Data Types
 
 ```typescript
-interface FeaturedVideo {
-  id: string;          // YouTube video ID (11 characters)
+type Video = {
+  id: string;          // YouTube video ID
   title: string;       // Display title
   description: string; // Short description
-}
+  views?: string;      // Optional view count
+  featured?: boolean;  // Optional featured flag
+  platform?: string;   // Optional platform tag
+};
 
-const featuredVideos: FeaturedVideo[];
+type CategoryKey = 'all' | 'latest' | 'retro' | 'gaming';
+
+const VIDEO_CATEGORIES: Record<Exclude<CategoryKey, 'all'>, { label: string; videos: Video[] }>;
+
+// Derived helpers built from VIDEO_CATEGORIES:
+const featuredVideo: Video;            // VIDEO_CATEGORIES.latest.videos[0]
+const allVideosWithCategory: (Video & { category: Exclude<CategoryKey, 'all'> })[];
 ```
 
 ### YouTube iframe Parameters

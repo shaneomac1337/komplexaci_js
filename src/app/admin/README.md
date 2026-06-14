@@ -1790,11 +1790,11 @@ curl -X POST http://localhost:3000/api/music/upload \
 
 ## Related Documentation
 
-- **Main README:** `C:\Users\Martin\Desktop\Projects\komplexaci_js\README.md`
-- **API Documentation:** `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\api\README.md`
-- **Authentication Setup:** `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\app\api\auth\[...nextauth]\route.ts`
-- **Supabase Schema:** `C:\Users\Martin\Desktop\Projects\komplexaci_js\src\lib\supabase.ts`
-- **Environment Variables:** `C:\Users\Martin\Desktop\Projects\komplexaci_js\.env.example`
+- **Main README:** `D:\Projects\komplexaci_js\README.md`
+- **API Documentation:** `D:\Projects\komplexaci_js\src\app\api\README.md`
+- **Authentication Setup:** `D:\Projects\komplexaci_js\src\app\api\auth\[...nextauth]\route.ts`
+- **Supabase Schema:** `D:\Projects\komplexaci_js\src\lib\supabase.ts`
+- **Environment Variables:** `D:\Projects\komplexaci_js\.env.example`
 
 ---
 
