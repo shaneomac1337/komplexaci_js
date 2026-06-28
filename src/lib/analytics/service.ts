@@ -667,12 +667,13 @@ class AnalyticsService {
           daily_spotify_minutes: 0,
           daily_spotify_songs: newDailySpotifySongs,
           daily_streaming_minutes: 0,
+          // monthly_* columns are dormant (legacy); monthly is derived from daily_snapshots.
           monthly_online_minutes: 0,
           monthly_voice_minutes: 0,
           monthly_games_played: 0,
           monthly_games_minutes: 0,
           monthly_spotify_minutes: 0,
-          monthly_spotify_songs: newDailySpotifySongs,
+          monthly_spotify_songs: 0,
           monthly_streaming_minutes: 0,
           last_daily_reset: now.toISOString(),
           last_monthly_reset: now.toISOString(),
@@ -680,16 +681,13 @@ class AnalyticsService {
           updated_at: now.toISOString()
         };
       } else {
-        // Update existing user stats with new song count
+        // Update existing user stats with new song count (daily only; monthly_*
+        // is dormant and preserved via the spread).
         const now = new Date();
-        
-        // Real-time monthly accumulation: use Math.max() to ensure monthly >= daily
-        const newMonthlySpotifySongs = Math.max(userStats.monthly_spotify_songs, newDailySpotifySongs);
-        
+
         userStats = {
           ...userStats,
           daily_spotify_songs: newDailySpotifySongs,
-          monthly_spotify_songs: newMonthlySpotifySongs,
           updated_at: now.toISOString()
         };
       }
@@ -697,7 +695,7 @@ class AnalyticsService {
       // Save updated stats to database
       this.db.upsertUserStats(userStats);
       
-      console.log(`🎵 IMMEDIATE UPDATE: Updated Spotify song count for user ${userId}: ${newDailySpotifySongs} daily songs, ${userStats.monthly_spotify_songs} monthly songs`);
+      console.log(`🎵 IMMEDIATE UPDATE: Updated Spotify song count for user ${userId}: ${newDailySpotifySongs} daily songs`);
     } catch (error) {
       console.error(`❌ Error updating Spotify song count immediately for ${userId}:`, error);
     }
@@ -765,10 +763,11 @@ class AnalyticsService {
           daily_spotify_minutes: 0,
           daily_spotify_songs: 0,
           daily_streaming_minutes: 0,
+          // monthly_* columns are dormant (legacy); monthly is derived from daily_snapshots.
           monthly_online_minutes: 0,
           monthly_voice_minutes: 0,
-          monthly_games_played: newDailyGamesPlayed,
-          monthly_games_minutes: newDailyGameMinutes,
+          monthly_games_played: 0,
+          monthly_games_minutes: 0,
           monthly_spotify_minutes: 0,
           monthly_spotify_songs: 0,
           monthly_streaming_minutes: 0,
@@ -778,19 +777,14 @@ class AnalyticsService {
           updated_at: now.toISOString()
         };
       } else {
-        // Update existing user stats with new game time
+        // Update existing user stats with new game time (daily only; monthly_*
+        // is dormant and preserved via the spread).
         const now = new Date();
-        
-        // Real-time monthly accumulation: use Math.max() to ensure monthly >= daily
-        const newMonthlyGameMinutes = Math.max(userStats.monthly_games_minutes, newDailyGameMinutes);
-        const newMonthlyGamesPlayed = Math.max(userStats.monthly_games_played, newDailyGamesPlayed);
-        
+
         userStats = {
           ...userStats,
           daily_games_played: newDailyGamesPlayed,
           daily_games_minutes: newDailyGameMinutes,
-          monthly_games_played: newMonthlyGamesPlayed,
-          monthly_games_minutes: newMonthlyGameMinutes,
           updated_at: now.toISOString()
         };
       }
@@ -798,7 +792,7 @@ class AnalyticsService {
       // Save updated stats to database
       this.db.upsertUserStats(userStats);
       
-      console.log(`🎮 IMMEDIATE UPDATE: Updated game time for user ${userId}: ${newDailyGameMinutes} daily minutes (${newDailyGamesPlayed} games), ${userStats.monthly_games_minutes} monthly minutes`);
+      console.log(`🎮 IMMEDIATE UPDATE: Updated game time for user ${userId}: ${newDailyGameMinutes} daily minutes (${newDailyGamesPlayed} games)`);
     } catch (error) {
       console.error(`❌ Error updating game time immediately for ${userId}:`, error);
     }
@@ -842,32 +836,28 @@ class AnalyticsService {
           daily_spotify_minutes: 0,
           daily_spotify_songs: 0,
           daily_streaming_minutes: newDailyStreamingMinutes,
+          // monthly_* columns are dormant (legacy); monthly is derived from daily_snapshots.
           monthly_online_minutes: 0,
-          monthly_voice_minutes: newDailyVoiceMinutes,
+          monthly_voice_minutes: 0,
           monthly_games_played: 0,
           monthly_games_minutes: 0,
           monthly_spotify_minutes: 0,
           monthly_spotify_songs: 0,
-          monthly_streaming_minutes: newDailyStreamingMinutes,
+          monthly_streaming_minutes: 0,
           last_daily_reset: resetTime,
           last_monthly_reset: now.toISOString().split('T')[0] + 'T00:00:00.000Z',
           created_at: now.toISOString(),
           updated_at: now.toISOString()
         };
       } else {
-        // Update existing user stats with new voice time
+        // Update existing user stats with new voice time (daily only; monthly_*
+        // is dormant and preserved via the spread).
         const now = new Date();
-
-        // Real-time monthly accumulation: use Math.max() to ensure monthly >= daily
-        const newMonthlyVoiceMinutes = Math.max(userStats.monthly_voice_minutes, newDailyVoiceMinutes);
-        const newMonthlyStreamingMinutes = Math.max(userStats.monthly_streaming_minutes, newDailyStreamingMinutes);
 
         userStats = {
           ...userStats,
           daily_voice_minutes: newDailyVoiceMinutes,
           daily_streaming_minutes: newDailyStreamingMinutes,
-          monthly_voice_minutes: newMonthlyVoiceMinutes,
-          monthly_streaming_minutes: newMonthlyStreamingMinutes,
           updated_at: now.toISOString()
         };
       }

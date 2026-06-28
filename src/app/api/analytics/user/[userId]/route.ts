@@ -13,13 +13,14 @@ export async function GET(
     
     const db = getAnalyticsDatabase();
     
-    // Get user's reset dates and counters to respect daily/monthly reset
+    // Get user's reset dates and daily counters. monthly_* counter columns are
+    // dormant (legacy) and intentionally NOT selected — monthly figures are
+    // derived from daily_snapshots via db.getMonthlyTotals(). last_monthly_reset
+    // is still used to bound the per-tab session lists below.
     const userStats = db.getDatabase().prepare(`
       SELECT last_monthly_reset, last_daily_reset,
              daily_online_minutes, daily_voice_minutes, daily_games_played, daily_games_minutes,
-             daily_spotify_minutes, daily_spotify_songs, daily_streaming_minutes,
-             monthly_online_minutes, monthly_voice_minutes, monthly_games_played, monthly_games_minutes,
-             monthly_spotify_minutes, monthly_spotify_songs
+             daily_spotify_minutes, daily_spotify_songs, daily_streaming_minutes
       FROM user_stats
       WHERE user_id = ?
     `).get(userId) as any;

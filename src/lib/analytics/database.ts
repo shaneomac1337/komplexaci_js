@@ -903,42 +903,9 @@ class AnalyticsDatabase {
     }
   }
 
-  public resetMonthlyStats(userId?: string) {
-    const now = new Date().toISOString();
-
-    if (userId) {
-      // Reset specific user
-      const stmt = this.db.prepare(`
-        UPDATE user_stats SET
-          monthly_online_minutes = 0,
-          monthly_voice_minutes = 0,
-          monthly_games_played = 0,
-          monthly_games_minutes = 0,
-          monthly_spotify_minutes = 0,
-          monthly_spotify_songs = 0,
-          monthly_streaming_minutes = 0,
-          last_monthly_reset = ?,
-          updated_at = CURRENT_TIMESTAMP
-        WHERE user_id = ?
-      `);
-      return stmt.run(now, userId);
-    } else {
-      // Reset all users
-      const stmt = this.db.prepare(`
-        UPDATE user_stats SET
-          monthly_online_minutes = 0,
-          monthly_voice_minutes = 0,
-          monthly_games_played = 0,
-          monthly_games_minutes = 0,
-          monthly_spotify_minutes = 0,
-          monthly_spotify_songs = 0,
-          monthly_streaming_minutes = 0,
-          last_monthly_reset = ?,
-          updated_at = CURRENT_TIMESTAMP
-      `);
-      return stmt.run(now);
-    }
-  }
+  // NOTE: resetMonthlyStats() removed in the monthly-stats cleanup. Monthly
+  // figures are now derived from daily_snapshots (see getMonthlyTotals /
+  // getMonthlyLeaderboard); the monthly_* columns are dormant and never reset.
 
   // === DAILY RESET MANAGEMENT ===
 

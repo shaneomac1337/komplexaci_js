@@ -8,7 +8,7 @@ export async function GET() {
     
     // Get user stats
     const userStats = db.getDatabase().prepare(`
-      SELECT user_id, daily_voice_minutes, monthly_voice_minutes, last_monthly_reset, updated_at
+      SELECT user_id, daily_voice_minutes, updated_at
       FROM user_stats 
       ORDER BY updated_at DESC 
       LIMIT 10
