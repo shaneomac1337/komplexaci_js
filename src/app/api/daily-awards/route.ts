@@ -22,8 +22,10 @@ export async function GET(request: NextRequest) {
   try {
     const db = getAnalyticsDatabase();
     const gateway = getDiscordGateway();
+    const { searchParams } = new URL(request.url);
+    const period = searchParams.get('period') === 'monthly' ? 'monthly' : 'daily';
 
-    console.log('🏆 Calculating daily awards...');
+    console.log(`🏆 Calculating ${period} awards...`);
 
     // Get Discord members for display names and avatars
     const memberMap = new Map();
@@ -49,123 +51,78 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Helper function to get winner for a category
-    const getWinner = (query: string, valueField: string, unit: string) => {
-      const result = db.getDatabase().prepare(query).get() as any;
-      if (!result || result[valueField] <= 0) {
-        return null;
-      }
-
-      const member = memberMap.get(result.user_id);
-      
-      // Validate avatar URL
+    // Validate + shape a winner from a (user_id, value) pair.
+    const resolveWinner = (user_id: string, value: number, unit: string) => {
+      if (!value || value <= 0) return null;
+      const member = memberMap.get(user_id);
       let avatarUrl = member?.avatar || null;
       if (avatarUrl && (!avatarUrl.startsWith('https://') || !avatarUrl.includes('cdn.discordapp.com'))) {
         console.warn(`⚠️  Invalid avatar URL for ${member?.displayName}: ${avatarUrl}`);
         avatarUrl = null;
       }
-      
       return {
-        userId: result.user_id,
+        userId: user_id,
         displayName: member?.displayName || 'Unknown User',
         avatar: avatarUrl,
-        value: result[valueField],
+        value,
         unit
       };
     };
 
-    // Helper function to get participant count
-    const getParticipantCount = (query: string) => {
-      const result = db.getDatabase().prepare(query).get() as any;
-      return result?.count || 0;
-    };
-
-    // 1. Pařmen dne (Gamer of the Day) - Most gaming time
-    const gamerWinner = getWinner(
-      `SELECT user_id, daily_games_minutes 
-       FROM user_stats 
-       WHERE daily_games_minutes > 0 
-       ORDER BY daily_games_minutes DESC 
-       LIMIT 1`,
-      'daily_games_minutes',
-      'minut'
-    );
-
-    const gamerParticipants = getParticipantCount(
-      `SELECT COUNT(*) as count 
-       FROM user_stats 
-       WHERE daily_games_minutes > 0`
-    );
-
-    // 2. Nerd dne (Nerd of the Day) - Most online time
-    const nerdWinner = getWinner(
-      `SELECT user_id, daily_online_minutes 
-       FROM user_stats 
-       WHERE daily_online_minutes > 0 
-       ORDER BY daily_online_minutes DESC 
-       LIMIT 1`,
-      'daily_online_minutes',
-      'minut'
-    );
-
-    const nerdParticipants = getParticipantCount(
-      `SELECT COUNT(*) as count 
-       FROM user_stats 
-       WHERE daily_online_minutes > 0`
-    );
-
-    // 3. Posluchač dne (Listener of the Day) - Most Spotify songs
-    const listenerWinner = getWinner(
-      `SELECT user_id, daily_spotify_songs 
-       FROM user_stats 
-       WHERE daily_spotify_songs > 0 
-       ORDER BY daily_spotify_songs DESC 
-       LIMIT 1`,
-      'daily_spotify_songs',
-      'písniček'
-    );
-
-    const listenerParticipants = getParticipantCount(
-      `SELECT COUNT(*) as count 
-       FROM user_stats 
-       WHERE daily_spotify_songs > 0`
-    );
-
-    // Create awards array
-    const awards: DailyAward[] = [
-      {
-        id: 'gamer',
-        title: 'Pařmen dne',
-        icon: '🎮',
-        description: 'Nejvíce času stráveného hraním',
-        winner: gamerWinner,
-        participantCount: gamerParticipants
-      },
-      {
-        id: 'nerd',
-        title: 'Nerd dne',
-        icon: '🤓',
-        description: 'Nejvíce času stráveného online',
-        winner: nerdWinner,
-        participantCount: nerdParticipants
-      },
-      {
-        id: 'listener',
-        title: 'Posluchač dne',
-        icon: '🎵',
-        description: 'Nejvíce písniček na Spotify',
-        winner: listenerWinner,
-        participantCount: listenerParticipants
-      }
+    // Category config. Daily reads a user_stats column directly; monthly sums
+    // daily_snapshots over the Prague calendar month + today's live counter.
+    const CATEGORY_CONFIG = [
+      { id: 'gamer',    icon: '🎮', dailyTitle: 'Pařmen dne',     monthlyTitle: 'Pařmen měsíce',     description: 'Nejvíce času stráveného hraním',  dailyCol: 'daily_games_minutes', monthlyMetric: 'games_minutes',  liveCol: 'daily_games_minutes', unit: 'minut' },
+      { id: 'nerd',     icon: '🤓', dailyTitle: 'Nerd dne',       monthlyTitle: 'Nerd měsíce',       description: 'Nejvíce času stráveného online', dailyCol: 'daily_online_minutes', monthlyMetric: 'online_minutes', liveCol: 'daily_online_minutes', unit: 'minut' },
+      { id: 'listener', icon: '🎵', dailyTitle: 'Posluchač dne', monthlyTitle: 'Posluchač měsíce', description: 'Nejvíce písniček na Spotify',     dailyCol: 'daily_spotify_songs', monthlyMetric: 'spotify_minutes', liveCol: 'daily_spotify_songs', unit: 'písniček' },
     ];
 
-    console.log('🏆 Daily awards calculated:', awards.map(a => 
+    // Create awards array (daily or monthly)
+    const awards: DailyAward[] = CATEGORY_CONFIG.map((cfg) => {
+      let winner = null;
+      let participantCount = 0;
+
+      if (period === 'monthly') {
+        const rows = db.getMonthlyLeaderboard(cfg.monthlyMetric, cfg.liveCol, 1000);
+        participantCount = rows.length;
+        if (rows.length > 0) {
+          winner = resolveWinner(rows[0].user_id, rows[0].value, cfg.unit);
+        }
+      } else {
+        const top = db.getDatabase().prepare(
+          `SELECT user_id, ${cfg.dailyCol} AS value
+           FROM user_stats
+           WHERE ${cfg.dailyCol} > 0
+           ORDER BY ${cfg.dailyCol} DESC
+           LIMIT 1`
+        ).get() as any;
+        const count = db.getDatabase().prepare(
+          `SELECT COUNT(*) as count FROM user_stats WHERE ${cfg.dailyCol} > 0`
+        ).get() as any;
+        participantCount = count?.count || 0;
+        if (top) {
+          winner = resolveWinner(top.user_id, top.value, cfg.unit);
+        }
+      }
+
+      return {
+        id: cfg.id,
+        title: period === 'monthly' ? cfg.monthlyTitle : cfg.dailyTitle,
+        icon: cfg.icon,
+        description: cfg.description,
+        winner,
+        participantCount
+      };
+    });
+
+    console.log(`🏆 ${period} awards calculated:`, awards.map(a => 
       `${a.title}: ${a.winner?.displayName || 'Nikdo'} (${a.winner?.value || 0} ${a.winner?.unit || ''})`
     ));
 
     return NextResponse.json({
       success: true,
       awards,
+      period,
       lastUpdated: new Date().toISOString()
     });
 

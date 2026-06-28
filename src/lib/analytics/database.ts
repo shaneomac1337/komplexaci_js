@@ -1,6 +1,7 @@
 import Database from 'better-sqlite3';
 import path from 'path';
 import fs from 'fs';
+import { getPragueMonthStartDateString, getPragueDateString } from '../czech-time';
 
 export interface DailySnapshot {
   user_id: string;
@@ -8,7 +9,8 @@ export interface DailySnapshot {
   online_minutes: number;
   voice_minutes: number;
   games_played: number;
-  spotify_minutes: number;
+  games_minutes: number; // total gaming minutes for the day (durable monthly source)
+  spotify_minutes: number; // NOTE: actually stores play COUNT (plays_count), not minutes
   created_at: string;
 }
 
@@ -141,6 +143,16 @@ class AnalyticsDatabase {
 
         console.log('✅ Migration completed: Added daily_streaming_minutes and monthly_streaming_minutes columns');
       }
+
+      // Migration 2: Add games_minutes to daily_snapshots (durable monthly source).
+      // Historical rows default to 0; accurate gaming minutes accrue from ship date forward.
+      const dailySnapshotsInfo = this.db.prepare('PRAGMA table_info(daily_snapshots)').all() as any[];
+      const hasGamesMinutes = dailySnapshotsInfo.some((col: any) => col.name === 'games_minutes');
+      if (!hasGamesMinutes) {
+        console.log('🔄 Running migration: Adding games_minutes column to daily_snapshots...');
+        this.db.exec('ALTER TABLE daily_snapshots ADD COLUMN games_minutes INTEGER DEFAULT 0;');
+        console.log('✅ Migration completed: Added games_minutes column to daily_snapshots');
+      }
     } catch (error) {
       console.error('❌ Migration failed:', error);
     }
@@ -157,6 +169,7 @@ class AnalyticsDatabase {
           online_minutes INTEGER DEFAULT 0,
           voice_minutes INTEGER DEFAULT 0,
           games_played INTEGER DEFAULT 0,
+          games_minutes INTEGER DEFAULT 0,
           spotify_minutes INTEGER DEFAULT 0,
           created_at TEXT DEFAULT CURRENT_TIMESTAMP,
           PRIMARY KEY (user_id, date)
@@ -454,16 +467,18 @@ class AnalyticsDatabase {
   // Daily snapshots
   public upsertDailySnapshot(snapshot: Omit<DailySnapshot, 'created_at'>) {
     const stmt = this.db.prepare(`
-      INSERT INTO daily_snapshots (user_id, date, online_minutes, voice_minutes, games_played, spotify_minutes)
-      VALUES (?, ?, ?, ?, ?, ?)
+      INSERT INTO daily_snapshots (user_id, date, online_minutes, voice_minutes, games_played, games_minutes, spotify_minutes)
+      VALUES (?, ?, ?, ?, ?, ?, ?)
       ON CONFLICT(user_id, date) DO UPDATE SET
         online_minutes = excluded.online_minutes,
         voice_minutes = excluded.voice_minutes,
         games_played = excluded.games_played,
+        games_minutes = excluded.games_minutes,
         spotify_minutes = excluded.spotify_minutes
     `);
     return stmt.run(snapshot.user_id, snapshot.date, snapshot.online_minutes,
-                   snapshot.voice_minutes, snapshot.games_played, snapshot.spotify_minutes);
+                   snapshot.voice_minutes, snapshot.games_played, snapshot.games_minutes ?? 0,
+                   snapshot.spotify_minutes);
   }
 
   public getDailySnapshot(userId: string, date: string): DailySnapshot | null {
@@ -490,6 +505,76 @@ class AnalyticsDatabase {
 
     query += ' ORDER BY date DESC';
     return this.db.prepare(query).all(...params) as DailySnapshot[];
+  }
+
+  // === MONTHLY AGGREGATION (durable source: daily_snapshots) ===
+  // "Monthly" = current Prague calendar month. Computed as SUM(daily_snapshots)
+  // for past days this month (date >= 1st AND date < today) PLUS today's live
+  // daily_* counters from user_stats. Today's snapshot row is excluded to avoid
+  // double-counting (online_minutes is also written live to today's snapshot).
+
+  // Per-user monthly totals (for the user stats modal).
+  public getMonthlyTotals(userId: string) {
+    const monthStart = getPragueMonthStartDateString();   // 'YYYY-MM-01'
+    const today = getPragueDateString(new Date());        // 'YYYY-MM-DD'
+
+    const past = this.db.prepare(`
+      SELECT
+        COALESCE(SUM(online_minutes), 0)  AS online,
+        COALESCE(SUM(voice_minutes), 0)   AS voice,
+        COALESCE(SUM(games_minutes), 0)   AS games,
+        COALESCE(SUM(spotify_minutes), 0) AS spotifySongs
+      FROM daily_snapshots
+      WHERE user_id = ? AND date >= ? AND date < ?
+    `).get(userId, monthStart, today) as any;
+
+    const live = this.db.prepare(`
+      SELECT
+        daily_online_minutes    AS online,
+        daily_voice_minutes     AS voice,
+        daily_games_minutes     AS games,
+        daily_spotify_songs     AS spotifySongs,
+        daily_streaming_minutes AS streaming
+      FROM user_stats WHERE user_id = ?
+    `).get(userId) as any;
+
+    return {
+      online_minutes:    (past?.online || 0) + (live?.online || 0),
+      voice_minutes:     (past?.voice || 0) + (live?.voice || 0),
+      games_minutes:     (past?.games || 0) + (live?.games || 0),
+      spotify_songs:     (past?.spotifySongs || 0) + (live?.spotifySongs || 0),
+      streaming_minutes: (live?.streaming || 0), // history not persisted; today only
+    };
+  }
+
+  // Per-category monthly leaderboard across all users (for the awards section).
+  // metricCol/liveCol MUST be server-chosen constants (whitelisted by the caller) —
+  // never user input — since they are interpolated into SQL.
+  public getMonthlyLeaderboard(metricCol: string, liveCol: string, limit = 50) {
+    const allowedMetric = new Set(['online_minutes', 'voice_minutes', 'games_minutes', 'spotify_minutes']);
+    const allowedLive = new Set(['daily_online_minutes', 'daily_voice_minutes', 'daily_games_minutes', 'daily_spotify_songs']);
+    if (!allowedMetric.has(metricCol) || !allowedLive.has(liveCol)) {
+      throw new Error(`getMonthlyLeaderboard: invalid column (${metricCol}, ${liveCol})`);
+    }
+
+    const monthStart = getPragueMonthStartDateString();
+    const today = getPragueDateString(new Date());
+
+    return this.db.prepare(`
+      WITH past AS (
+        SELECT user_id, COALESCE(SUM(${metricCol}), 0) AS past_val
+        FROM daily_snapshots
+        WHERE date >= ? AND date < ?
+        GROUP BY user_id
+      )
+      SELECT u.user_id AS user_id,
+             (COALESCE(p.past_val, 0) + COALESCE(u.${liveCol}, 0)) AS value
+      FROM user_stats u
+      LEFT JOIN past p ON p.user_id = u.user_id
+      WHERE (COALESCE(p.past_val, 0) + COALESCE(u.${liveCol}, 0)) > 0
+      ORDER BY value DESC
+      LIMIT ?
+    `).all(monthStart, today, limit) as Array<{ user_id: string; value: number }>;
   }
 
   // Game sessions

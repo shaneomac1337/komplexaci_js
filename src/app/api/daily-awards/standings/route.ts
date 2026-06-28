@@ -15,6 +15,7 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const category = searchParams.get('category');
+    const period = searchParams.get('period') === 'monthly' ? 'monthly' : 'daily';
 
     if (!category) {
       return NextResponse.json({
@@ -26,7 +27,7 @@ export async function GET(request: NextRequest) {
     const db = getAnalyticsDatabase();
     const gateway = getDiscordGateway();
 
-    console.log(`🏆 Fetching standings for category: ${category}`);
+    console.log(`🏆 Fetching ${period} standings for category: ${category}`);
 
     // Get Discord members for display names and avatars
     const memberMap = new Map();
@@ -42,80 +43,56 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    let query: string;
-    let valueField: string;
-    let unit: string;
+    // Category config: daily reads a user_stats column directly; monthly sums
+    // daily_snapshots over the Prague calendar month + today's live counter.
+    const CATEGORY_CONFIG: Record<string, { dailyCol: string; monthlyMetric: string; liveCol: string; unit: string }> = {
+      gamer:    { dailyCol: 'daily_games_minutes', monthlyMetric: 'games_minutes',   liveCol: 'daily_games_minutes', unit: 'minut' },
+      nerd:     { dailyCol: 'daily_online_minutes', monthlyMetric: 'online_minutes', liveCol: 'daily_online_minutes', unit: 'minut' },
+      listener: { dailyCol: 'daily_spotify_songs', monthlyMetric: 'spotify_minutes', liveCol: 'daily_spotify_songs', unit: 'písniček' },
+    };
 
-    // Determine query based on category
-    switch (category) {
-      case 'gamer':
-        query = `SELECT user_id, daily_games_minutes 
-                 FROM user_stats 
-                 WHERE daily_games_minutes > 0 
-                 ORDER BY daily_games_minutes DESC 
-                 LIMIT 50`;
-        valueField = 'daily_games_minutes';
-        unit = 'minut';
-        break;
+    const config = CATEGORY_CONFIG[category];
+    if (!config) {
+      return NextResponse.json({
+        success: false,
+        error: 'Invalid category'
+      }, { status: 400 });
+    }
+    const unit = config.unit;
 
-      case 'nerd':
-        query = `SELECT user_id, daily_online_minutes 
-                 FROM user_stats 
-                 WHERE daily_online_minutes > 0 
-                 ORDER BY daily_online_minutes DESC 
-                 LIMIT 50`;
-        valueField = 'daily_online_minutes';
-        unit = 'minut';
-        break;
-
-      case 'listener':
-        query = `SELECT user_id, daily_spotify_songs 
-                 FROM user_stats 
-                 WHERE daily_spotify_songs > 0 
-                 ORDER BY daily_spotify_songs DESC 
-                 LIMIT 50`;
-        valueField = 'daily_spotify_songs';
-        unit = 'písniček';
-        break;
-
-      default:
-        return NextResponse.json({
-          success: false,
-          error: 'Invalid category'
-        }, { status: 400 });
+    // Build the ranked rows: [{ user_id, value }]
+    let rows: Array<{ user_id: string; value: number }>;
+    if (period === 'monthly') {
+      rows = db.getMonthlyLeaderboard(config.monthlyMetric, config.liveCol, 50);
+    } else {
+      const valueField = config.dailyCol;
+      rows = (db.getDatabase().prepare(
+        `SELECT user_id, ${valueField} AS value
+         FROM user_stats
+         WHERE ${valueField} > 0
+         ORDER BY ${valueField} DESC
+         LIMIT 50`
+      ).all() as any[]).map(r => ({ user_id: r.user_id, value: r.value }));
     }
 
-    // Execute query
-    const results = db.getDatabase().prepare(query).all() as any[];
-
     // Transform results into standings
-    const standings: StandingsEntry[] = results.map((result, index) => {
+    const standings: StandingsEntry[] = rows.map((result, index) => {
       const member = memberMap.get(result.user_id);
       return {
         userId: result.user_id,
         displayName: member?.displayName || 'Unknown User',
         avatar: member?.avatar || null,
-        value: result[valueField],
+        value: result.value,
         unit,
         rank: index + 1
       };
     });
 
-    // Get additional statistics for today
-    const totalParticipants = db.getDatabase().prepare(`
-      SELECT COUNT(*) as count
-      FROM user_stats
-      WHERE ${valueField} > 0
-    `).get() as any;
-
-    const totalValue = db.getDatabase().prepare(`
-      SELECT SUM(${valueField}) as total
-      FROM user_stats
-      WHERE ${valueField} > 0
-    `).get() as any;
-
-    const averageValue = totalParticipants.count > 0 ?
-      Math.round((totalValue.total || 0) / totalParticipants.count) : 0;
+    // Statistics computed from the result set (works for both periods)
+    const participantsCount = standings.length;
+    const totalValueSum = standings.reduce((sum, s) => sum + (s.value || 0), 0);
+    const averageValue = participantsCount > 0 ?
+      Math.round(totalValueSum / participantsCount) : 0;
 
     console.log(`🏆 Found ${standings.length} entries for ${category} standings`);
 
@@ -123,10 +100,11 @@ export async function GET(request: NextRequest) {
       success: true,
       standings,
       category,
+      period,
       totalEntries: standings.length,
       statistics: {
-        totalParticipants: totalParticipants.count || 0,
-        totalValue: totalValue.total || 0,
+        totalParticipants: participantsCount,
+        totalValue: totalValueSum,
         averageValue,
         unit
       },

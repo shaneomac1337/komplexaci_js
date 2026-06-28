@@ -400,6 +400,11 @@ export async function GET(
     // For other time ranges, use session-based calculations
     let totalGameTime, totalVoiceTime, totalSongsPlayed, totalScreenShareTime;
 
+    // "monthly" = current Prague calendar month, recomputed from daily_snapshots
+    // (durable source) + today's live counters. The old monthly_* columns are
+    // abandoned (buggy Math.max accumulation); do NOT read them here.
+    const monthlyTotals = timeRange === 'monthly' ? db.getMonthlyTotals(userId) : null;
+
     if (timeRange === '1d') {
       // Use daily counters from user_stats (real-time tracking, includes active sessions)
       totalGameTime = userStats?.daily_games_minutes || 0;
@@ -407,11 +412,11 @@ export async function GET(
       totalSongsPlayed = userStats?.daily_spotify_songs || 0;
       totalScreenShareTime = userStats?.daily_streaming_minutes || 0;
     } else if (timeRange === 'monthly') {
-      // Use monthly counters from user_stats (reset to 0 by monthly reset)
-      totalGameTime = userStats?.monthly_games_minutes || 0; // Now we have proper monthly game time tracking!
-      totalVoiceTime = userStats?.monthly_voice_minutes || 0;
-      totalSongsPlayed = userStats?.monthly_spotify_songs || 0; // Use monthly_spotify_songs for song count
-      totalScreenShareTime = 0; // Not tracked in monthly counters yet
+      // Snapshot-based monthly totals (calendar month, includes today live)
+      totalGameTime = monthlyTotals!.games_minutes;
+      totalVoiceTime = monthlyTotals!.voice_minutes;
+      totalSongsPlayed = monthlyTotals!.spotify_songs;
+      totalScreenShareTime = monthlyTotals!.streaming_minutes; // today-only; not persisted historically
     } else {
       // Use session-based calculations for other time ranges
       totalGameTime = gameSessions.reduce((sum: number, game: any) => sum + game.total_minutes, 0);
@@ -420,10 +425,13 @@ export async function GET(
       totalScreenShareTime = voiceActivity.reduce((sum: number, voice: any) => sum + voice.screen_share_minutes, 0);
     }
 
-    // Use saved daily snapshots for online time (this comes from Discord Gateway's real tracking)
+    // Online time: 1d → live daily counter; monthly → snapshot-based monthly total
+    // (calendar month + today live); other ranges → sum of snapshot rows in range.
     const totalOnlineTime = timeRange === '1d'
       ? (userStats?.daily_online_minutes || 0)
-      : dailySnapshots.reduce((sum, day) => sum + day.online_minutes, 0);
+      : timeRange === 'monthly'
+        ? monthlyTotals!.online_minutes
+        : dailySnapshots.reduce((sum, day) => sum + day.online_minutes, 0);
 
     const totals = {
       totalOnlineTime: Math.round(totalOnlineTime),

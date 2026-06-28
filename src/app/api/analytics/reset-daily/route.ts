@@ -88,6 +88,7 @@ export async function POST(request: NextRequest) {
 
           const voiceMinutes = Math.round(voiceStats?.total_minutes || 0);
           const gamesPlayed = gameStats?.games_played || 0;
+          const gamesMinutes = Math.round(gameStats?.total_minutes || 0);
           const spotifyMinutes = spotifyStats?.plays_count || 0;
 
           if (onlineMinutes > 0 || voiceMinutes > 0 || gamesPlayed > 0 || spotifyMinutes > 0) {
@@ -97,6 +98,7 @@ export async function POST(request: NextRequest) {
               online_minutes: onlineMinutes,
               voice_minutes: voiceMinutes,
               games_played: gamesPlayed,
+              games_minutes: gamesMinutes,
               spotify_minutes: spotifyMinutes
             });
             snapshotsCreated++;

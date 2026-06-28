@@ -31,8 +31,15 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
   const [initialLoading, setInitialLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'spotify' | 'gaming' | 'voice' | 'achievements'>('overview');
+  const [period, setPeriod] = useState<'daily' | 'monthly'>('daily');
   const [mounted, setMounted] = useState(false);
   const prevDataRef = useRef<string>('');
+
+  // Achievements are defined per-day, so they're hidden in monthly mode
+  // (decision: hide day-scoped pieces when viewing the month).
+  const visibleTabs = period === 'monthly'
+    ? TABS.filter((tb) => tb.id !== 'achievements')
+    : TABS;
 
   const headingId = useId();
   const panelRef = useRef<HTMLDivElement | null>(null);
@@ -89,13 +96,23 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
     if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
     e.preventDefault();
     const dir = e.key === 'ArrowRight' ? 1 : -1;
-    const nextIndex = (currentIndex + dir + TABS.length) % TABS.length;
-    setActiveTab(TABS[nextIndex].id);
+    const nextIndex = (currentIndex + dir + visibleTabs.length) % visibleTabs.length;
+    setActiveTab(visibleTabs[nextIndex].id);
     tabRefs.current[nextIndex]?.focus();
   };
 
+  // If the period switches to monthly while the (now-hidden) Achievements tab is
+  // active, fall back to Overview so the body never renders an absent tab.
+  useEffect(() => {
+    if (period === 'monthly' && activeTab === 'achievements') {
+      setActiveTab('overview');
+    }
+  }, [period, activeTab]);
+
   useEffect(() => {
     if (isOpen && userId) {
+      // Period (or user/open) changed — force a repaint with the new dataset.
+      prevDataRef.current = '';
       fetchUserStats(true);
 
       // 🔄 REAL-TIME UPDATES: Refresh every 30 seconds while modal is open
@@ -105,7 +122,7 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
 
       return () => clearInterval(interval);
     }
-  }, [isOpen, userId]);
+  }, [isOpen, userId, period]);
 
   const fetchUserStats = async (isInitial = false) => {
     if (isInitial) {
@@ -114,8 +131,10 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
     setError(null);
 
     try {
-      // Fetch today's stats (1d timeRange for daily data)
-      const response = await fetch(`/api/analytics/user/${userId}?timeRange=1d`);
+      // 1d = today's live data; monthly = current Prague calendar month
+      // (snapshot-based totals + today live).
+      const timeRange = period === 'monthly' ? 'monthly' : '1d';
+      const response = await fetch(`/api/analytics/user/${userId}?timeRange=${timeRange}`);
 
       if (!response.ok) {
         throw new Error('Failed to fetch user stats');
@@ -148,6 +167,10 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
   const todayLabel = new Date().toLocaleDateString('cs-CZ', {
     day: '2-digit',
     month: '2-digit',
+  });
+  const monthLabel = new Date().toLocaleDateString('cs-CZ', {
+    month: 'long',
+    year: 'numeric',
   });
 
   const liveState: 'is-loading' | 'is-live' | 'is-error' =
@@ -183,7 +206,27 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
           </div>
           <div className="meta">
             <span id={headingId} className="name">{displayName}</span>
-            <span className="sub">Dnešní aktivita · {todayLabel}</span>
+            <span className="sub">
+              {period === 'monthly' ? `Tento měsíc · ${monthLabel}` : `Dnešní aktivita · ${todayLabel}`}
+            </span>
+          </div>
+          <div className="period-toggle" role="group" aria-label="Přepínač období">
+            <button
+              type="button"
+              className={`period-btn ${period === 'daily' ? 'is-active' : ''}`}
+              aria-pressed={period === 'daily'}
+              onClick={() => setPeriod('daily')}
+            >
+              Denní
+            </button>
+            <button
+              type="button"
+              className={`period-btn ${period === 'monthly' ? 'is-active' : ''}`}
+              aria-pressed={period === 'monthly'}
+              onClick={() => setPeriod('monthly')}
+            >
+              Měsíční
+            </button>
           </div>
           <span className={`live-pill ${liveState}`} aria-live="polite">
             <i />
@@ -203,7 +246,7 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
         </div>
 
         <div className="tabs" role="tablist" aria-label="Statistiky">
-          {TABS.map((tab, i) => (
+          {visibleTabs.map((tab, i) => (
             <button
               key={tab.id}
               ref={(el) => { tabRefs.current[i] = el; }}
@@ -258,7 +301,7 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
           {stats && !initialLoading && (
             <div key={activeTab} className="space-y-4">
               {/* Overview Tab */}
-              {activeTab === 'overview' && <OverviewTab stats={stats} />}
+              {activeTab === 'overview' && <OverviewTab stats={stats} period={period} />}
 
               {/* Spotify Tab */}
               {activeTab === 'spotify' && <SpotifyTab stats={stats} />}
@@ -275,7 +318,11 @@ export default function UserStatsModal({ isOpen, onClose, userId, displayName, a
           )}
         </div>
 
-        <div className="footer">Data se resetují každý den o půlnoci (CET)</div>
+        <div className="footer">
+          {period === 'monthly'
+            ? 'Měsíční souhrn · aktuální kalendářní měsíc (CET)'
+            : 'Data se resetují každý den o půlnoci (CET)'}
+        </div>
       </div>
     </div>,
     document.body

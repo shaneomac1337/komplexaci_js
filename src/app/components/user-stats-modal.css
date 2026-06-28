@@ -192,6 +192,48 @@
   color: var(--lounge-faint);
 }
 
+/* ============ Period toggle (Dení / Měsíční) ============ */
+.user-stats-lounge .period-toggle {
+  display: inline-flex;
+  flex: 0 0 auto;
+  gap: 3px;
+  padding: 3px;
+  border: 1px solid var(--lounge-line-strong);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.user-stats-lounge .period-btn {
+  appearance: none;
+  cursor: pointer;
+  border: 0;
+  border-radius: 999px;
+  padding: 5px 11px;
+  background: transparent;
+  color: var(--lounge-faint);
+  font-family: var(--lounge-font-mono);
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  transition: color 0.18s ease, background 0.18s ease, box-shadow 0.18s ease;
+}
+
+.user-stats-lounge .period-btn:hover {
+  color: var(--lounge-muted);
+}
+
+.user-stats-lounge .period-btn.is-active {
+  color: #fff;
+  background: linear-gradient(135deg, rgba(0, 255, 255, 0.22), rgba(88, 101, 242, 0.28));
+  box-shadow: 0 0 16px rgba(0, 255, 255, 0.16), inset 0 1px 0 rgba(255, 255, 255, 0.12);
+}
+
+.user-stats-lounge .period-btn:focus-visible {
+  outline: 2px solid var(--lounge-cyan);
+  outline-offset: 2px;
+}
+
 /* ============ Live pill ============ */
 .user-stats-lounge .live-pill {
   display: inline-flex;

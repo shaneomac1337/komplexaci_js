@@ -908,6 +908,7 @@ class AnalyticsService {
         online_minutes: onlineMinutes,
         voice_minutes: existingSnapshot?.voice_minutes || 0,
         games_played: existingSnapshot?.games_played || 0,
+        games_minutes: existingSnapshot?.games_minutes || 0,
         spotify_minutes: existingSnapshot?.spotify_minutes || 0
       });
 
@@ -1048,6 +1049,7 @@ class AnalyticsService {
         online_minutes: Math.round(estimatedOnlineTime),
         voice_minutes: voiceTime?.total || 0,
         games_played: gamesPlayed?.count || 0,
+        games_minutes: Math.round(gameTime?.total || 0),
         spotify_minutes: spotifyTime?.total || 0
       });
 

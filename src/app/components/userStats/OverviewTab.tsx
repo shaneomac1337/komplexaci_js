@@ -3,6 +3,7 @@ import { formatDate, formatOnlineTime } from './formatters';
 
 interface OverviewTabProps {
   stats: UserStats;
+  period?: 'daily' | 'monthly';
 }
 
 const tonePillForPercentile = (p: number): string => {
@@ -54,19 +55,20 @@ function ComparisonPill({ vsAverage, percentile, isTimeValue = true, fallback }:
   return <span className="pill eq">= průměr</span>;
 }
 
-export default function OverviewTab({ stats }: OverviewTabProps) {
+export default function OverviewTab({ stats, period = 'daily' }: OverviewTabProps) {
   const t = stats.data.totals;
   const sa = stats.data.serverAverages;
   const p = stats.data.percentiles;
+  const isMonthly = period === 'monthly';
 
   const recent = (stats.data.recentSessions ?? []).slice(0, 8);
 
   return (
     <>
       <div className="overview-hero">
-        <div className="eyebrow">Dnes online</div>
+        <div className="eyebrow">{isMonthly ? 'Tento měsíc online' : 'Dnes online'}</div>
         <p className="headline">{formatOnlineTime(t.totalOnlineTime)}</p>
-        <p className="sub">online dnes</p>
+        <p className="sub">{isMonthly ? 'online tento měsíc' : 'online dnes'}</p>
         {sa && (
           <div className="compare-line">
             srovnání s {sa.totalActiveUsers} aktivními · live tracking
@@ -126,7 +128,7 @@ export default function OverviewTab({ stats }: OverviewTabProps) {
         </div>
       </div>
 
-      {recent.length > 0 && (
+      {!isMonthly && recent.length > 0 && (
         <>
           <p className="timeline-heading">Dnešní aktivita</p>
           <ul className="timeline-list">

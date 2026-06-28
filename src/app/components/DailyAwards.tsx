@@ -45,7 +45,12 @@ export default function DailyAwards() {
   const [standingsLoading, setStandingsLoading] = useState(false);
   const [statistics, setStatistics] = useState<StandingsStatistics | null>(null);
   const [mounted, setMounted] = useState(false);
+  const [period, setPeriod] = useState<'daily' | 'monthly'>('daily');
   const prevDataRef = useRef<string>('');
+  // Always-current refs so the polling interval and fetchers read live values
+  // without needing to be re-created on every state change.
+  const periodRef = useRef(period);
+  const selectedAwardRef = useRef<DailyAward | null>(null);
 
   const fetchAwards = async (isInitial = false) => {
     try {
@@ -54,7 +59,7 @@ export default function DailyAwards() {
       }
       setError(null);
 
-      const response = await fetch('/api/daily-awards');
+      const response = await fetch(`/api/daily-awards?period=${periodRef.current}`);
       const data = await response.json();
 
       if (data.success) {
@@ -80,7 +85,7 @@ export default function DailyAwards() {
   const fetchStandings = async (award: DailyAward) => {
     try {
       setStandingsLoading(true);
-      const response = await fetch(`/api/daily-awards/standings?category=${award.id}`);
+      const response = await fetch(`/api/daily-awards/standings?category=${award.id}&period=${periodRef.current}`);
       const data = await response.json();
 
       if (data.success) {
@@ -115,13 +120,25 @@ export default function DailyAwards() {
     setMounted(true);
   }, []);
 
-  useEffect(() => {
-    fetchAwards(true);
+  // Keep refs in sync with state for the interval/fetchers.
+  useEffect(() => { periodRef.current = period; }, [period]);
+  useEffect(() => { selectedAwardRef.current = selectedAward; }, [selectedAward]);
 
-    // 🔄 REAL-TIME UPDATES: Refresh every minute for live competition tracking
+  // 🔄 REAL-TIME UPDATES: poll every minute (reads current period via ref).
+  useEffect(() => {
     const interval = setInterval(() => fetchAwards(false), 60 * 1000);
     return () => clearInterval(interval);
   }, []);
+
+  // Fetch on mount and whenever the period toggles. Reset the change-detector so
+  // the new period always repaints, and refresh open standings to match.
+  useEffect(() => {
+    prevDataRef.current = '';
+    fetchAwards(true);
+    if (selectedAwardRef.current) {
+      fetchStandings(selectedAwardRef.current);
+    }
+  }, [period]);
 
   if (initialLoading) {
     return (
@@ -175,14 +192,32 @@ export default function DailyAwards() {
         <div className="awards-title">
           <span className="awards-title-icon">★</span>
           <div>
-            <h4>Ocenění dne</h4>
+            <h4>{period === 'monthly' ? 'Ocenění měsíce' : 'Ocenění dne'}</h4>
             <p>Klikni na kategorii pro detailní žebříček</p>
           </div>
         </div>
-        <span className="awards-live-pill">
-          <i />
-          Live
-        </span>
+        <div
+          className="awards-period-toggle"
+          role="group"
+          aria-label="Přepínač období"
+        >
+          <button
+            type="button"
+            className={`awards-period-btn ${period === 'daily' ? 'is-active' : ''}`}
+            aria-pressed={period === 'daily'}
+            onClick={() => setPeriod('daily')}
+          >
+            Denní
+          </button>
+          <button
+            type="button"
+            className={`awards-period-btn ${period === 'monthly' ? 'is-active' : ''}`}
+            aria-pressed={period === 'monthly'}
+            onClick={() => setPeriod('monthly')}
+          >
+            Měsíční
+          </button>
+        </div>
       </div>
 
       <div className="awards-list">
@@ -254,7 +289,9 @@ export default function DailyAwards() {
                 <div className="awards-modal-title-copy">
                   <h3 id="daily-awards-modal-title">{selectedAward.title}</h3>
                   <p>{selectedAward.description}</p>
-                  <span className="awards-modal-kicker">Dnešní pořadí · live tracking</span>
+                  <span className="awards-modal-kicker">
+                    {period === 'monthly' ? 'Měsíční pořadí · tento měsíc' : 'Dnešní pořadí · live tracking'}
+                  </span>
                 </div>
                 <button
                   type="button"
@@ -274,12 +311,17 @@ export default function DailyAwards() {
                     <path d="M19 3h-1V1h-2v2H8V1H6v2H5c-1.11 0-1.99.9-1.99 2L3 19c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm0 16H5V8h14v11zM7 10h5v5H7z" />
                   </svg>
                   <span>
-                    {new Date().toLocaleDateString('cs-CZ', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
+                    {period === 'monthly'
+                      ? new Date().toLocaleDateString('cs-CZ', {
+                          year: 'numeric',
+                          month: 'long'
+                        })
+                      : new Date().toLocaleDateString('cs-CZ', {
+                          weekday: 'long',
+                          year: 'numeric',
+                          month: 'long',
+                          day: 'numeric'
+                        })}
                   </span>
                 </div>
 

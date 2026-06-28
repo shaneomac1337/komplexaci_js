@@ -92,3 +92,17 @@ export function getPragueDateStartUtcString(dateString: string) {
 export function getNextPragueDateString(dateString: string) {
   return addDaysToDateString(dateString, 1);
 }
+
+// First day of the Prague calendar month containing `date`, as 'YYYY-MM-01'.
+export function getPragueMonthStartDateString(date: Date = new Date()) {
+  const parts = getPragueDateParts(date);
+  return formatDateParts(parts.year, parts.month, 1);
+}
+
+// True if `previous` and `current` fall in different Prague calendar months
+// (different year or different month).
+export function hasPragueMonthChanged(previous: Date, current: Date = new Date()) {
+  const a = getPragueDateParts(previous);
+  const b = getPragueDateParts(current);
+  return a.year !== b.year || a.month !== b.month;
+}
